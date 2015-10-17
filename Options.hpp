@@ -11,7 +11,7 @@
 #include <sys/types.h>
 #include <string>
     
-#include "gdrive/gdrive.h"
+#include "gdrive/Gdrive.hpp"
 
 
 
@@ -23,7 +23,7 @@ namespace fusedrive
         int gdrive_access;
 
         // Path to config/auth file
-        std::string* gdrive_auth_file;
+        std::string gdrive_auth_file;
 
         // Time (in seconds) to assume cached data is still valid
         time_t gdrive_cachettl;
@@ -54,7 +54,7 @@ namespace fusedrive
         bool error;
 
         // If non-NULL, an error message that may be displayed to the user
-        char* errorMsg;
+        // char* errorMsg;
         
         /**
          * Create a Options object and fill it with values based on 
@@ -125,6 +125,7 @@ namespace fusedrive
     class BadOptionException : std::exception
     {
     public:
+        BadOptionException(const char* message);
         BadOptionException(const char* fmtStr, const char* arg);
         virtual const char* what() const noexcept;
         ~BadOptionException();

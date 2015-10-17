@@ -5,23 +5,29 @@
                    displayName="Header Files"
                    projectFiles="true">
       <logicalFolder name="f1" displayName="gdrive" projectFiles="true">
-        <itemPath>gdrive/gdrive-cache-node.h</itemPath>
+        <itemPath>gdrive/Gdrive.hpp</itemPath>
+        <itemPath>gdrive/GdriveInfo.hpp</itemPath>
+        <itemPath>gdrive/gdrive-cache-node.hpp</itemPath>
+        <itemPath>gdrive/gdrive-cache.hpp</itemPath>
         <itemPath>gdrive/gdrive-client-secret-template.h</itemPath>
         <itemPath>gdrive/gdrive-client-secret.h</itemPath>
-        <itemPath>gdrive/gdrive-download-buffer.h</itemPath>
-        <itemPath>gdrive/gdrive-file-contents.h</itemPath>
+        <itemPath>gdrive/gdrive-download-buffer.hpp</itemPath>
+        <itemPath>gdrive/gdrive-file-contents.hpp</itemPath>
+        <itemPath>gdrive/gdrive-file.hpp</itemPath>
         <itemPath>gdrive/gdrive-fileid-cache-node.h</itemPath>
-        <itemPath>gdrive-fileinfo-array.h</itemPath>
+        <itemPath>gdrive/gdrive-fileinfo-array.hpp</itemPath>
+        <itemPath>gdrive/gdrive-fileinfo.hpp</itemPath>
         <itemPath>gdrive/gdrive-info.h</itemPath>
         <itemPath>gdrive/gdrive-json.h</itemPath>
-        <itemPath>gdrive/gdrive-query.h</itemPath>
-        <itemPath>gdrive/gdrive-sysinfo.h</itemPath>
-        <itemPath>gdrive/gdrive-transfer.h</itemPath>
+        <itemPath>gdrive/gdrive-query.hpp</itemPath>
+        <itemPath>gdrive/gdrive-sysinfo.hpp</itemPath>
+        <itemPath>gdrive/gdrive-transfer.hpp</itemPath>
         <itemPath>gdrive/gdrive-util.h</itemPath>
         <itemPath>gdrive/gdrive.h</itemPath>
       </logicalFolder>
+      <itemPath>FuseDrivePrivateData.hpp</itemPath>
       <itemPath>Options.hpp</itemPath>
-      <itemPath>fuse-drive.h</itemPath>
+      <itemPath>fuse-drive.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Resource Files"
@@ -31,20 +37,23 @@
                    displayName="Source Files"
                    projectFiles="true">
       <logicalFolder name="f1" displayName="gdrive" projectFiles="true">
-        <itemPath>gdrive/gdrive-cache-node.c</itemPath>
-        <itemPath>gdrive/gdrive-cache.c</itemPath>
-        <itemPath>gdrive/gdrive-download-buffer.c</itemPath>
-        <itemPath>gdrive/gdrive-file-contents.c</itemPath>
+        <itemPath>gdrive/Gdrive.cpp</itemPath>
+        <itemPath>gdrive/GdriveInfo.cpp</itemPath>
+        <itemPath>gdrive/gdrive-cache-node.cpp</itemPath>
+        <itemPath>gdrive/gdrive-cache.cpp</itemPath>
+        <itemPath>gdrive/gdrive-download-buffer.cpp</itemPath>
+        <itemPath>gdrive/gdrive-file-contents.cpp</itemPath>
         <itemPath>gdrive/gdrive-fileid-cache-node.c</itemPath>
-        <itemPath>gdrive/gdrive-fileinfo-array.c</itemPath>
-        <itemPath>gdrive/gdrive-fileinfo.c</itemPath>
+        <itemPath>gdrive/gdrive-fileinfo-array.cpp</itemPath>
+        <itemPath>gdrive/gdrive-fileinfo.cpp</itemPath>
         <itemPath>gdrive/gdrive-info.c</itemPath>
         <itemPath>gdrive/gdrive-json.c</itemPath>
-        <itemPath>gdrive/gdrive-query.c</itemPath>
-        <itemPath>gdrive/gdrive-sysinfo.c</itemPath>
-        <itemPath>gdrive/gdrive-transfer.c</itemPath>
+        <itemPath>gdrive/gdrive-query.cpp</itemPath>
+        <itemPath>gdrive/gdrive-sysinfo.cpp</itemPath>
+        <itemPath>gdrive/gdrive-transfer.cpp</itemPath>
         <itemPath>gdrive/gdrive-util.c</itemPath>
       </logicalFolder>
+      <itemPath>FuseDrivePrivateData.cpp</itemPath>
       <itemPath>Options.cpp</itemPath>
       <itemPath>fuse-drive.cpp</itemPath>
     </logicalFolder>
@@ -71,11 +80,14 @@
       <compileType>
         <cTool>
           <standard>3</standard>
+          <commandlineTool>gcc</commandlineTool>
+          <commandLine>-Wextra</commandLine>
           <preprocessorList>
             <Elem>FUSE_USE_VERSION=26</Elem>
             <Elem>_FILE_OFFSET_BITS=64</Elem>
             <Elem>_XOPEN_SOURCE=700</Elem>
           </preprocessorList>
+          <warningLevel>2</warningLevel>
         </cTool>
         <ccTool>
           <standard>8</standard>
@@ -98,21 +110,33 @@
           </linkerLibItems>
         </linkerTool>
       </compileType>
+      <item path="FuseDrivePrivateData.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="FuseDrivePrivateData.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="Options.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Options.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="fuse-drive.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="fuse-drive.h" ex="false" tool="3" flavor2="0">
+      <item path="fuse-drive.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive-fileinfo-array.h" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/Gdrive.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-cache-node.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/Gdrive.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-cache-node.h" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/GdriveInfo.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-cache.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/GdriveInfo.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="gdrive/gdrive-cache-node.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/gdrive-cache-node.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="gdrive/gdrive-cache.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/gdrive-cache.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/gdrive-client-secret-template.h"
             ex="false"
@@ -121,21 +145,27 @@
       </item>
       <item path="gdrive/gdrive-client-secret.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-download-buffer.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/gdrive-download-buffer.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-download-buffer.h" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/gdrive-download-buffer.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-file-contents.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/gdrive-file-contents.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-file-contents.h" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/gdrive-file-contents.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="gdrive/gdrive-file.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/gdrive-fileid-cache-node.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="gdrive/gdrive-fileid-cache-node.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-fileinfo-array.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/gdrive-fileinfo-array.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-fileinfo.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/gdrive-fileinfo-array.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="gdrive/gdrive-fileinfo.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/gdrive-fileinfo.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/gdrive-info.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -145,17 +175,17 @@
       </item>
       <item path="gdrive/gdrive-json.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-query.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/gdrive-query.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-query.h" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/gdrive-query.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-sysinfo.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/gdrive-sysinfo.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-sysinfo.h" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/gdrive-sysinfo.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-transfer.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/gdrive-transfer.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-transfer.h" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/gdrive-transfer.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/gdrive-util.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -184,21 +214,33 @@
           <developmentMode>5</developmentMode>
         </asmTool>
       </compileType>
+      <item path="FuseDrivePrivateData.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="FuseDrivePrivateData.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="Options.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="Options.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="fuse-drive.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="fuse-drive.h" ex="false" tool="3" flavor2="0">
+      <item path="fuse-drive.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive-fileinfo-array.h" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/Gdrive.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-cache-node.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/Gdrive.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-cache-node.h" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/GdriveInfo.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-cache.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/GdriveInfo.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="gdrive/gdrive-cache-node.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/gdrive-cache-node.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="gdrive/gdrive-cache.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/gdrive-cache.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/gdrive-client-secret-template.h"
             ex="false"
@@ -207,21 +249,27 @@
       </item>
       <item path="gdrive/gdrive-client-secret.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-download-buffer.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/gdrive-download-buffer.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-download-buffer.h" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/gdrive-download-buffer.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-file-contents.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/gdrive-file-contents.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-file-contents.h" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/gdrive-file-contents.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="gdrive/gdrive-file.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/gdrive-fileid-cache-node.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="gdrive/gdrive-fileid-cache-node.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-fileinfo-array.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/gdrive-fileinfo-array.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-fileinfo.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/gdrive-fileinfo-array.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="gdrive/gdrive-fileinfo.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/gdrive-fileinfo.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/gdrive-info.c" ex="false" tool="0" flavor2="0">
       </item>
@@ -231,17 +279,17 @@
       </item>
       <item path="gdrive/gdrive-json.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-query.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/gdrive-query.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-query.h" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/gdrive-query.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-sysinfo.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/gdrive-sysinfo.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-sysinfo.h" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/gdrive-sysinfo.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-transfer.c" ex="false" tool="0" flavor2="0">
+      <item path="gdrive/gdrive-transfer.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-transfer.h" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/gdrive-transfer.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/gdrive-util.c" ex="false" tool="0" flavor2="0">
       </item>

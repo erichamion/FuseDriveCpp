@@ -1,4 +1,14 @@
 /* 
+ * File:   gdrive-file.hpp
+ * Author: me
+ *
+ * Created on October 16, 2015, 11:03 PM
+ */
+
+#ifndef GDRIVE_FILE_HPP
+#define	GDRIVE_FILE_HPP
+
+/* 
  * File:   gdrive-file.h
  * Author: me
  * 
@@ -10,14 +20,11 @@
  * Created on May 4, 2015, 11:07 PM
  */
 
-#ifndef GDRIVE_FILE_H
-#define	GDRIVE_FILE_H
-
-#ifdef	__cplusplus
-extern "C" {
-#endif
+//#ifdef	__cplusplus
+//extern "C" {
+//#endif
     
-#include "gdrive-fileinfo.h"
+#include "gdrive-fileinfo.hpp"
     
 #include <stdbool.h>
     
@@ -47,7 +54,7 @@ typedef struct Gdrive_Cache_Node Gdrive_File;
  *      as each call is eventually balanced by a call to gdrive_file_close()
  *      with the returned file handle and the same flags.
  */
-Gdrive_File* gdrive_file_open(const char* fileId, int flags, int* pError);
+Gdrive_File* gdrive_file_open(fusedrive::Gdrive& gInfo, const char* fileId, int flags, int* pError);
 
 /*
  * gdrive_file_close(): Closes an open file, releasing any unnecessary 
@@ -58,7 +65,7 @@ Gdrive_File* gdrive_file_open(const char* fileId, int flags, int* pError);
  *      flags (int):
  *              The same flags that were used when calling gdrive_file_open().
  */
-void gdrive_file_close(Gdrive_File* pFile, int flags);
+void gdrive_file_close(fusedrive::Gdrive& gInfo, Gdrive_File* pFile, int flags);
 
 /*
  * gdrive_file_read():  Reads the contents of an open file and adds the contents
@@ -83,7 +90,7 @@ void gdrive_file_close(Gdrive_File* pFile, int flags);
  *      Change the return type to size_t, and add a parameter to hold a pointer
  *      to an error value.
  */
-int gdrive_file_read(Gdrive_File* fh, char* buf, size_t size, off_t offset);
+int gdrive_file_read(fusedrive::Gdrive& gInfo, Gdrive_File* fh, char* buf, size_t size, off_t offset);
 
 /*
  * gdrive_file_write(): Write to the cached contents of an open file.
@@ -107,7 +114,7 @@ int gdrive_file_read(Gdrive_File* fh, char* buf, size_t size, off_t offset);
  *      Change the return type to size_t, and add a parameter to hold a pointer
  *      to an error value.
  */
-int gdrive_file_write(Gdrive_File* fh, const char* buf, size_t size, 
+int gdrive_file_write(fusedrive::Gdrive& gInfo, Gdrive_File* fh, const char* buf, size_t size, 
                       off_t offset);
 
 /*
@@ -122,7 +129,7 @@ int gdrive_file_write(Gdrive_File* fh, const char* buf, size_t size,
   * Return value (int):
  *      0 on success, a negative error numer on failure.
  */
-int gdrive_file_truncate(Gdrive_File* fh, off_t size);
+int gdrive_file_truncate(fusedrive::Gdrive& gInfo, Gdrive_File* fh, off_t size);
 
 /*
  * gdrive_file_new():   Create a new file.
@@ -140,7 +147,7 @@ int gdrive_file_truncate(Gdrive_File* fh, off_t size);
  *      ID of the newly created file. The caller is responsible for freeing the
  *      pointed-to memory.
  */
-char* gdrive_file_new(const char* path, bool createFolder, int* pError);
+char* gdrive_file_new(fusedrive::Gdrive& gInfo, const char* path, bool createFolder, int* pError);
 
 /*
  * gdrive_file_sync():  Sync a file with Google Drive. In particular, if the 
@@ -152,7 +159,7 @@ char* gdrive_file_new(const char* path, bool createFolder, int* pError);
  * Return value:
  *      0 on success, a negative error number on failure.
  */
-int gdrive_file_sync(Gdrive_File* fh);
+int gdrive_file_sync(fusedrive::Gdrive& gInfo, Gdrive_File* fh);
 
 /*
  * gdrive_file_sync():  Sync a file's metadata (the information stored in a 
@@ -163,7 +170,7 @@ int gdrive_file_sync(Gdrive_File* fh);
  * Return value:
  *      0 on success, a negative error number on failure.
  */
-int gdrive_file_sync_metadata(Gdrive_File* fh);
+int gdrive_file_sync_metadata(fusedrive::Gdrive& gInfo, Gdrive_File* fh);
 
 /*
  * gdrive_file_set_atime(): Set the access time for an open file.
@@ -177,7 +184,7 @@ int gdrive_file_sync_metadata(Gdrive_File* fh);
  *      This function will happily set a future time, but Google Drive doesn't
  *      seem to support future access times.
  */
-int gdrive_file_set_atime(Gdrive_File* fh, const struct timespec* ts);
+int gdrive_file_set_atime(fusedrive::Gdrive& gInfo, Gdrive_File* fh, const struct timespec* ts);
 
 /*
  * gdrive_file_set_mtime(): Set the modification time for an open file.
@@ -188,7 +195,7 @@ int gdrive_file_set_atime(Gdrive_File* fh, const struct timespec* ts);
  *              The pointer to a timespec struct representing the desired 
  *              modification time.
  */
-int gdrive_file_set_mtime(Gdrive_File* fh, const struct timespec* ts);
+int gdrive_file_set_mtime(fusedrive::Gdrive& gInfo, Gdrive_File* fh, const struct timespec* ts);
 
 
 /*
@@ -216,12 +223,15 @@ Gdrive_Fileinfo* gdrive_file_get_info(Gdrive_File* fh);
  *      read and write access), but the system only has GDRIVE_ACCESS_READ, the
  *      returned value will be 4 (read access only).
  */
-unsigned int gdrive_file_get_perms(const Gdrive_File* fh);
+unsigned int gdrive_file_get_perms(fusedrive::Gdrive& gInfo, const Gdrive_File* fh);
 
 
-#ifdef	__cplusplus
-}
-#endif
+//#ifdef	__cplusplus
+//}
+//#endif
 
-#endif	/* GDRIVE_FILE_H */
+
+
+
+#endif	/* GDRIVE_FILE_HPP */
 

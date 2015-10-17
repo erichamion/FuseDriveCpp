@@ -1,4 +1,14 @@
 /* 
+ * File:   gdrive-query.hpp
+ * Author: me
+ *
+ * Created on October 17, 2015, 10:04 AM
+ */
+
+#ifndef GDRIVE_QUERY_HPP
+#define	GDRIVE_QUERY_HPP
+
+/* 
  * File:   gdrive-query.h
  * Author: me
  * 
@@ -11,13 +21,11 @@
  * Created on May 3, 2015, 7:33 PM
  */
 
-#ifndef HEADER_TEMPLATE_H
-#define	HEADER_TEMPLATE_H
-
-#ifdef	__cplusplus
-extern "C" {
-#endif
+//#ifdef	__cplusplus
+//extern "C" {
+//#endif
     
+#include "Gdrive.hpp"
     
 typedef struct Gdrive_Query Gdrive_Query;
 
@@ -70,7 +78,7 @@ void gdrive_query_free(Gdrive_Query* pQuery);
  *      longer needed, the returned pointer should be passed to 
  *      gdrive_query_free().
  */
-Gdrive_Query* gdrive_query_add(Gdrive_Query* pQuery, const char* field, 
+Gdrive_Query* gdrive_query_add(fusedrive::Gdrive& gInfo, Gdrive_Query* pQuery, const char* field, 
                                const char* value);
 
 /*
@@ -103,9 +111,12 @@ Gdrive_Query* gdrive_query_add(Gdrive_Query* pQuery, const char* field,
 char* gdrive_query_assemble(const Gdrive_Query* pQuery, const char* url);
 
 
-#ifdef	__cplusplus
-}
-#endif
+//#ifdef	__cplusplus
+//}
+//#endif
 
-#endif	/* HEADER_TEMPLATE_H */
+
+
+
+#endif	/* GDRIVE_QUERY_HPP */
 

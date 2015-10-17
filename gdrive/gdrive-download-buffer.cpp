@@ -1,8 +1,11 @@
-#include "gdrive-download-buffer.h"
-#include "gdrive-info.h"
+
+#include "gdrive-download-buffer.hpp"
+#include "Gdrive.hpp"
 
 #include <string.h>
 
+
+using namespace fusedrive;
 
 
 /*************************************************************************
@@ -38,7 +41,7 @@ gdrive_dlbuf_header_callback(char* buffer, size_t size, size_t nitems,
                              void* userdata);
 
 static enum Gdrive_Retry_Method 
-gdrive_dlbuf_retry_on_error(Gdrive_Download_Buffer* pBuf, long httpResp);
+gdrive_dlbuf_retry_on_error(Gdrive& gInfo, Gdrive_Download_Buffer* pBuf, long httpResp);
 
 static void gdrive_exponential_wait(int tryNum);
 
@@ -53,7 +56,7 @@ static void gdrive_exponential_wait(int tryNum);
 
 Gdrive_Download_Buffer* gdrive_dlbuf_create(size_t initialSize, FILE* fh)
 {
-    Gdrive_Download_Buffer* pBuf = malloc(sizeof(Gdrive_Download_Buffer));
+    Gdrive_Download_Buffer* pBuf = (Gdrive_Download_Buffer*) malloc(sizeof(Gdrive_Download_Buffer));
     if (pBuf == NULL)
     {
         // Couldn't allocate memory for the struct.
@@ -62,15 +65,15 @@ Gdrive_Download_Buffer* gdrive_dlbuf_create(size_t initialSize, FILE* fh)
     pBuf->usedSize = 0;
     pBuf->allocatedSize = initialSize;
     pBuf->httpResp = 0;
-    pBuf->resultCode = 0;
+    pBuf->resultCode = (CURLcode) 0;
     pBuf->data = NULL;
-    pBuf->pReturnedHeaders = malloc(1);
+    pBuf->pReturnedHeaders = (char*) malloc(1);
     pBuf->pReturnedHeaders[0] = '\0';
     pBuf->returnedHeaderSize = 1;
     pBuf->fh = fh;
     if (initialSize != 0)
     {
-        if ((pBuf->data = malloc(initialSize)) == NULL)
+        if ((pBuf->data = (char*) malloc(initialSize)) == NULL)
         {
             // Couldn't allocate the requested memory for the data.
             // Free the struct's memory and return NULL.
@@ -169,7 +172,7 @@ CURLcode gdrive_dlbuf_download(Gdrive_Download_Buffer* pBuf, CURL* curlHandle)
     return pBuf->resultCode;
 }
 
-int gdrive_dlbuf_download_with_retry(Gdrive_Download_Buffer* pBuf, 
+int gdrive_dlbuf_download_with_retry(Gdrive& gInfo, Gdrive_Download_Buffer* pBuf, 
                                      CURL* curlHandle, bool retryOnAuthError, 
                                      int tryNum, int maxTries)
 {
@@ -195,7 +198,7 @@ int gdrive_dlbuf_download_with_retry(Gdrive_Download_Buffer* pBuf,
         }
         
         bool retry = false;
-        switch (gdrive_dlbuf_retry_on_error(pBuf, 
+        switch (gdrive_dlbuf_retry_on_error(gInfo, pBuf, 
                                             gdrive_dlbuf_get_httpresp(pBuf)))
         {
             case GDRIVE_RETRY_RETRY:
@@ -210,7 +213,7 @@ int gdrive_dlbuf_download_with_retry(Gdrive_Download_Buffer* pBuf,
                 // auth fails).
                 if (retryOnAuthError)
                 {
-                    retry = (gdrive_auth() == 0);
+                    retry = (gInfo.gdrive_auth() == 0);
                     break;
                 }
                 // else fall through
@@ -226,7 +229,7 @@ int gdrive_dlbuf_download_with_retry(Gdrive_Download_Buffer* pBuf,
         
         if (retry)
         {
-            return gdrive_dlbuf_download_with_retry(pBuf, 
+            return gdrive_dlbuf_download_with_retry(gInfo, pBuf, 
                                                     curlHandle,
                                                     retryOnAuthError,
                                                     tryNum + 1,
@@ -272,7 +275,7 @@ static size_t gdrive_dlbuf_callback(char *newData, size_t size, size_t nmemb,
         size_t minSize = totalSize + dataSize;
         size_t doubleSize = 2 * pBuffer->allocatedSize;
         size_t allocSize = (minSize > doubleSize) ? minSize : doubleSize;
-        pBuffer->data = realloc(pBuffer->data, allocSize);
+        pBuffer->data = (char*) realloc(pBuffer->data, allocSize);
         if (pBuffer->data == NULL)
         {
             // Memory allocation error.
@@ -303,7 +306,7 @@ static size_t gdrive_dlbuf_header_callback(char* buffer, size_t size,
     oldSize = (oldSize > 0) ? oldSize : 1;
     size_t newHeaderLength = size * nitems;
     size_t totalSize = oldSize + newHeaderLength + 1;
-    pDlBuf->pReturnedHeaders = realloc(pDlBuf->pReturnedHeaders, totalSize);
+    pDlBuf->pReturnedHeaders = (char*) realloc(pDlBuf->pReturnedHeaders, totalSize);
     if (pDlBuf->pReturnedHeaders == NULL)
     {
         // Memory error
@@ -318,7 +321,7 @@ static size_t gdrive_dlbuf_header_callback(char* buffer, size_t size,
     return newHeaderLength;
 }
 
-static enum Gdrive_Retry_Method gdrive_dlbuf_retry_on_error(
+static enum Gdrive_Retry_Method gdrive_dlbuf_retry_on_error(Gdrive& gInfo, 
         Gdrive_Download_Buffer* pBuf, long httpResp)
 {
     /* TODO:    Currently only handles 403 errors correctly when pBuf->fh is 
@@ -350,11 +353,11 @@ static enum Gdrive_Retry_Method gdrive_dlbuf_retry_on_error(
         // Retry ONLY if the reason for the 403 was an exceeded rate limit
         bool retry = false;
         int reasonLength = strlen(GDRIVE_403_USERRATELIMIT) + 1;
-        char* reason = malloc(reasonLength);
+        char* reason = (char*) malloc(reasonLength);
         if (reason == NULL)
         {
             // Memory error
-            return -1;
+            return (Gdrive_Retry_Method) (-1);
         }
         reason[0] = '\0';
         Gdrive_Json_Object* pRoot = 

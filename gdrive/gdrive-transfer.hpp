@@ -1,4 +1,14 @@
 /* 
+ * File:   gdrive-transfer.hpp
+ * Author: me
+ *
+ * Created on October 16, 2015, 10:39 PM
+ */
+
+#ifndef GDRIVE_TRANSFER_HPP
+#define	GDRIVE_TRANSFER_HPP
+
+/* 
  * File:   gdrive-transfer.h
  * Author: me
  * 
@@ -10,18 +20,30 @@
  * Created on May 14, 2015, 7:33 PM
  */
 
-#ifndef GDRIVE_TRANSFER_H
-#define	GDRIVE_TRANSFER_H
-
-#ifdef	__cplusplus
-extern "C" {
-#endif
+//#ifdef	__cplusplus
+//extern "C" {
+//#endif
     
-#include "gdrive-download-buffer.h"
+#include "gdrive-download-buffer.hpp"
+#include "Gdrive.hpp"
     
 #include <sys/types.h>
+#include <stdio.h>
     
 typedef struct Gdrive_Transfer Gdrive_Transfer;
+namespace fusedrive
+{
+    class Gdrive;
+}
+
+enum Gdrive_Request_Type
+{
+    GDRIVE_REQUEST_GET,
+    GDRIVE_REQUEST_POST,
+    GDRIVE_REQUEST_PUT,
+    GDRIVE_REQUEST_PATCH,
+    GDRIVE_REQUEST_DELETE
+};
 
 /*
  * gdrive_xfer_upload_callback: Signature for a callback function to be used
@@ -46,7 +68,7 @@ typedef struct Gdrive_Transfer Gdrive_Transfer;
  *      different).
  */
 typedef size_t(*gdrive_xfer_upload_callback)
-    (char* buffer, off_t offset, size_t size, void* userdata);
+    (fusedrive::Gdrive& gInfo, char* buffer, off_t offset, size_t size, void* userdata);
 
 
 /*************************************************************************
@@ -71,7 +93,7 @@ typedef size_t(*gdrive_xfer_upload_callback)
  *      order. For example, URL query parameters can be added before setting the
  *      URL with no adverse effects.
  */
-Gdrive_Transfer* gdrive_xfer_create();
+Gdrive_Transfer* gdrive_xfer_create(fusedrive::Gdrive& gInfo);
 
 /*
  * gdrive_xfer_free():  Safely frees the memory associated with a 
@@ -88,6 +110,10 @@ void gdrive_xfer_free(Gdrive_Transfer* pTransfer);
 /*************************************************************************
  * Getter and setter functions
  *************************************************************************/
+
+void gdrive_xfer_set_gdrive(Gdrive_Transfer* pTransfer, fusedrive::Gdrive& gdrive);
+
+fusedrive::Gdrive& gdrive_xfer_get_gdrive(Gdrive_Transfer* pTransfer);
 
 /*
  * gdrive_xfer_set_requesttype():   Set the HTTP Request type for a transfer.
@@ -220,7 +246,7 @@ void gdrive_xfer_set_uploadcallback(Gdrive_Transfer* pTransfer,
  * Return value:
  *      0 on success, non-zero on failure.
  */
-int gdrive_xfer_add_query(Gdrive_Transfer* pTransfer, const char* field, 
+int gdrive_xfer_add_query(fusedrive::Gdrive& gInfo, Gdrive_Transfer* pTransfer, const char* field, 
                           const char* value);
 
 /*
@@ -242,7 +268,7 @@ int gdrive_xfer_add_query(Gdrive_Transfer* pTransfer, const char* field,
  * Return value:
  *      0 on success, non-zero on failure.
  */
-int gdrive_xfer_add_postfield(Gdrive_Transfer* pTransfer, const char* field, 
+int gdrive_xfer_add_postfield(fusedrive::Gdrive& gInfo, Gdrive_Transfer* pTransfer, const char* field, 
                               const char* value);
 
 /*
@@ -286,12 +312,15 @@ int gdrive_xfer_add_header(Gdrive_Transfer* pTransfer, const char* header);
  *      the transfer. The caller is responsible for passing the returned pointer
  *      to gdrive_dlbuf_free().
  */
-Gdrive_Download_Buffer* gdrive_xfer_execute(Gdrive_Transfer* pTransfer);
+struct Gdrive_Download_Buffer* gdrive_xfer_execute(fusedrive::Gdrive& gInfo, Gdrive_Transfer* pTransfer);
 
 
-#ifdef	__cplusplus
-}
-#endif
+//#ifdef	__cplusplus
+//}
+//#endif
 
-#endif	/* GDRIVE_TRANSFER_DESCRIPTOR_H */
+
+
+
+#endif	/* GDRIVE_TRANSFER_HPP */
 

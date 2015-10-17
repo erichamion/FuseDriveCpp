@@ -1,4 +1,14 @@
 /* 
+ * File:   gdrive-cache.hpp
+ * Author: me
+ *
+ * Created on October 16, 2015, 10:22 PM
+ */
+
+#ifndef GDRIVE_CACHE_HPP
+#define	GDRIVE_CACHE_HPP
+
+/* 
  * File:   gdrive-cache.h
  * Author: me
  * 
@@ -15,17 +25,15 @@
  * Created on May 3, 2015, 9:10 PM
  */
 
-#ifndef GDRIVE_CACHE_H
-#define	GDRIVE_CACHE_H
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
+//#ifdef	__cplusplus
+//extern "C" {
+//#endif
    
     
-#include "gdrive.h"
+#include "Gdrive.hpp"
 #include "gdrive-fileid-cache-node.h"
-#include "gdrive-cache-node.h"
+#include "gdrive-cache-node.hpp"
     
     
 typedef struct Gdrive_Cache Gdrive_Cache;
@@ -46,7 +54,7 @@ typedef struct Gdrive_Cache Gdrive_Cache;
  * Return value (int):
  *      0 on success, other on failure.
  */
-int gdrive_cache_init(time_t cacheTTL);
+int gdrive_cache_init(fusedrive::Gdrive& gInfo, time_t cacheTTL);
 
 /*
  * gdrive_cache_get():  Retrieves a pointer to the cache.
@@ -113,7 +121,7 @@ int64_t gdrive_cache_get_nextchangeid();
  * Return value (int):
  *      0 on success, other on error.
  */
-int gdrive_cache_update_if_stale();
+int gdrive_cache_update_if_stale(fusedrive::Gdrive& gInfo);
 
 /*
  * gdrive_cache_update():   Updates the cache by getting a list of changes from 
@@ -121,7 +129,7 @@ int gdrive_cache_update_if_stale();
  * Return value (int):
  *      0 on success, other on error.
  */
-int gdrive_cache_update();
+int gdrive_cache_update(fusedrive::Gdrive& gInfo);
 
 /*
  * gdrive_cache_get_item(): Retrieve the Gdrive_Fileinfo struct for a specified
@@ -146,7 +154,7 @@ int gdrive_cache_update();
  *      Any modifications made to this struct will be reflected in the cache.
  *      The pointed-to memory should NOT be freed.
  */
-Gdrive_Fileinfo* gdrive_cache_get_item(const char* fileId, 
+Gdrive_Fileinfo* gdrive_cache_get_item(fusedrive::Gdrive& gInfo, const char* fileId, 
                                        bool addIfDoesntExist, 
                                        bool* pAlreadyExists);
 
@@ -207,7 +215,7 @@ int gdrive_cache_add_fileid(const char* path, const char* fileId);
  * TODO:    Change this to gdrive_cache_get_filehandle() and return a
  *          Gdrive_Filehandle*.
  */
-Gdrive_Cache_Node* gdrive_cache_get_node(const char* fileId, 
+Gdrive_Cache_Node* gdrive_cache_get_node(fusedrive::Gdrive& gInfo, const char* fileId, 
                                          bool addIfDoesntExist, 
                                          bool* pAlreadyExists);
 
@@ -223,7 +231,7 @@ Gdrive_Cache_Node* gdrive_cache_get_node(const char* fileId,
  *      ID of the specified file. On failure, NULL. The caller is responsible
  *      for freeing the pointed-to memory.
  */
-char* gdrive_cache_get_fileid(const char* path);
+char* gdrive_cache_get_fileid(fusedrive::Gdrive& gInfo, const char* path);
 
 /*
  * gdrive_cache_delete_id():    Remove a file ID from the file ID cache, and 
@@ -234,7 +242,7 @@ char* gdrive_cache_get_fileid(const char* path);
  *      fileId (const char*):
  *              The Google Drive file ID to remove from the cache.
  */
-void gdrive_cache_delete_id(const char* fileId);
+void gdrive_cache_delete_id(fusedrive::Gdrive& gInfo, const char* fileId);
 
 /*
  * gdrive_cache_delete_node():  Remove the specified node from the main cache,
@@ -249,9 +257,8 @@ void gdrive_cache_delete_node(Gdrive_Cache_Node* pNode);
 
     
 
-#ifdef	__cplusplus
-}
-#endif
 
-#endif	/* GDRIVE_CACHE_H */
+
+
+#endif	/* GDRIVE_CACHE_HPP */
 

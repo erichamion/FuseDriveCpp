@@ -32,12 +32,12 @@ namespace fusedrive
     const unsigned int Options::OPTION_MAXCHUNKS = 502;
     const char* const Options::OPTION_STRING = "+a:c:i:p:d:";
 
-    const unsigned int Options::DEFAULT_GDRIVE_ACCESS = GDRIVE_ACCESS_WRITE;
+    const unsigned int Options::DEFAULT_GDRIVE_ACCESS = Gdrive::GDRIVE_ACCESS_WRITE;
     const char* const Options::DEFAULT_AUTH_BASENAME = ".auth";
     const char* const Options::DEFAULT_AUTH_RELPATH = "fuse-drive";
     const unsigned int Options::DEFAULT_CACHETTL = 30;
     const Gdrive_Interaction Options::DEFAULT_INTERACTION = GDRIVE_INTERACTION_STARTUP;
-    const unsigned int Options::DEFAULT_CHUNKSIZE = GDRIVE_BASE_CHUNK_SIZE * 4;
+    const unsigned int Options::DEFAULT_CHUNKSIZE = Gdrive::GDRIVE_BASE_CHUNK_SIZE * 4;
     const unsigned int Options::DEFAULT_MAXCHUNKS = 15;
     const unsigned int Options::DEFAULT_FILEPERMS = 0644;
     const unsigned int Options::DEFAULT_DIRPERMS = 07777;
@@ -47,7 +47,9 @@ namespace fusedrive
     * Public Methods
     **************************/
     
-    Options::Options(int argc, char** argv) {
+    Options::Options(int argc, char** argv) 
+    : gdrive_auth_file()
+    {
         // Initialize all options to their default values
         fudr_options_default();
         
@@ -202,10 +204,10 @@ namespace fusedrive
         // foreground option. The foreground option also changes other behavior
         // (specifically, the working directory is different). Since we need the
         // option sometimes, always add it to be consistent.
-        fuse_argv[fuse_argc++] = strdup("-f");
+        fuse_argv[fuse_argc++] = (char*) "-f";
 
         // Enforce single-threaded mode
-        fuse_argv[fuse_argc++] = strdup("-s");
+        fuse_argv[fuse_argc++] = (char*) "-s";
         
     }
 
@@ -235,21 +237,13 @@ namespace fusedrive
         }
 
         // Append the relative path and basename to the home directory
-        gdrive_auth_file = new string();
-        try
-        {
-            gdrive_auth_file->append(homedir);
-            gdrive_auth_file->append("/");
-            gdrive_auth_file->append(DEFAULT_AUTH_RELPATH);
-            gdrive_auth_file->append("/");
-            gdrive_auth_file->append(DEFAULT_AUTH_BASENAME);
-        }
-        catch (const exception& e)
-        {
-            delete gdrive_auth_file;
-            gdrive_auth_file = NULL;
-            throw e;
-        }
+        
+        gdrive_auth_file.append(homedir);
+        gdrive_auth_file.append("/");
+        gdrive_auth_file.append(DEFAULT_AUTH_RELPATH);
+        gdrive_auth_file.append("/");
+        gdrive_auth_file.append(DEFAULT_AUTH_BASENAME);
+        
     }
 
     
@@ -290,7 +284,7 @@ namespace fusedrive
         fuse_argv = NULL;
         fuse_argc = 0;
         error = false;
-        errorMsg = NULL;
+        // errorMsg = NULL;
     }
 
     /**
@@ -306,23 +300,23 @@ namespace fusedrive
 
         if (!strcmp(arg, "meta"))
         {
-            gdrive_access = GDRIVE_ACCESS_META;
+            gdrive_access = Gdrive::GDRIVE_ACCESS_META;
         }
         else if (!strcmp(arg, "read"))
         {
-            gdrive_access = GDRIVE_ACCESS_READ;
+            gdrive_access = Gdrive::GDRIVE_ACCESS_READ;
         }
         else if (!strcmp(arg, "write"))
         {
-            gdrive_access = GDRIVE_ACCESS_WRITE;
+            gdrive_access = Gdrive::GDRIVE_ACCESS_WRITE;
         }
         else if (!strcmp(arg, "apps"))
         {
-            gdrive_access = GDRIVE_ACCESS_APPS;
+            gdrive_access = Gdrive::GDRIVE_ACCESS_APPS;
         }
         else if (!strcmp(arg, "all"))
         {
-            gdrive_access = GDRIVE_ACCESS_ALL;
+            gdrive_access = Gdrive::GDRIVE_ACCESS_ALL;
         }
         else
         {
@@ -344,27 +338,12 @@ namespace fusedrive
         assert(arg);
         try
         {
-            if (gdrive_auth_file)
-            {
-                gdrive_auth_file->assign(arg);
-            }
-            else
-            {
-                gdrive_auth_file = new string();
-            }
+            gdrive_auth_file.assign(arg);
         }
         catch (const exception& e)
         {
-            error = true;
-            if (gdrive_auth_file)
-            {
-                delete gdrive_auth_file;
-                gdrive_auth_file = NULL;
-            }
-            // This will likely fail, but at least try
-            const char* msg = "Could not allocate memory for options";
-            errorMsg = strdup(msg);
-            throw e;
+            // This may fail, but at least try
+            throw new BadOptionException("Could not allocate memory for options");
         }
     }
 
@@ -580,20 +559,24 @@ namespace fusedrive
 
     void Options::cleanup()
     {
-        if (gdrive_auth_file)
-        {
-            delete gdrive_auth_file;
-        }
         if (fuse_argv)
         {
+//            for (int i = 0; i < fuse_argc; i++)
+//            {
+//                //free(fuse_argv[i]);
+//                printf("%d - %s\n", i, fuse_argv[i]);
+//            }
             delete[] fuse_argv;
         }
-        if(errorMsg)
-        {
-            delete errorMsg;
-        }
+        
     }
     
+    
+    
+    BadOptionException::BadOptionException(const char* message)
+    {
+        msg = message ? strdup(message) : NULL;
+    }
     
     BadOptionException::BadOptionException(const char* fmtStr, const char* arg)
     {

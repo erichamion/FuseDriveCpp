@@ -1,6 +1,7 @@
 
-#include "gdrive-cache-node.h"
-#include "gdrive-cache.h"
+#include "gdrive-cache-node.hpp"
+#include "gdrive-cache.hpp"
+#include "Gdrive.hpp"
 
 #include <errno.h>
 #include <string.h>
@@ -8,6 +9,8 @@
 #include <assert.h>
 #include <sys/stat.h>
 
+using namespace std;
+using namespace fusedrive;
 
 /*************************************************************************
  * Private struct and declarations of private functions for use within 
@@ -41,22 +44,22 @@ static Gdrive_File_Contents*
 gdrive_cnode_add_contents(Gdrive_Cache_Node* pNode);
 
 static Gdrive_File_Contents* 
-gdrive_cnode_create_chunk(Gdrive_Cache_Node* pNode, off_t offset, size_t size, 
+gdrive_cnode_create_chunk(Gdrive& gInfo, Gdrive_Cache_Node* pNode, off_t offset, size_t size, 
                           bool fillChunk);
 
-static size_t gdrive_file_read_next_chunk(Gdrive_File* pNode, char* destBuf, 
+static size_t gdrive_file_read_next_chunk(Gdrive& gInfo, Gdrive_File* pNode, char* destBuf, 
                                           off_t offset, size_t size);
 
-static off_t gdrive_file_write_next_chunk(Gdrive_File* pFile, const char* buf, 
+static off_t gdrive_file_write_next_chunk(Gdrive& gInfo, Gdrive_File* pFile, const char* buf, 
                                           off_t offset, size_t size);
 
-static bool gdrive_file_check_perm(const Gdrive_Cache_Node* pNode, 
+static bool gdrive_file_check_perm(Gdrive& gInfo, const Gdrive_Cache_Node* pNode, 
                                    int accessFlags);
 
-static size_t gdrive_file_uploadcallback(char* buffer, off_t offset, 
+static size_t gdrive_file_uploadcallback(Gdrive& gInfo, char* buffer, off_t offset, 
                                          size_t size, void* userdata);
 
-static char* gdrive_file_sync_metadata_or_create(Gdrive_Fileinfo* pFileinfo, 
+static char* gdrive_file_sync_metadata_or_create(fusedrive::Gdrive& gInfo, Gdrive_Fileinfo* pFileinfo, 
                                                  const char* parentId, 
                                                  const char* filename, 
                                                  bool isFolder, int* pError);
@@ -70,7 +73,7 @@ static char* gdrive_file_sync_metadata_or_create(Gdrive_Fileinfo* pFileinfo,
  * Constructors, factory methods, destructors and similar
  ******************/
 
-Gdrive_Cache_Node* gdrive_cnode_get(Gdrive_Cache_Node* pParent, 
+Gdrive_Cache_Node* gdrive_cnode_get(Gdrive& gInfo, Gdrive_Cache_Node* pParent, 
                                     Gdrive_Cache_Node** ppNode, 
                                     const char* fileId, 
                                     bool addIfDoesntExist, 
@@ -101,16 +104,16 @@ Gdrive_Cache_Node* gdrive_cnode_get(Gdrive_Cache_Node* pParent,
         Gdrive_Cache_Node* pNode = *ppNode;
         
         // Get the fileinfo
-        char* url = malloc(strlen(GDRIVE_URL_FILES) + strlen(fileId) + 2);
+        char* url = (char*) malloc(Gdrive::GDRIVE_URL_FILES.length() + strlen(fileId) + 2);
         if (!url)
         {
             // Memory error
             return NULL;
         }
-        strcpy(url, GDRIVE_URL_FILES);
+        strcpy(url, Gdrive::GDRIVE_URL_FILES.c_str());
         strcat(url, "/");
         strcat(url, fileId);
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create();
+        Gdrive_Transfer* pTransfer = gdrive_xfer_create(gInfo);
         if (!pTransfer)
         {
             // Memory error
@@ -124,7 +127,7 @@ Gdrive_Cache_Node* gdrive_cnode_get(Gdrive_Cache_Node* pParent,
         }
         free(url);
         gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
-        Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(pTransfer);
+        Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
         gdrive_xfer_free(pTransfer);
         if (!pBuf || gdrive_dlbuf_get_httpresp(pBuf) >= 400)
         {
@@ -167,14 +170,14 @@ Gdrive_Cache_Node* gdrive_cnode_get(Gdrive_Cache_Node* pParent,
     else if (cmp < 0)
     {
         // fileId is less than the current node. Look for it on the left.
-        return gdrive_cnode_get(pNode, &(pNode->pLeft), fileId, 
+        return gdrive_cnode_get(gInfo, pNode, &(pNode->pLeft), fileId, 
                                       addIfDoesntExist, pAlreadyExists
                 );
     }
     else
     {
         // fileId is greater than the current node. Look for it on the right.
-        return gdrive_cnode_get(pNode, &(pNode->pRight), fileId, 
+        return gdrive_cnode_get(gInfo, pNode, &(pNode->pRight), fileId, 
                                       addIfDoesntExist, pAlreadyExists
                 );
     }
@@ -361,7 +364,7 @@ bool gdrive_cnode_isdeleted(const Gdrive_Cache_Node* pNode)
  * Public functions to support Gdrive_File usage
  *************************************************************************/
 
-Gdrive_File* gdrive_file_open(const char* fileId, int flags, int* pError)
+Gdrive_File* gdrive_file_open(Gdrive& gInfo, const char* fileId, int flags, int* pError)
 {
     assert(fileId != NULL && pError != NULL);
     
@@ -370,9 +373,9 @@ Gdrive_File* gdrive_file_open(const char* fileId, int flags, int* pError)
     // gdrive_file_info_from_id() to create the node and fill out the struct, 
     // then try again to get the node.
     Gdrive_Cache_Node* pNode;
-    while ((pNode = gdrive_cache_get_node(fileId, false, NULL)) == NULL)
+    while ((pNode = gdrive_cache_get_node(gInfo, fileId, false, NULL)) == NULL)
     {
-        if (gdrive_finfo_get_by_id(fileId) == NULL)
+        if (gdrive_finfo_get_by_id(gInfo, fileId) == NULL)
         {
             // Problem getting the file info.  Return failure.
             *pError = ENOENT;
@@ -397,7 +400,7 @@ Gdrive_File* gdrive_file_open(const char* fileId, int flags, int* pError)
     }
     
     
-    if (!gdrive_file_check_perm(pNode, flags))
+    if (!gdrive_file_check_perm(gInfo, pNode, flags))
     {
         // Access error
         *pError = EACCES;
@@ -420,7 +423,7 @@ Gdrive_File* gdrive_file_open(const char* fileId, int flags, int* pError)
     
 }
 
-void gdrive_file_close(Gdrive_File* pFile, int flags)
+void gdrive_file_close(Gdrive& gInfo, Gdrive_File* pFile, int flags)
 {
     assert(pFile != NULL);
     
@@ -434,8 +437,8 @@ void gdrive_file_close(Gdrive_File* pFile, int flags)
         // Was opened for writing
         
         // Upload any changes back to Google Drive
-        gdrive_file_sync(pFile);
-        gdrive_file_sync_metadata(pFile);
+        gdrive_file_sync(gInfo, pFile);
+        gdrive_file_sync_metadata(gInfo, pFile);
         
         // Close the file
         pNode->openWrites--;
@@ -457,12 +460,12 @@ void gdrive_file_close(Gdrive_File* pFile, int flags)
     }
 }
 
-int gdrive_file_read(Gdrive_File* fh, char* buf, size_t size, off_t offset)
+int gdrive_file_read(Gdrive& gInfo, Gdrive_File* fh, char* buf, size_t size, off_t offset)
 {
     assert(fh != NULL && offset >= (off_t) 0);
     
     // Make sure we have at least read access for the file.
-    if (!gdrive_file_check_perm(fh, O_RDONLY))
+    if (!gdrive_file_check_perm(gInfo, fh, O_RDONLY))
     {
         // Access error
         return -EACCES;
@@ -487,7 +490,7 @@ int gdrive_file_read(Gdrive_File* fh, char* buf, size_t size, off_t offset)
         // Read into the current position if we're given a real buffer, or pass
         // in NULL otherwise
         char* bufPos = (buf != NULL) ? buf + bufferOffset : NULL;
-        off_t bytesRead = gdrive_file_read_next_chunk(fh, 
+        off_t bytesRead = gdrive_file_read_next_chunk(gInfo, fh, 
                                                       bufPos,
                                                       nextOffset, 
                                                       bytesRemaining
@@ -510,7 +513,7 @@ int gdrive_file_read(Gdrive_File* fh, char* buf, size_t size, off_t offset)
     return realSize;
 }
 
-int gdrive_file_write(Gdrive_File* fh, 
+int gdrive_file_write(Gdrive& gInfo, Gdrive_File* fh, 
                       const char* buf, 
                       size_t size, 
                       off_t offset
@@ -519,7 +522,7 @@ int gdrive_file_write(Gdrive_File* fh,
     assert(fh != NULL);
     
     // Make sure we have read and write access for the file.
-    if (!gdrive_file_check_perm(fh, O_RDWR))
+    if (!gdrive_file_check_perm(gInfo, fh, O_RDWR))
     {
         // Access error
         return -EACCES;
@@ -536,7 +539,7 @@ int gdrive_file_write(Gdrive_File* fh,
         }
         readSize++;
     }
-    gdrive_file_read(fh, NULL, readSize, readOffset);
+    gdrive_file_read(gInfo, fh, NULL, readSize, readOffset);
     
     off_t nextOffset = offset;
     off_t bufferOffset = 0;
@@ -544,7 +547,7 @@ int gdrive_file_write(Gdrive_File* fh,
     
     while (bytesRemaining > 0)
     {
-        off_t bytesWritten = gdrive_file_write_next_chunk(fh, 
+        off_t bytesWritten = gdrive_file_write_next_chunk(gInfo, fh, 
                                                           buf + bufferOffset,
                                                           nextOffset, 
                                                           bytesRemaining
@@ -562,7 +565,7 @@ int gdrive_file_write(Gdrive_File* fh,
     return size;
 }
 
-int gdrive_file_truncate(Gdrive_File* fh, off_t size)
+int gdrive_file_truncate(Gdrive& gInfo, Gdrive_File* fh, off_t size)
 {
     assert(fh != NULL);
     
@@ -576,7 +579,7 @@ int gdrive_file_truncate(Gdrive_File* fh, off_t size)
      */
     
     // Check for write permissions
-    if (!gdrive_file_check_perm(fh, O_RDWR))
+    if (!gdrive_file_check_perm(gInfo, fh, O_RDWR))
     {
         return -EACCES;
     }
@@ -608,7 +611,7 @@ int gdrive_file_truncate(Gdrive_File* fh, off_t size)
         {
             // If the file is non-zero length, read the last byte of the file to
             // cache it.
-            if (gdrive_file_read(fh, NULL, 1, fh->fileinfo.size - 1) < 0)
+            if (gdrive_file_read(gInfo, fh, NULL, 1, fh->fileinfo.size - 1) < 0)
             {
                 // Read error
                 return -EIO;
@@ -626,7 +629,7 @@ int gdrive_file_truncate(Gdrive_File* fh, off_t size)
             if ((pFinalChunk = gdrive_fcontents_find_chunk(fh->pContents, 0))
                     == NULL)
             {
-                pFinalChunk = gdrive_cnode_create_chunk(fh, 0, size, false);
+                pFinalChunk = gdrive_cnode_create_chunk(gInfo, fh, 0, size, false);
             }
         }
     }
@@ -637,7 +640,7 @@ int gdrive_file_truncate(Gdrive_File* fh, off_t size)
         // The (new) final chunk is the one that contains what will become the
         // last byte of the truncated file. Read this byte in order to cache the
         // chunk.
-        if (gdrive_file_read(fh, NULL, 1, size - 1) < 0)
+        if (gdrive_file_read(gInfo, fh, NULL, 1, size - 1) < 0)
         {
             // Read error
             return -EIO;
@@ -647,7 +650,7 @@ int gdrive_file_truncate(Gdrive_File* fh, off_t size)
         pFinalChunk = gdrive_fcontents_find_chunk(fh->pContents, size - 1);
         
         // Delete any chunks past the new EOF
-        gdrive_fcontents_delete_after_offset(&(fh->pContents), size - 1);
+        gdrive_fcontents_delete_after_offset(gInfo, &(fh->pContents), size - 1);
     }
     
     // Make sure we received the final chunk
@@ -669,7 +672,7 @@ int gdrive_file_truncate(Gdrive_File* fh, off_t size)
     return returnVal;
 }
 
-int gdrive_file_sync(Gdrive_File* fh)
+int gdrive_file_sync(Gdrive& gInfo, Gdrive_File* fh)
 {
     if (fh == NULL)
     {
@@ -686,14 +689,14 @@ int gdrive_file_sync(Gdrive_File* fh)
     }
     
     // Check for write permissions
-    if (!gdrive_file_check_perm(fh, O_RDWR))
+    if (!gdrive_file_check_perm(gInfo, fh, O_RDWR))
     {
         return -EACCES;
     }
     
     // Just using simple upload for now.
     // TODO: Consider using resumable upload, possibly only for large files.
-    Gdrive_Transfer* pTransfer = gdrive_xfer_create();
+    Gdrive_Transfer* pTransfer = gdrive_xfer_create(gInfo);
     if (pTransfer == NULL)
     {
         // Memory error
@@ -702,15 +705,15 @@ int gdrive_file_sync(Gdrive_File* fh)
     gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_PUT);
     
     // Assemble the URL
-    size_t urlSize = strlen(GDRIVE_URL_UPLOAD) + strlen(pNode->fileinfo.id) + 2;
-    char* url = malloc(urlSize);
+    size_t urlSize = strlen(Gdrive::GDRIVE_URL_UPLOAD.c_str()) + strlen(pNode->fileinfo.id) + 2;
+    char* url = (char*) malloc(urlSize);
     if (url == NULL)
     {
         // Memory error
         gdrive_xfer_free(pTransfer);
         return -ENOMEM;
     }
-    strcpy(url, GDRIVE_URL_UPLOAD);
+    strcpy(url, Gdrive::GDRIVE_URL_UPLOAD.c_str());
     strcat(url, "/");
     strcat(url, pNode->fileinfo.id);
     if (gdrive_xfer_set_url(pTransfer, url) != 0)
@@ -723,7 +726,7 @@ int gdrive_file_sync(Gdrive_File* fh)
     free(url);
     
     // Add query parameter(s)
-    if (gdrive_xfer_add_query(pTransfer, "uploadType", "media") != 0)
+    if (gdrive_xfer_add_query(gInfo, pTransfer, "uploadType", "media") != 0)
     {
         // Error, probably memory
         gdrive_xfer_free(pTransfer);
@@ -734,7 +737,7 @@ int gdrive_file_sync(Gdrive_File* fh)
     gdrive_xfer_set_uploadcallback(pTransfer, gdrive_file_uploadcallback, fh);
     
     // Do the transfer
-    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(pTransfer);
+    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
     gdrive_xfer_free(pTransfer);
     int returnVal = (pBuf == NULL || gdrive_dlbuf_get_httpresp(pBuf) >= 400);
     if (returnVal == 0)
@@ -746,7 +749,7 @@ int gdrive_file_sync(Gdrive_File* fh)
     return returnVal;
 }
 
-int gdrive_file_sync_metadata(Gdrive_File* fh)
+int gdrive_file_sync_metadata(Gdrive& gInfo, Gdrive_File* fh)
 {
     assert(fh != NULL);
     
@@ -759,14 +762,14 @@ int gdrive_file_sync_metadata(Gdrive_File* fh)
     }
     
     // Check for write permissions
-    if (!gdrive_file_check_perm(fh, O_RDWR))
+    if (!gdrive_file_check_perm(gInfo, fh, O_RDWR))
     {
         return -EACCES;
     }
     
     int error = 0;
     char* dummy = 
-        gdrive_file_sync_metadata_or_create(pFileinfo, NULL, NULL, 
+        gdrive_file_sync_metadata_or_create(gInfo, pFileinfo, NULL, NULL, 
                                             (pFileinfo->type == 
                                             GDRIVE_FILETYPE_FOLDER), 
                                             &error
@@ -775,14 +778,14 @@ int gdrive_file_sync_metadata(Gdrive_File* fh)
     return error;
 }
 
-int gdrive_file_set_atime(Gdrive_File* fh, const struct timespec* ts)
+int gdrive_file_set_atime(Gdrive& gInfo, Gdrive_File* fh, const struct timespec* ts)
 {
     assert(fh != NULL);
     
     Gdrive_Cache_Node* pNode = fh;
 
     // Make sure we have write permission
-    if (!gdrive_file_check_perm(pNode, O_RDWR))
+    if (!gdrive_file_check_perm(gInfo, pNode, O_RDWR))
     {
         return -EACCES;
     }
@@ -791,14 +794,14 @@ int gdrive_file_set_atime(Gdrive_File* fh, const struct timespec* ts)
     return 0;
 }
 
-int gdrive_file_set_mtime(Gdrive_File* fh, const struct timespec* ts)
+int gdrive_file_set_mtime(Gdrive& gInfo, Gdrive_File* fh, const struct timespec* ts)
 {
     assert(fh != NULL);
     
     Gdrive_Cache_Node* pNode = fh;
     
     // Make sure we have write permission
-    if (!gdrive_file_check_perm(pNode, O_RDWR))
+    if (!gdrive_file_check_perm(gInfo, pNode, O_RDWR))
     {
         return -EACCES;
     }
@@ -807,7 +810,7 @@ int gdrive_file_set_mtime(Gdrive_File* fh, const struct timespec* ts)
     return 0;
 }
 
-char* gdrive_file_new(const char* path, bool createFolder, int* pError)
+char* gdrive_file_new(Gdrive& gInfo, const char* path, bool createFolder, int* pError)
 {
     assert(path != NULL && path[0] == '/' && pError != NULL);
             
@@ -840,8 +843,9 @@ char* gdrive_file_new(const char* path, bool createFolder, int* pError)
         gdrive_path_free(pGpath);
         return NULL;
     }
-    char* parentId = gdrive_filepath_to_id(folderName);
-    if (parentId == NULL)
+    string parentIdStr = gInfo.gdrive_filepath_to_id(folderName);
+    const char* parentId = parentIdStr.c_str();
+    if (!parentId || !parentId[0])
     {
         // Folder doesn't exist
         *pError = ENOTDIR;
@@ -849,13 +853,12 @@ char* gdrive_file_new(const char* path, bool createFolder, int* pError)
         return NULL;
     }
     Gdrive_Cache_Node* pFolderNode = 
-            gdrive_cache_get_node(parentId, true, NULL);
+            gdrive_cache_get_node(gInfo, parentId, true, NULL);
     if (pFolderNode == NULL)
     {
         // Couldn't get a node for the parent folder
         *pError = EIO;
         gdrive_path_free(pGpath);
-        free(parentId);
         return NULL;
     }
     const Gdrive_Fileinfo* pFolderinfo = gdrive_cnode_get_fileinfo(pFolderNode);
@@ -864,25 +867,22 @@ char* gdrive_file_new(const char* path, bool createFolder, int* pError)
         // Not an actual folder
         *pError = ENOTDIR;
         gdrive_path_free(pGpath);
-        free(parentId);
         return NULL;
     }
     
     // Make sure we have write access to the folder
-    if (!gdrive_file_check_perm(pFolderNode, O_WRONLY))
+    if (!gdrive_file_check_perm(gInfo, pFolderNode, O_WRONLY))
     {
         // Don't have the needed permission
         *pError = EACCES;
         gdrive_path_free(pGpath);
-        free(parentId);
         return NULL;
     }
     
     
-    char* fileId = gdrive_file_sync_metadata_or_create(NULL, parentId, filename,
+    char* fileId = gdrive_file_sync_metadata_or_create(gInfo, NULL, parentId, filename,
                                                        createFolder, pError);
     gdrive_path_free(pGpath);
-    free(parentId);
     
     // TODO: See if gdrive_cache_add_fileid() can be modified to return a 
     // pointer to the cached ID (which is a new copy of the ID that was passed
@@ -897,7 +897,7 @@ char* gdrive_file_new(const char* path, bool createFolder, int* pError)
         return NULL;
     }
     
-    return gdrive_filepath_to_id(path);
+    return strdup(gInfo.gdrive_filepath_to_id(path).c_str());
 }
 
 Gdrive_Fileinfo* gdrive_file_get_info(Gdrive_File* fh)
@@ -915,10 +915,10 @@ Gdrive_Fileinfo* gdrive_file_get_info(Gdrive_File* fh)
     return gdrive_cnode_get_fileinfo(pNode);
 }
 
-unsigned int gdrive_file_get_perms(const Gdrive_File* fh)
+unsigned int gdrive_file_get_perms(Gdrive& gInfo, const Gdrive_File* fh)
 {
     const Gdrive_Cache_Node* pNode = fh;
-    return gdrive_finfo_real_perms(&(pNode->fileinfo));
+    return gdrive_finfo_real_perms(gInfo, &(pNode->fileinfo));
 }
 
 
@@ -932,7 +932,7 @@ unsigned int gdrive_file_get_perms(const Gdrive_File* fh)
  */
 static Gdrive_Cache_Node* gdrive_cnode_create(Gdrive_Cache_Node* pParent)
 {
-    Gdrive_Cache_Node* result = malloc(sizeof(Gdrive_Cache_Node));
+    Gdrive_Cache_Node* result = (Gdrive_Cache_Node*) malloc(sizeof(Gdrive_Cache_Node));
     if (result != NULL)
     {
         memset(result, 0, sizeof(Gdrive_Cache_Node));
@@ -1059,15 +1059,15 @@ static Gdrive_File_Contents* gdrive_cnode_add_contents(Gdrive_Cache_Node* pNode)
 }
 
 static Gdrive_File_Contents* 
-gdrive_cnode_create_chunk(Gdrive_Cache_Node* pNode, off_t offset, size_t size, 
+gdrive_cnode_create_chunk(Gdrive& gInfo, Gdrive_Cache_Node* pNode, off_t offset, size_t size, 
                           bool fillChunk)
 {
     // Get the normal chunk size for this file, the smallest multiple of
     // minChunkSize that results in maxChunks or fewer chunks. Avoid creating
     // a chunk of size 0 by forcing fileSize to be at least 1.
     size_t fileSize = (pNode->fileinfo.size > 0) ? pNode->fileinfo.size : 1;
-    int maxChunks = gdrive_get_maxchunks();
-    size_t minChunkSize = gdrive_get_minchunksize();
+    int maxChunks = gInfo.gdrive_get_maxchunks();
+    size_t minChunkSize = gInfo.gdrive_get_minchunksize();
 
     size_t perfectChunkSize = gdrive_divide_round_up(fileSize, maxChunks);
     size_t chunkSize = gdrive_divide_round_up(perfectChunkSize, minChunkSize) * 
@@ -1090,7 +1090,7 @@ gdrive_cnode_create_chunk(Gdrive_Cache_Node* pNode, off_t offset, size_t size,
     
     if (fillChunk)
     {
-        int success = gdrive_fcontents_fill_chunk(pContents,
+        int success = gdrive_fcontents_fill_chunk(gInfo, pContents,
                                                   pNode->fileinfo.id, 
                                                   chunkStart, realChunkSize
         );
@@ -1108,7 +1108,7 @@ gdrive_cnode_create_chunk(Gdrive_Cache_Node* pNode, off_t offset, size_t size,
     return pContents;
 }
 
-static size_t gdrive_file_read_next_chunk(Gdrive_File* pFile, char* destBuf, 
+static size_t gdrive_file_read_next_chunk(Gdrive& gInfo, Gdrive_File* pFile, char* destBuf, 
                                           off_t offset, size_t size)
 {
     // Gdrive_Filehandle and Gdrive_Cache_Node are the same thing, but it's 
@@ -1123,7 +1123,7 @@ static size_t gdrive_file_read_next_chunk(Gdrive_File* pFile, char* destBuf,
     if (pChunkContents == NULL)
     {
         // Chunk doesn't exist, need to create and download it.
-        pChunkContents = gdrive_cnode_create_chunk(pNode, offset, size, true);
+        pChunkContents = gdrive_cnode_create_chunk(gInfo, pNode, offset, size, true);
         
         if (pChunkContents == NULL)
         {
@@ -1141,7 +1141,7 @@ static size_t gdrive_file_read_next_chunk(Gdrive_File* pFile, char* destBuf,
     return gdrive_fcontents_read(pChunkContents, destBuf, offset, size);
 }
 
-static off_t gdrive_file_write_next_chunk(Gdrive_File* pFile, const char* buf, 
+static off_t gdrive_file_write_next_chunk(Gdrive& gInfo, Gdrive_File* pFile, const char* buf, 
                                           off_t offset, size_t size)
 {
     // Gdrive_Filehandle and Gdrive_Cache_Node are the same thing, but it's 
@@ -1166,7 +1166,7 @@ static off_t gdrive_file_write_next_chunk(Gdrive_File* pFile, const char* buf,
         {
             // File size is 0, and there is no existing chunk. Create one and 
             // try again.
-            gdrive_cnode_create_chunk(pNode, 0, 1, false);
+            gdrive_cnode_create_chunk(gInfo, pNode, 0, 1, false);
             pChunkContents = 
                     gdrive_fcontents_find_chunk(pNode->pContents, searchOffset);
         }
@@ -1205,11 +1205,11 @@ static off_t gdrive_file_write_next_chunk(Gdrive_File* pFile, const char* buf,
     return bytesWritten;
 }
 
-static bool gdrive_file_check_perm(const Gdrive_Cache_Node* pNode, 
+static bool gdrive_file_check_perm(Gdrive& gInfo, const Gdrive_Cache_Node* pNode, 
                                    int accessFlags)
 {
     // What permissions do we have?
-    unsigned int perms = gdrive_finfo_real_perms(&(pNode->fileinfo));
+    unsigned int perms = gdrive_finfo_real_perms(gInfo, &(pNode->fileinfo));
     
     // What permissions do we need?
     unsigned int neededPerms = 0;
@@ -1231,13 +1231,13 @@ static bool gdrive_file_check_perm(const Gdrive_Cache_Node* pNode,
     
 }
 
-static size_t gdrive_file_uploadcallback(char* buffer, off_t offset, 
+static size_t gdrive_file_uploadcallback(Gdrive& gInfo, char* buffer, off_t offset, 
                                          size_t size, 
                                          void* userdata)
 {
     // All we need to do is read from a Gdrive_File* file handle into a buffer.
     // We already know how to do exactly that.
-    int returnVal = gdrive_file_read((Gdrive_File*) userdata, 
+    int returnVal = gdrive_file_read(gInfo, (Gdrive_File*) userdata, 
                                      buffer, 
                                      size, 
                                      offset
@@ -1245,7 +1245,7 @@ static size_t gdrive_file_uploadcallback(char* buffer, off_t offset,
     return (returnVal >= 0) ? (size_t) returnVal: (size_t)(-1);
 }
 
-static char* gdrive_file_sync_metadata_or_create(Gdrive_Fileinfo* pFileinfo, 
+static char* gdrive_file_sync_metadata_or_create(Gdrive& gInfo, Gdrive_Fileinfo* pFileinfo, 
                                                  const char* parentId, 
                                                  const char* filename, 
                                                  bool isFolder, int* pError)
@@ -1310,7 +1310,7 @@ static char* gdrive_file_sync_metadata_or_create(Gdrive_Fileinfo* pFileinfo,
                                "application/vnd.google-apps.folder"
                 );
     }
-    char* timeString = malloc(GDRIVE_TIMESTRING_LENGTH);
+    char* timeString = (char*) malloc(GDRIVE_TIMESTRING_LENGTH);
     if (timeString == NULL)
     {
         // Memory error
@@ -1356,33 +1356,33 @@ static char* gdrive_file_sync_metadata_or_create(Gdrive_Fileinfo* pFileinfo,
     if (pFileinfo == NULL)
     {
         // New file, just need the base URL
-        size_t urlSize = strlen(GDRIVE_URL_FILES) + 1;
-        url = malloc(urlSize);
+        size_t urlSize = strlen(Gdrive::GDRIVE_URL_FILES.c_str()) + 1;
+        url = (char*) malloc(urlSize);
         if (url == NULL)
         {
             *pError = ENOMEM;
             return NULL;
         }
-        strncpy(url, GDRIVE_URL_FILES, urlSize);
+        strncpy(url, Gdrive::GDRIVE_URL_FILES.c_str(), urlSize);
     }
     else
     {
         // Existing file, need base URL + '/' + file ID
-        size_t baseUrlLength = strlen(GDRIVE_URL_FILES);
+        size_t baseUrlLength = strlen(Gdrive::GDRIVE_URL_FILES.c_str());
         size_t fileIdLength = strlen(pMyFileinfo->id);
-        url = malloc(baseUrlLength + fileIdLength + 2);
+        url = (char*) malloc(baseUrlLength + fileIdLength + 2);
         if (url == NULL)
         {
             *pError = ENOMEM;
             return NULL;
         }
-        strncpy(url, GDRIVE_URL_FILES, baseUrlLength);
+        strncpy(url, Gdrive::GDRIVE_URL_FILES.c_str(), baseUrlLength);
         url[baseUrlLength] = '/';
         strncpy(url + baseUrlLength + 1, pMyFileinfo->id, fileIdLength + 1);
     }
     
     // Set up the network request
-    Gdrive_Transfer* pTransfer = gdrive_xfer_create();
+    Gdrive_Transfer* pTransfer = gdrive_xfer_create(gInfo);
     if (pTransfer == NULL)
     {
         *pError = ENOMEM;
@@ -1397,8 +1397,8 @@ static char* gdrive_file_sync_metadata_or_create(Gdrive_Fileinfo* pFileinfo,
             gdrive_xfer_add_header(pTransfer, "Content-Type: application/json"))
             || 
             (hasMtime && 
-            gdrive_xfer_add_query(pTransfer, "setModifiedDate", "true")) || 
-            gdrive_xfer_add_query(pTransfer, "updateViewedDate", "false")
+            gdrive_xfer_add_query(gInfo, pTransfer, "setModifiedDate", "true")) || 
+            gdrive_xfer_add_query(gInfo, pTransfer, "updateViewedDate", "false")
         )
     {
         *pError = ENOMEM;
@@ -1413,7 +1413,7 @@ static char* gdrive_file_sync_metadata_or_create(Gdrive_Fileinfo* pFileinfo,
     gdrive_xfer_set_body(pTransfer, uploadResourceStr);
     
     // Do the transfer
-    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(pTransfer);
+    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
     gdrive_xfer_free(pTransfer);
     free(uploadResourceStr);
     

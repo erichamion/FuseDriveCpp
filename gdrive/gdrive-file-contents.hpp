@@ -1,4 +1,14 @@
 /* 
+ * File:   gdrive-file-contents.hpp
+ * Author: me
+ *
+ * Created on October 16, 2015, 10:52 PM
+ */
+
+#ifndef GDRIVE_FILE_CONTENTS_HPP
+#define	GDRIVE_FILE_CONTENTS_HPP
+
+/* 
  * File:   gdrive-file-contents.h
  * Author: me
  * 
@@ -12,14 +22,14 @@
  * Created on May 6, 2015, 8:45 AM
  */
 
-#ifndef GDRIVE_FILE_CONTENTS_H
-#define	GDRIVE_FILE_CONTENTS_H
+//#ifdef	__cplusplus
+//extern "C" {
+//#endif
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
-
-#include "gdrive-info.h"
+#include "Gdrive.hpp"
+    
+#include <sys/types.h>
+#include <stdbool.h>
 
     
 typedef struct Gdrive_File_Contents Gdrive_File_Contents;
@@ -87,7 +97,7 @@ void gdrive_fcontents_delete(Gdrive_File_Contents* pContents,
  *              Any Gdrive_File_Contents structs whose starting offset is 
  *              strictly greater than this argument will be deleted.
  */
-void gdrive_fcontents_delete_after_offset(Gdrive_File_Contents** ppHead, 
+void gdrive_fcontents_delete_after_offset(fusedrive::Gdrive& gInfo, Gdrive_File_Contents** ppHead, 
                                           off_t offset);
 
 /*
@@ -155,7 +165,7 @@ Gdrive_File_Contents* gdrive_fcontents_find_chunk(Gdrive_File_Contents* pHead,
  * Return value (int):
  *      0 on success, other on failure.
  */
-int gdrive_fcontents_fill_chunk(Gdrive_File_Contents* pContents, 
+int gdrive_fcontents_fill_chunk(fusedrive::Gdrive& gInfo, Gdrive_File_Contents* pContents, 
                                 const char* fileId, off_t start, size_t size);
 
 /*
@@ -233,9 +243,12 @@ off_t gdrive_fcontents_write(Gdrive_File_Contents* pContents, const char* buf,
 int gdrive_fcontents_truncate(Gdrive_File_Contents* pContents, size_t size);
 
 
-#ifdef	__cplusplus
-}
-#endif
+//#ifdef	__cplusplus
+//}
+//#endif
 
-#endif	/* GDRIVE_FILE_CONTENTS_H */
+
+
+
+#endif	/* GDRIVE_FILE_CONTENTS_HPP */
 

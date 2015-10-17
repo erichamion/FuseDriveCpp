@@ -1,8 +1,12 @@
 
-#include "gdrive-cache.h"
+#include "gdrive-cache.hpp"
+#include "Gdrive.hpp"
 
 #include <string.h>
 #include <assert.h>
+
+
+using namespace fusedrive;
 
 
 
@@ -22,7 +26,7 @@ typedef struct Gdrive_Cache
 
 static Gdrive_Cache* gdrive_cache_get_internal(void);
 
-static void gdrive_cache_remove_id(const char* fileId);
+static void gdrive_cache_remove_id(Gdrive& gInfo, const char* fileId);
 
 
 /*************************************************************************
@@ -32,7 +36,7 @@ static void gdrive_cache_remove_id(const char* fileId);
 /******************
  * Constructors, factory methods, destructors and similar
  ******************/
-int gdrive_cache_init(time_t cacheTTL)
+int gdrive_cache_init(Gdrive& gInfo, time_t cacheTTL)
 {
     Gdrive_Cache* pCache = gdrive_cache_get_internal();
     
@@ -50,7 +54,7 @@ int gdrive_cache_init(time_t cacheTTL)
     pCache->cacheTTL = cacheTTL;
     
     // Prepare and send the network request
-    Gdrive_Transfer* pTransfer = gdrive_xfer_create();
+    Gdrive_Transfer* pTransfer = gdrive_xfer_create(gInfo);
     if (pTransfer == NULL)
     {
         // Memory error
@@ -58,16 +62,16 @@ int gdrive_cache_init(time_t cacheTTL)
     }
     gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
     if (
-            gdrive_xfer_set_url(pTransfer, GDRIVE_URL_ABOUT) || 
-            gdrive_xfer_add_query(pTransfer, "includeSubscribed", "false") || 
-            gdrive_xfer_add_query(pTransfer, "fields", "largestChangeId")
+            gdrive_xfer_set_url(pTransfer, Gdrive::GDRIVE_URL_ABOUT.c_str()) || 
+            gdrive_xfer_add_query(gInfo, pTransfer, "includeSubscribed", "false") || 
+            gdrive_xfer_add_query(gInfo, pTransfer, "fields", "largestChangeId")
         )
     {
         // Error
         gdrive_xfer_free(pTransfer);
         return -1;
     }
-    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(pTransfer);
+    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
     gdrive_xfer_free(pTransfer);
     
     bool success = false;
@@ -142,25 +146,25 @@ int64_t gdrive_cache_get_nextchangeid()
  * Other accessible functions
  ******************/
 
-int gdrive_cache_update_if_stale()
+int gdrive_cache_update_if_stale(Gdrive& gInfo)
 {
     Gdrive_Cache* pCache = gdrive_cache_get_internal();
     if (pCache->lastUpdateTime + pCache->cacheTTL < time(NULL))
     {
-        return gdrive_cache_update(pCache);
+        return gdrive_cache_update(gInfo);
     }
     
     return 0;
 }
 
-int gdrive_cache_update()
+int gdrive_cache_update(Gdrive& gInfo)
 {
     Gdrive_Cache* pCache = gdrive_cache_get_internal();
     
     // Convert the numeric largest change ID into a string
     char* changeIdString = NULL;
     size_t changeIdStringLen = snprintf(NULL, 0, "%lu", pCache->nextChangeId);
-    changeIdString = malloc(changeIdStringLen + 1);
+    changeIdString = (char*) malloc(changeIdStringLen + 1);
     if (changeIdString == NULL)
     {
         // Memory error
@@ -171,7 +175,7 @@ int gdrive_cache_update()
             );
     
     // Prepare the request, using the string change ID, and send it
-    Gdrive_Transfer* pTransfer = gdrive_xfer_create();
+    Gdrive_Transfer* pTransfer = gdrive_xfer_create(gInfo);
     if (pTransfer == NULL)
     {
         // Memory error
@@ -180,10 +184,10 @@ int gdrive_cache_update()
     }
     gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
     if (
-            gdrive_xfer_set_url(pTransfer, GDRIVE_URL_CHANGES) || 
-            gdrive_xfer_add_query(pTransfer, "startChangeId", 
+            gdrive_xfer_set_url(pTransfer, Gdrive::GDRIVE_URL_CHANGES.c_str()) || 
+            gdrive_xfer_add_query(gInfo, pTransfer, "startChangeId", 
                                   changeIdString) || 
-            gdrive_xfer_add_query(pTransfer, "includeSubscribed", "false")
+            gdrive_xfer_add_query(gInfo, pTransfer, "includeSubscribed", "false")
         )
     {
         // Error
@@ -191,7 +195,7 @@ int gdrive_cache_update()
         gdrive_xfer_free(pTransfer);
     }
     free(changeIdString);
-    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(pTransfer);
+    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(gInfo,pTransfer);
     gdrive_xfer_free(pTransfer);
     
     
@@ -232,7 +236,7 @@ int gdrive_cache_update()
                 // Update the file metadata cache, but only if the file is not
                 // opened for writing with dirty data.
                 Gdrive_Cache_Node* pCacheNode = 
-                        gdrive_cnode_get(NULL,
+                        gdrive_cnode_get(gInfo, NULL,
                                                &(pCache->pCacheHead), 
                                                fileId, 
                                                false, 
@@ -270,7 +274,7 @@ int gdrive_cache_update()
                     // Remove the parent from the cache, if present.
                     if (parentId != NULL)
                     {
-                        gdrive_cache_remove_id(parentId);
+                        gdrive_cache_remove_id(gInfo, parentId);
                     }
                     free(parentId);
                 }
@@ -299,14 +303,14 @@ int gdrive_cache_update()
     return returnVal;
 }
 
-Gdrive_Fileinfo* gdrive_cache_get_item(const char* fileId, 
+Gdrive_Fileinfo* gdrive_cache_get_item(Gdrive& gInfo, const char* fileId, 
                                        bool addIfDoesntExist, 
                                        bool* pAlreadyExists)
 {
     Gdrive_Cache* pCache = gdrive_cache_get_internal();
     
     // Get the existing node (or a new one) from the cache.
-    Gdrive_Cache_Node* pNode = gdrive_cnode_get(NULL,
+    Gdrive_Cache_Node* pNode = gdrive_cnode_get(gInfo, NULL,
                                                 &(pCache->pCacheHead),
                                                 fileId, 
                                                 addIfDoesntExist, 
@@ -335,10 +339,10 @@ Gdrive_Fileinfo* gdrive_cache_get_item(const char* fileId,
         bool isFolder = (gdrive_cnode_get_filetype(pNode) == 
                 GDRIVE_FILETYPE_FOLDER);
         
-        gdrive_cache_update();
+        gdrive_cache_update(gInfo);
         
         return (isFolder ? 
-                gdrive_cache_get_item(fileId, addIfDoesntExist, 
+                gdrive_cache_get_item(gInfo, fileId, addIfDoesntExist, 
                                       pAlreadyExists) :
                 gdrive_cnode_get_fileinfo(pNode));
     }
@@ -353,18 +357,18 @@ int gdrive_cache_add_fileid(const char* path, const char* fileId)
     return gdrive_fidnode_add(&(pCache->pFileIdCacheHead), path, fileId);
 }
 
-Gdrive_Cache_Node* gdrive_cache_get_node(const char* fileId, 
+Gdrive_Cache_Node* gdrive_cache_get_node(Gdrive& gInfo, const char* fileId, 
                                          bool addIfDoesntExist, 
                                          bool* pAlreadyExists
 )
 {
     Gdrive_Cache* pCache = gdrive_cache_get_internal();
-    return gdrive_cnode_get(NULL, &(pCache->pCacheHead), fileId,
+    return gdrive_cnode_get(gInfo, NULL, &(pCache->pCacheHead), fileId,
                                   addIfDoesntExist, pAlreadyExists
             );
 }
 
-char* gdrive_cache_get_fileid(const char* path)
+char* gdrive_cache_get_fileid(Gdrive& gInfo, const char* path)
 {
     Gdrive_Cache* pCache = gdrive_cache_get_internal();
     
@@ -380,22 +384,22 @@ char* gdrive_cache_get_fileid(const char* path)
     // We have the cached item.  Test whether it's too old.  Use the last update
     // either of the entire cache, or of the individual item, whichever is
     // newer.
-    time_t cacheUpdateTime = gdrive_cache_get_lastupdatetime(pCache);
+    time_t cacheUpdateTime = gdrive_cache_get_lastupdatetime();
     time_t nodeUpdateTime = gdrive_fidnode_get_lastupdatetime(pNode);
-    time_t cacheTTL = gdrive_cache_get_ttl(pCache);
+    time_t cacheTTL = gdrive_cache_get_ttl();
     time_t expireTime = ((nodeUpdateTime > cacheUpdateTime) ? 
         nodeUpdateTime : cacheUpdateTime) + cacheTTL;
     if (time(NULL) > expireTime)
     {
         // Item is expired.  Check for updates and try again.
-        gdrive_cache_update(pCache);
-        return gdrive_cache_get_fileid(path);
+        gdrive_cache_update(gInfo);
+        return gdrive_cache_get_fileid(gInfo, path);
     }
     
     return gdrive_fidnode_get_fileid(pNode);
 }
 
-void gdrive_cache_delete_id(const char* fileId)
+void gdrive_cache_delete_id(Gdrive& gInfo, const char* fileId)
 {
     assert(fileId != NULL);
     
@@ -409,7 +413,7 @@ void gdrive_cache_delete_id(const char* fileId)
             
     // Find the node we want to remove.
     Gdrive_Cache_Node* pNode = 
-            gdrive_cnode_get(NULL, &(pCache->pCacheHead), fileId, 
+            gdrive_cnode_get(gInfo, NULL, &(pCache->pCacheHead), fileId, 
                                    false, NULL);
     if (pNode == NULL)
     {
@@ -436,12 +440,12 @@ static Gdrive_Cache* gdrive_cache_get_internal(void)
     return &cache;
 }
 
-static void gdrive_cache_remove_id(const char* fileId)
+static void gdrive_cache_remove_id(Gdrive& gInfo, const char* fileId)
 {
     Gdrive_Cache* pCache = gdrive_cache_get_internal();
     // Find the node we want to remove.
     Gdrive_Cache_Node* pNode = 
-            gdrive_cnode_get(NULL, &(pCache->pCacheHead), fileId, 
+            gdrive_cnode_get(gInfo, NULL, &(pCache->pCacheHead), fileId, 
                                    false, NULL);
     if (pNode == NULL)
     {
@@ -452,6 +456,7 @@ static void gdrive_cache_remove_id(const char* fileId)
 
     gdrive_cnode_delete(pNode, &(pCache->pCacheHead));
 }
+
 
 
 

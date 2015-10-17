@@ -1,4 +1,14 @@
 /* 
+ * File:   gdrive-sysinfo.hpp
+ * Author: me
+ *
+ * Created on October 16, 2015, 11:36 PM
+ */
+
+#ifndef GDRIVE_SYSINFO_HPP
+#define	GDRIVE_SYSINFO_HPP
+
+/* 
  * File:   gdrive-sysinfo.h
  * Author: me
  * 
@@ -11,14 +21,11 @@
  * Created on May 8, 2015, 9:18 AM
  */
 
-#ifndef GDRIVE_SYSINFO_H
-#define	GDRIVE_SYSINFO_H
-
-#ifdef	__cplusplus
-extern "C" {
-#endif
+//#ifdef	__cplusplus
+//extern "C" {
+//#endif
     
-#include "gdrive.h"
+#include "Gdrive.hpp"
 #include <sys/types.h>
 
 typedef struct Gdrive_Sysinfo Gdrive_Sysinfo; 
@@ -49,7 +56,7 @@ void gdrive_sysinfo_cleanup();
  * Return value (int64_t):
  *      The total size, in bytes, of the user's Google Drive quota.
  */
-int64_t gdrive_sysinfo_get_size(void);
+int64_t gdrive_sysinfo_get_size(fusedrive::Gdrive& gInfo);
 
 /*
  * gdrive_sysinfo_get_used():   Retrieves the used portion of the user's Google
@@ -61,7 +68,7 @@ int64_t gdrive_sysinfo_get_size(void);
  *      used bytes from the total size will yield the actual amount of storage
  *      still available.
  */
-int64_t gdrive_sysinfo_get_used(void);
+int64_t gdrive_sysinfo_get_used(fusedrive::Gdrive& gInfo);
 
 /*
  * gdrive_sysinfo_get_rootid(): Retrieves the Google Drive file ID for the top
@@ -71,7 +78,7 @@ int64_t gdrive_sysinfo_get_used(void);
  *      folder. The memory at the returned location should not be altered or
  *      freed.
  */
-const char* gdrive_sysinfo_get_rootid(void);
+const char* gdrive_sysinfo_get_rootid(fusedrive::Gdrive& gInfo);
 
 
 /*************************************************************************
@@ -81,9 +88,12 @@ const char* gdrive_sysinfo_get_rootid(void);
 // No other public functions
 
 
-#ifdef	__cplusplus
-}
-#endif
+//#ifdef	__cplusplus
+//}
+//#endif
 
-#endif	/* GDRIVE_SYSINFO_H */
+
+
+
+#endif	/* GDRIVE_SYSINFO_HPP */
 

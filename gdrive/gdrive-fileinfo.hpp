@@ -1,4 +1,14 @@
 /* 
+ * File:   gdrive-fileinfo.hpp
+ * Author: me
+ *
+ * Created on October 16, 2015, 10:58 PM
+ */
+
+#ifndef GDRIVE_FILEINFO_HPP
+#define	GDRIVE_FILEINFO_HPP
+
+/* 
  * File:   gdrive-fileinfo.h
  * Author: me
  * 
@@ -10,18 +20,19 @@
  * Created on May 5, 2015, 9:42 PM
  */
 
-#ifndef GDRIVE_FILEINFO_H
-#define	GDRIVE_FILEINFO_H
-
-#ifdef	__cplusplus
-extern "C" {
-#endif
+//#ifdef	__cplusplus
+//extern "C" {
+//#endif
     
 typedef struct Gdrive_Fileinfo Gdrive_Fileinfo;
+namespace fusedrive
+{
+    class Gdrive;
+}
 
 
 #include <time.h>
-#include "gdrive.h"
+#include "Gdrive.hpp"
 #include "gdrive-json.h"
 
 
@@ -35,7 +46,7 @@ typedef struct Gdrive_Fileinfo
     // filename: The filename with extension (not the full path)
     char* filename;
     // type: The type of file
-    enum Gdrive_Filetype type;
+    enum fusedrive::Gdrive_Filetype type;
     // size: File size in bytes
     size_t size;
     // basePermission: File permission, does not consider the access mode.
@@ -68,7 +79,7 @@ typedef struct Gdrive_Fileinfo
  *      A pointer to a Gdrive_Fileinfo struct describing the file. The memory
  *      at the pointed-to location should not be freed or altered.
  */
-const Gdrive_Fileinfo* gdrive_finfo_get_by_id(const char* fileId);
+const Gdrive_Fileinfo* gdrive_finfo_get_by_id(fusedrive::Gdrive& gInfo, const char* fileId);
 
 /*
  * gdrive_finfo_cleanup():  Safely frees any memory pointed to by members of a
@@ -202,14 +213,17 @@ void gdrive_finfo_read_json(Gdrive_Fileinfo* pFileinfo,
  *      read and write access), but the system only has GDRIVE_ACCESS_READ, the
  *      returned value will be 4 (read access only).
  */
-unsigned int gdrive_finfo_real_perms(const Gdrive_Fileinfo* pFileinfo);
+unsigned int gdrive_finfo_real_perms(fusedrive::Gdrive& gInfo, const Gdrive_Fileinfo* pFileinfo);
 
 
     
 
-#ifdef	__cplusplus
-}
-#endif
+//#ifdef	__cplusplus
+//}
+//#endif
 
-#endif	/* GDRIVE_FILEINFO_H */
+
+
+
+#endif	/* GDRIVE_FILEINFO_HPP */
 

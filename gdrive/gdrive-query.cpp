@@ -1,12 +1,14 @@
 
-
-#include "gdrive-query.h"
+#include "Gdrive.hpp"
+#include "gdrive-query.hpp"
 #include "gdrive-info.h"
 
 #include <stdlib.h>
 #include <string.h>
+#include <curl/curl.h>
 
 
+using namespace fusedrive;
 
 /*************************************************************************
  * Private struct and declarations of private functions for use within 
@@ -72,7 +74,7 @@ void gdrive_query_free(Gdrive_Query* pQuery)
  * Other accessible functions
  ******************/
 
-Gdrive_Query* gdrive_query_add(Gdrive_Query* pQuery, 
+Gdrive_Query* gdrive_query_add(Gdrive& gInfo, Gdrive_Query* pQuery, 
                                const char* field, 
                                const char* value
 )
@@ -114,7 +116,7 @@ Gdrive_Query* gdrive_query_add(Gdrive_Query* pQuery,
     }
     
     // Populate the newly-created Gdrive_Query with URL-escaped strings
-    CURL* curlHandle = gdrive_get_curlhandle();
+    CURL* curlHandle = gInfo.gdrive_get_curlhandle();
     if (curlHandle == NULL)
     {
         // Error
@@ -169,7 +171,7 @@ char* gdrive_query_assemble(const Gdrive_Query* pQuery, const char* url)
     }
     
     // Allocate a string long enough to hold everything.
-    char* result = malloc(totalLength);
+    char* result = (char*) malloc(totalLength);
     if (result == NULL)
     {
         // Memory error
@@ -230,10 +232,11 @@ char* gdrive_query_assemble(const Gdrive_Query* pQuery, const char* url)
 
 Gdrive_Query* gdrive_query_create(void)
 {
-    Gdrive_Query* result = malloc(sizeof(Gdrive_Query));
+    Gdrive_Query* result = (Gdrive_Query*) malloc(sizeof(Gdrive_Query));
     if (result != NULL)
     {
         memset(result, 0, sizeof(Gdrive_Query));
     }
     return result;
 }
+

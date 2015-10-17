@@ -1,12 +1,13 @@
 
-#include "gdrive-sysinfo.h"
+#include "gdrive-sysinfo.hpp"
 
-#include "gdrive-info.h"
-#include "gdrive-cache.h"
+#include "Gdrive.hpp"
+#include "gdrive-cache.hpp"
 
 #include <string.h>
 #include <stdbool.h>
     
+using namespace fusedrive;
 
 typedef struct Gdrive_Sysinfo
 {
@@ -27,14 +28,14 @@ typedef struct Gdrive_Sysinfo
  * this file
  *************************************************************************/
 
-static const Gdrive_Sysinfo* gdrive_sysinfo_get_or_clear(bool cleanup);
+static const Gdrive_Sysinfo* gdrive_sysinfo_get_or_clear(Gdrive& gInfo, bool cleanup);
 
 static void gdrive_sysinfo_cleanup_internal(Gdrive_Sysinfo* pSysinfo);
 
 static int gdrive_sysinfo_fill_from_json(Gdrive_Sysinfo* pDest, 
                                          Gdrive_Json_Object* pObj);
 
-static int gdrive_sysinfo_update(Gdrive_Sysinfo* pDest);
+static int gdrive_sysinfo_update(Gdrive& gInfo, Gdrive_Sysinfo* pDest);
 
 
 /*************************************************************************
@@ -49,9 +50,9 @@ static int gdrive_sysinfo_update(Gdrive_Sysinfo* pDest);
 // in static memory for the lifetime of the application. Members are retrieved
 // using the gdrive_sysinfo_get_*() functions below.
 
-void gdrive_sysinfo_cleanup()
+void gdrive_sysinfo_cleanup(Gdrive& gInfo)
 {
-    gdrive_sysinfo_get_or_clear(true);
+    gdrive_sysinfo_get_or_clear(gInfo, true);
 }
 
 
@@ -59,19 +60,19 @@ void gdrive_sysinfo_cleanup()
  * Getter and setter functions
  ******************/
 
-int64_t gdrive_sysinfo_get_size(void)
+int64_t gdrive_sysinfo_get_size(Gdrive& gInfo)
 {
-    return gdrive_sysinfo_get_or_clear(false)->quotaBytesTotal;
+    return gdrive_sysinfo_get_or_clear(gInfo, false)->quotaBytesTotal;
 }
 
-int64_t gdrive_sysinfo_get_used()
+int64_t gdrive_sysinfo_get_used(Gdrive& gInfo)
 {
-    return gdrive_sysinfo_get_or_clear(false)->quotaBytesUsed;
+    return gdrive_sysinfo_get_or_clear(gInfo, false)->quotaBytesUsed;
 }
 
-const char* gdrive_sysinfo_get_rootid(void)
+const char* gdrive_sysinfo_get_rootid(Gdrive& gInfo)
 {
-    return gdrive_sysinfo_get_or_clear(false)->rootId;
+    return gdrive_sysinfo_get_or_clear(gInfo, false)->rootId;
 }
 
 
@@ -86,7 +87,7 @@ const char* gdrive_sysinfo_get_rootid(void)
  * Implementations of private functions for use within this file
  *************************************************************************/
 
-static const Gdrive_Sysinfo* gdrive_sysinfo_get_or_clear(bool cleanup)
+static const Gdrive_Sysinfo* gdrive_sysinfo_get_or_clear(Gdrive& gInfo, bool cleanup)
 {
     // Set the initial nextChangeId to the lowest possible value, guaranteeing
     // that the info will be updated the first time this function is called.
@@ -103,17 +104,17 @@ static const Gdrive_Sysinfo* gdrive_sysinfo_get_or_clear(bool cleanup)
 
     // Is the info current?
     // First, make sure the cache is up to date.
-    gdrive_cache_update_if_stale(gdrive_cache_get());
+    gdrive_cache_update_if_stale(gInfo);
 
     // If the Sysinfo's next change ID is at least as high as the cache's
     // next change ID, then our info is current.  No need to do anything
     // else. Otherwise, it needs updated.
     int64_t cacheChangeId = 
-            gdrive_cache_get_nextchangeid(gdrive_cache_get());
+            gdrive_cache_get_nextchangeid();
     if (sysinfo.nextChangeId < cacheChangeId)
     {
         // Either we don't have any sysinfo, or it needs updated.
-        gdrive_sysinfo_update(&sysinfo);
+        gdrive_sysinfo_update(gInfo, &sysinfo);
     }
     
     
@@ -161,7 +162,7 @@ static int gdrive_sysinfo_fill_from_json(Gdrive_Sysinfo* pDest,
     return totalSuccess ? 0 : -1;
 }
 
-static int gdrive_sysinfo_update(Gdrive_Sysinfo* pDest)
+static int gdrive_sysinfo_update(Gdrive& gInfo, Gdrive_Sysinfo* pDest)
 {
     if (pDest != NULL)
     {
@@ -173,7 +174,7 @@ static int gdrive_sysinfo_update(Gdrive_Sysinfo* pDest)
             "largestChangeId,rootFolderId,importFormats,exportFormats";
     
     // Prepare the transfer
-    Gdrive_Transfer* pTransfer = gdrive_xfer_create();
+    Gdrive_Transfer* pTransfer = gdrive_xfer_create(gInfo);
     if (pTransfer == NULL)
     {
         // Memory error
@@ -181,9 +182,9 @@ static int gdrive_sysinfo_update(Gdrive_Sysinfo* pDest)
     }
     gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
     if (
-            gdrive_xfer_set_url(pTransfer, GDRIVE_URL_ABOUT) || 
-            gdrive_xfer_add_query(pTransfer, "includeSubscribed", "false") || 
-            gdrive_xfer_add_query(pTransfer, "fields", fieldString)
+            gdrive_xfer_set_url(pTransfer, Gdrive::GDRIVE_URL_ABOUT.c_str()) || 
+            gdrive_xfer_add_query(gInfo, pTransfer, "includeSubscribed", "false") || 
+            gdrive_xfer_add_query(gInfo, pTransfer, "fields", fieldString)
         )
     {
         // Error
@@ -192,7 +193,7 @@ static int gdrive_sysinfo_update(Gdrive_Sysinfo* pDest)
     }
     
     // Do the transfer.
-    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(pTransfer);
+    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
     gdrive_xfer_free(pTransfer);
     
     int returnVal = -1;
@@ -212,5 +213,6 @@ static int gdrive_sysinfo_update(Gdrive_Sysinfo* pDest)
     
     return returnVal;
 }
+
 
 

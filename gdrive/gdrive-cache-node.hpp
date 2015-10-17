@@ -1,4 +1,13 @@
 /* 
+ * File:   gdrive-cache-node.hpp
+ * Author: me
+ *
+ * Created on October 16, 2015, 10:10 PM
+ */
+
+#ifndef GDRIVE_CACHE_NODE_HPP
+#define	GDRIVE_CACHE_NODE_HPP
+/* 
  * File:   gdrive-cache-node.h
  * Author: me
  * 
@@ -18,11 +27,15 @@
 #ifndef GDRIVE_CACHE_NODE_H
 #define	GDRIVE_CACHE_NODE_H
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
+#include "Gdrive.hpp"
+
+//#ifdef	__cplusplus
+//extern "C" {
+//#endif
     
-#include "gdrive-file-contents.h"
+#include "gdrive-file-contents.hpp"
+#include "gdrive-fileinfo.hpp"
+
 
     
 typedef struct Gdrive_Cache_Node Gdrive_Cache_Node;
@@ -61,7 +74,7 @@ typedef struct Gdrive_Cache_Node Gdrive_Cache_Node;
  *      Google Drive file ID. On failure, or if the given file ID doesn't 
  *      already have a cache node and addIfDoesntExist is false, returns NULL.
  */
-Gdrive_Cache_Node* gdrive_cnode_get(Gdrive_Cache_Node* pParent, 
+Gdrive_Cache_Node* gdrive_cnode_get(fusedrive::Gdrive& gInfo, Gdrive_Cache_Node* pParent, 
                                     Gdrive_Cache_Node** ppNode, 
                                     const char* fileId, bool addIfDoesntExist, 
                                     bool* pAlreadyExists);
@@ -133,7 +146,7 @@ time_t gdrive_cnode_get_update_time(Gdrive_Cache_Node* pNode);
         GDRIVE_FILETYPE_FOLDER: A folder (directory)
  *      See enum Gdrive_Filetype for the most up to date list of types.
  */
-enum Gdrive_Filetype gdrive_cnode_get_filetype(Gdrive_Cache_Node* pNode);
+enum fusedrive::Gdrive_Filetype gdrive_cnode_get_filetype(Gdrive_Cache_Node* pNode);
 
 /*
  * gdrive_cnode_get_fileinfo(): Retrieve the Gdrive_Fileinfo struct stored in a
@@ -195,9 +208,14 @@ void gdrive_cnode_delete_file_contents(Gdrive_Cache_Node* pNode,
 bool gdrive_cnode_is_dirty(const Gdrive_Cache_Node* pNode);
 
 
-#ifdef	__cplusplus
-}
-#endif
+//#ifdef	__cplusplus
+//}
+//#endif
 
 #endif	/* GDRIVE_CACHE_NODE_H */
+
+
+
+
+#endif	/* GDRIVE_CACHE_NODE_HPP */
 

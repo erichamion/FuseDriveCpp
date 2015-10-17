@@ -1,4 +1,5 @@
-
+#define IGNOREME
+#ifndef IGNOREME
 
 #include "gdrive-info.h"
 #include "gdrive-cache.h"
@@ -1412,3 +1413,6 @@ void gdrive_curlhandle_setup(CURL* curlHandle)
     // Automatically follow redirects
     curl_easy_setopt(curlHandle, CURLOPT_FOLLOWLOCATION, 1);
 }
+
+#endif  /* IGNOREME */
+#undef IGNOREME

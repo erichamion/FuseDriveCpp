@@ -1,11 +1,16 @@
 
-#include "gdrive-file-contents.h"
+#include "gdrive-file-contents.hpp"
+#include "Gdrive.hpp"
 
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <stdio.h>
 
 
+
+using namespace fusedrive;
 
 /*************************************************************************
  * Private struct and declarations of private functions for use within 
@@ -79,7 +84,7 @@ void gdrive_fcontents_delete(Gdrive_File_Contents* pContents,
     free(pContents);
 }
 
-void gdrive_fcontents_delete_after_offset(Gdrive_File_Contents** ppHead, 
+void gdrive_fcontents_delete_after_offset(Gdrive& gInfo, Gdrive_File_Contents** ppHead, 
                                           off_t offset
 )
 {
@@ -90,7 +95,7 @@ void gdrive_fcontents_delete_after_offset(Gdrive_File_Contents** ppHead,
     }
     
     // Array to store pointers to the chunks that need deleted
-    int maxChunks = gdrive_get_maxchunks();
+    int maxChunks = gInfo.gdrive_get_maxchunks();
     Gdrive_File_Contents* deleteArray[maxChunks];
     
     // Walk through the list of chunks and find the ones to delete
@@ -187,10 +192,10 @@ Gdrive_File_Contents* gdrive_fcontents_find_chunk(Gdrive_File_Contents* pHead,
     return gdrive_fcontents_find_chunk(pHead->pNext, offset);
 }
 
-int gdrive_fcontents_fill_chunk(Gdrive_File_Contents* pContents, 
+int gdrive_fcontents_fill_chunk(Gdrive& gInfo, Gdrive_File_Contents* pContents, 
                                 const char* fileId, off_t start, size_t size)
 {
-    Gdrive_Transfer* pTransfer = gdrive_xfer_create();
+    Gdrive_Transfer* pTransfer = gdrive_xfer_create(gInfo);
     if (pTransfer == NULL)
     {
         // Memory error
@@ -199,7 +204,7 @@ int gdrive_fcontents_fill_chunk(Gdrive_File_Contents* pContents,
     gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
     
     // Construct the base URL in the form of "<GDRIVE_URL_FILES>/<fileId>".
-    char* fileUrl = malloc(strlen(GDRIVE_URL_FILES) + 
+    char* fileUrl = (char*) malloc(strlen(Gdrive::GDRIVE_URL_FILES.c_str()) + 
                            strlen(fileId) + 2
     );
     if (fileUrl == NULL)
@@ -208,7 +213,7 @@ int gdrive_fcontents_fill_chunk(Gdrive_File_Contents* pContents,
         gdrive_xfer_free(pTransfer);
         return -1;
     }
-    strcpy(fileUrl, GDRIVE_URL_FILES);
+    strcpy(fileUrl, Gdrive::GDRIVE_URL_FILES.c_str());
     strcat(fileUrl, "/");
     strcat(fileUrl, fileId);
     if (gdrive_xfer_set_url(pTransfer, fileUrl) != 0)
@@ -222,8 +227,8 @@ int gdrive_fcontents_fill_chunk(Gdrive_File_Contents* pContents,
     
     // Construct query parameters
     if (
-            gdrive_xfer_add_query(pTransfer, "updateViewedDate", "false") || 
-            gdrive_xfer_add_query(pTransfer, "alt", "media")
+            gdrive_xfer_add_query(gInfo, pTransfer, "updateViewedDate", "false") || 
+            gdrive_xfer_add_query(gInfo, pTransfer, "alt", "media")
         )
     {
         // Error
@@ -237,7 +242,7 @@ int gdrive_fcontents_fill_chunk(Gdrive_File_Contents* pContents,
     // worry about the file size.
     off_t end = start + size - 1;
     int rangeSize = snprintf(NULL, 0, "Range: bytes=%ld-%ld", start, end) + 1;
-    char* rangeHeader = malloc(rangeSize);
+    char* rangeHeader = (char*) malloc(rangeSize);
     if (rangeHeader == NULL)
     {
         // Memory error
@@ -263,7 +268,7 @@ int gdrive_fcontents_fill_chunk(Gdrive_File_Contents* pContents,
     rewind(pContents->fh);
     
     // Perform the transfer
-    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(pTransfer);
+    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
     gdrive_xfer_free(pTransfer);
     
     bool success = (pBuf != NULL && gdrive_dlbuf_get_httpresp(pBuf) < 400);
@@ -372,7 +377,7 @@ int gdrive_fcontents_truncate(Gdrive_File_Contents* pContents, size_t size)
 
 static Gdrive_File_Contents* gdrive_fcontents_create()
 {
-    Gdrive_File_Contents* pContents = malloc(sizeof(Gdrive_File_Contents));
+    Gdrive_File_Contents* pContents = (Gdrive_File_Contents*) malloc(sizeof(Gdrive_File_Contents));
     if (pContents == NULL)
     {
         // Memory error
@@ -393,3 +398,4 @@ static Gdrive_File_Contents* gdrive_fcontents_create()
     
     return pContents;
 }
+

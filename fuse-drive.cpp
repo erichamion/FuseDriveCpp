@@ -25,10 +25,11 @@
 
 
 // Project header(s)
-#include "fuse-drive.h"
+#include "fuse-drive.hpp"
 #include "gdrive/gdrive-util.h"
-#include "gdrive/gdrive.h"
+#include "gdrive/Gdrive.hpp"
 #include "Options.hpp"
+#include "FuseDrivePrivateData.hpp"
 
 using namespace std;
 using namespace fusedrive;
@@ -50,10 +51,10 @@ using namespace fusedrive;
 //namespace fusedrive
 //{
 
-    static int fudr_stat_from_fileinfo(const Gdrive_Fileinfo* pFileinfo, 
-                                       bool isRoot, struct stat* stbuf);
+    static int fudr_stat_from_fileinfo(Gdrive& gInfo, 
+            const Gdrive_Fileinfo* pFileinfo, bool isRoot, struct stat* stbuf);
 
-    static int fudr_rm_file_or_dir_by_id(const char* fileId, const char* parentId);
+    static int fudr_rm_file_or_dir_by_id(Gdrive& gInfo, const char* fileId, const char* parentId);
 
     static unsigned int fudr_get_max_perms(bool isDir);
 
@@ -174,8 +175,8 @@ using namespace fusedrive;
 
 
 
-    static int fudr_stat_from_fileinfo(const Gdrive_Fileinfo* pFileinfo, 
-                                       bool isRoot, struct stat* stbuf)
+    static int fudr_stat_from_fileinfo(Gdrive& gInfo, 
+            const Gdrive_Fileinfo* pFileinfo, bool isRoot, struct stat* stbuf)
     {
         switch (pFileinfo->type)
         {
@@ -197,7 +198,7 @@ using namespace fusedrive;
                 }
         }
 
-        unsigned int perms = gdrive_finfo_real_perms(pFileinfo);
+        unsigned int perms = gdrive_finfo_real_perms(gInfo, pFileinfo);
         unsigned int maxPerms = 
             fudr_get_max_perms(pFileinfo->type == GDRIVE_FILETYPE_FOLDER);
         // Owner permissions.
@@ -220,14 +221,14 @@ using namespace fusedrive;
         return 0;
     }
 
-    static int fudr_rm_file_or_dir_by_id(const char* fileId, const char* parentId)
+    static int fudr_rm_file_or_dir_by_id(Gdrive& gInfo, const char* fileId, const char* parentId)
     {
         // The fileId should never be NULL. A NULL parentId is a runtime error, but
         // it shouldn't stop execution. Just check the fileId here.
         assert(fileId != NULL);
 
         // Find the number of parents, which is the number of "hard" links.
-        const Gdrive_Fileinfo* pFileinfo = gdrive_finfo_get_by_id(fileId);
+        const Gdrive_Fileinfo* pFileinfo = gdrive_finfo_get_by_id(gInfo, fileId);
         if (pFileinfo == NULL)
         {
             // Error
@@ -241,17 +242,19 @@ using namespace fusedrive;
                 // Invalid ID for parent folder
                 return -ENOENT;
             }
-            return gdrive_remove_parent(fileId, parentId);
+            return gInfo.gdrive_remove_parent(fileId, parentId);
         }
         // else this is the only hard link. Delete or trash the file.
 
-        return gdrive_delete(fileId, parentId);
+        return gInfo.gdrive_delete(fileId, parentId);
     }
 
     static unsigned int fudr_get_max_perms(bool isDir)
     {
         struct fuse_context* context = fuse_get_context();
-        unsigned long perms = (unsigned long) context->private_data;
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        unsigned long perms = pPrivateData->getPerms();
         if (isDir)
         {
             perms >>= 9;
@@ -296,15 +299,21 @@ using namespace fusedrive;
     {
         // If fudr_chmod() or fudr_chown() is ever added, this function will likely 
         // need changes.
-
-        char* fileId = gdrive_filepath_to_id(path);
-        if (!fileId)
+        
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
+        
+        string fileIdStr = gInfo.gdrive_filepath_to_id(path);
+        const char* fileId = fileIdStr.c_str();
+        if (!fileId || !fileId[0])
         {
             // File doesn't exist
             return -ENOENT;
         }
-        const Gdrive_Fileinfo* pFileinfo = gdrive_finfo_get_by_id(fileId);
-        free(fileId);
+        const Gdrive_Fileinfo* pFileinfo = gdrive_finfo_get_by_id(gInfo, fileId);
+        
         if (!pFileinfo)
         {
             // Unknown error
@@ -317,11 +326,10 @@ using namespace fusedrive;
             return 0;
         }
 
-        unsigned int filePerms = gdrive_finfo_real_perms(pFileinfo);
+        unsigned int filePerms = gdrive_finfo_real_perms(gInfo, pFileinfo);
         unsigned int maxPerms = 
             fudr_get_max_perms(pFileinfo->type == GDRIVE_FILETYPE_FOLDER);
 
-        const struct fuse_context* context = fuse_get_context();
 
         if (context->uid == geteuid())
         {
@@ -371,16 +379,19 @@ using namespace fusedrive;
      */
 
     static int fudr_create(const char* path, mode_t mode, 
-                           struct fuse_file_info* fi)
+            struct fuse_file_info* fi)
     {
         // Silence compiler warning for unused parameter. If fudr_chmod is 
         // implemented, this line should be removed.
         (void) mode;
+        
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
 
         // Determine whether the file already exists
-        char* dummyFileId = gdrive_filepath_to_id(path);
-        free(dummyFileId);
-        if (dummyFileId != NULL)
+        if (!gInfo.gdrive_filepath_to_id(path).empty())
         {
             return -EEXIST;
         }
@@ -402,7 +413,7 @@ using namespace fusedrive;
 
         // Create the file
         int error = 0;
-        char* fileId = gdrive_file_new(path, false, &error);
+        char* fileId = gdrive_file_new(gInfo, path, false, &error);
         if (fileId == NULL)
         {
             // Some error occurred
@@ -413,7 +424,7 @@ using namespace fusedrive;
         // using the (currently unused) mode parameter we were given.
 
         // File was successfully created. Open it.
-        fi->fh = (uint64_t) gdrive_file_open(fileId, O_RDWR, &error);
+        fi->fh = (uint64_t) gdrive_file_open(gInfo, fileId, O_RDWR, &error);
         free(fileId);
 
         return -error;
@@ -424,7 +435,7 @@ using namespace fusedrive;
         // Silence compiler warning about unused parameter
         (void) private_data;
 
-        gdrive_cleanup();
+        //gdrive_cleanup();
     }
 
     /* static int fudr_fallocate(const char* path, int mode, off_t offset, 
@@ -446,8 +457,13 @@ using namespace fusedrive;
             // Invalid file handle
             return -EBADF;
         }
-
-        return fudr_stat_from_fileinfo(pFileinfo, strcmp(path, "/") == 0, stbuf);
+        
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
+        
+        return fudr_stat_from_fileinfo(gInfo, pFileinfo, strcmp(path, "/") == 0, stbuf);
     }
 
     /* static int fudr_flock(const char* path, struct fuse_file_info* fi, int op)
@@ -477,7 +493,12 @@ using namespace fusedrive;
             return -EBADF;
         }
 
-        return gdrive_file_sync((Gdrive_File*) fi->fh);
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
+        
+        return gdrive_file_sync(gInfo, (Gdrive_File*) fi->fh);
     }
 
     /* static int fudr_fsyncdir(const char* path, int isdatasync, 
@@ -507,29 +528,39 @@ using namespace fusedrive;
             return accessResult;
         }
 
-        return gdrive_file_truncate(fh, size);
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
+        
+        return gdrive_file_truncate(gInfo, fh, size);
     }
 
     static int fudr_getattr(const char *path, struct stat *stbuf)
     {
         memset(stbuf, 0, sizeof(struct stat));
-
-        char* fileId = gdrive_filepath_to_id(path);
-        if (fileId == NULL)
+        
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
+        
+        string fileIdStr = gInfo.gdrive_filepath_to_id(path);
+        const char* fileId = fileIdStr.c_str();
+        if (!fileId[0])
         {
             // File not found
             return -ENOENT;
         }
 
-        const Gdrive_Fileinfo* pFileinfo = gdrive_finfo_get_by_id(fileId);
-        free(fileId);
+        const Gdrive_Fileinfo* pFileinfo = gdrive_finfo_get_by_id(gInfo, fileId);
         if (pFileinfo == NULL)
         {
             // An error occurred.
             return -ENOENT;
         }    
 
-        return fudr_stat_from_fileinfo(pFileinfo, strcmp(path, "/") == 0, stbuf);
+        return fudr_stat_from_fileinfo(gInfo, pFileinfo, strcmp(path, "/") == 0, stbuf);
     }
 
     /* static int fudr_getxattr(const char* path, const char* name, char* value, 
@@ -566,11 +597,15 @@ using namespace fusedrive;
     {
         Gdrive_Path* pOldPath = gdrive_path_create(from);
         Gdrive_Path* pNewPath = gdrive_path_create(to);
+        
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
 
         // Determine whether the file already exists
-        char* dummyFileId = gdrive_filepath_to_id(to);
-        free(dummyFileId);
-        if (dummyFileId != NULL)
+        const char* dummyFileId = gInfo.gdrive_filepath_to_id(to).c_str();
+        if (dummyFileId && dummyFileId[0])
         {
             return -EEXIST;
         }
@@ -592,27 +627,24 @@ using namespace fusedrive;
             return accessResult;
         }
 
-        char* fileId = gdrive_filepath_to_id(from);
-        if (!fileId)
+        const char* fileId = gInfo.gdrive_filepath_to_id(from).c_str();
+        if (!fileId[0])
         {
             // Original file does not exist
             return -ENOENT;
         }
-        char* newParentId = 
-            gdrive_filepath_to_id(gdrive_path_get_dirname(pNewPath));
+        const char* newParentId = 
+            gInfo.gdrive_filepath_to_id(gdrive_path_get_dirname(pNewPath)).c_str();
         gdrive_path_free(pOldPath);
         gdrive_path_free(pNewPath);
-        if (!newParentId)
+        if (!newParentId[0])
         {
             // New directory doesn't exist
-            free(fileId);
             return -ENOENT;
         }
 
-        int returnVal = gdrive_add_parent(fileId, newParentId);
+        int returnVal = gInfo.gdrive_add_parent(fileId, newParentId);
 
-        free(fileId);
-        free(newParentId);
         return returnVal;
     }
 
@@ -634,14 +666,20 @@ using namespace fusedrive;
         // Silence compiler warning for unused variable. If and when chmod is 
         // implemented, this should be removed.
         (void) mode;
+        
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
 
         // Determine whether the folder already exists, 
-        char* dummyFileId = gdrive_filepath_to_id(path);
-        free(dummyFileId);
-        if (dummyFileId != NULL)
+        char* dummyFileId = strdup(gInfo.gdrive_filepath_to_id(path).c_str());
+        if (!dummyFileId || !dummyFileId[0])
         {
+            free(dummyFileId);
             return -EEXIST;
         }
+        free(dummyFileId);
 
         // Need write access to the parent directory
         Gdrive_Path* pGpath = gdrive_path_create(path);
@@ -659,7 +697,7 @@ using namespace fusedrive;
 
         // Create the folder
         int error = 0;
-        dummyFileId = gdrive_file_new(path, true, &error);
+        dummyFileId = gdrive_file_new(gInfo, path, true, &error);
         free(dummyFileId);
 
         // TODO: If fudr_chmod is ever implemented, change the folder permissions 
@@ -676,9 +714,15 @@ using namespace fusedrive;
 
     static int fudr_open(const char *path, struct fuse_file_info *fi)
     {
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
+        
         // Get the file ID
-        char* fileId = gdrive_filepath_to_id(path);
-        if (fileId == NULL)
+        string fileIdStr = gInfo.gdrive_filepath_to_id(path);
+        const char* fileId = fileIdStr.c_str();
+        if (!fileId || !fileId[0])
         {
             // File not found
             return -ENOENT;
@@ -706,8 +750,7 @@ using namespace fusedrive;
 
         // Open the file
         int error = 0;
-        Gdrive_File* pFile = gdrive_file_open(fileId, fi->flags, &error);
-        free(fileId);
+        Gdrive_File* pFile = gdrive_file_open(gInfo, fileId, fi->flags, &error);
 
         if (pFile == NULL)
         {
@@ -748,7 +791,12 @@ using namespace fusedrive;
 
         Gdrive_File* pFile = (Gdrive_File*) fi->fh;
 
-        return gdrive_file_read(pFile, buf, size, offset);
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
+        
+        return gdrive_file_read(gInfo, pFile, buf, size, offset);
     }
 
     /* static int 
@@ -765,9 +813,15 @@ using namespace fusedrive;
         // Suppress warnings for unused function parameters
         (void) offset;
         (void) fi;
-
-        char* folderId = gdrive_filepath_to_id(path);
-        if (folderId == NULL)
+        
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
+        
+        string folderIdStr = gInfo.gdrive_filepath_to_id(path);
+        const char* folderId = folderIdStr.c_str();
+        if (!folderId || !folderId[0])
         {
             return -ENOENT;
         }
@@ -776,13 +830,11 @@ using namespace fusedrive;
         int accessResult = fudr_access(path, R_OK);
         if (accessResult)
         {
-            free(folderId);
             return accessResult;
         }
 
         Gdrive_Fileinfo_Array* pFileArray = 
-                gdrive_folder_list(folderId);
-        free(folderId);
+                gInfo.gdrive_folder_list(folderId);
         if (pFileArray == NULL)
         {
             // An error occurred.
@@ -833,7 +885,12 @@ using namespace fusedrive;
             return -EBADF;
         }
 
-        gdrive_file_close((Gdrive_File*) fi->fh, fi->flags);
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
+        
+        gdrive_file_close(gInfo, (Gdrive_File*) fi->fh, fi->flags);
         return 0;
     }
 
@@ -851,29 +908,34 @@ using namespace fusedrive;
 
     static int fudr_rename(const char* from, const char* to)
     {
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
+        
         // Neither from nor to should be the root directory
-        char* rootId = gdrive_filepath_to_id("/");
-        if (!rootId)
+        string rootIdStr = gInfo.gdrive_filepath_to_id("/");
+        const char* rootId = rootIdStr.c_str();
+        if (!rootId || !rootId[0])
         {
             // Memory error
             return -ENOMEM;
         }
-
-        char* fromFileId = gdrive_filepath_to_id(from);
-        if (!fromFileId)
+        
+        string fromFileIdStr = gInfo.gdrive_filepath_to_id(from);
+        const char* fromFileId = fromFileIdStr.c_str();
+        if (!fromFileId || !fromFileId[0])
         {
             // from doesn't exist
-            free(rootId);
             return -ENOENT;
         }
         if (!strcmp(fromFileId, rootId))
         {
             // from is root
-            free(fromFileId);
-            free(rootId);
             return -EBUSY;
         }
-        char* toFileId = gdrive_filepath_to_id(to); 
+        string toFileIdStr = gInfo.gdrive_filepath_to_id(to);
+        const char* toFileId = toFileIdStr.c_str(); 
         // toFileId may be NULL.
 
         // Special handling if the destination exists
@@ -882,39 +944,29 @@ using namespace fusedrive;
             if (!strcmp(toFileId, rootId))
             {
                 // to is root
-                free(toFileId);
-                free(fromFileId);
-                free(rootId);
                 return -EBUSY;
             }
-            free(rootId);
 
             // If from and to are hard links to the same file, do nothing and 
             // return success.
             if (!strcmp(fromFileId, toFileId))
             {
-                free(toFileId);
-                free(fromFileId);
                 return 0;
             }
 
             // If the source is a directory, destination must be an empty directory
-            const Gdrive_Fileinfo* pFromInfo = gdrive_finfo_get_by_id(fromFileId);
+            const Gdrive_Fileinfo* pFromInfo = gdrive_finfo_get_by_id(gInfo, fromFileId);
             if (pFromInfo && pFromInfo->type == GDRIVE_FILETYPE_FOLDER)
             {
-                const Gdrive_Fileinfo* pToInfo = gdrive_finfo_get_by_id(toFileId);
+                const Gdrive_Fileinfo* pToInfo = gdrive_finfo_get_by_id(gInfo, toFileId);
                 if (pToInfo && pToInfo->type != GDRIVE_FILETYPE_FOLDER)
                 {
                     // Destination is not a directory
-                    free(toFileId);
-                    free(fromFileId);
                     return -ENOTDIR;
                 }
                 if (pToInfo && pToInfo->nChildren > 0)
                 {
                     // Destination is not empty
-                    free(toFileId);
-                    free(fromFileId);
                     return -ENOTEMPTY;
                 }
             }
@@ -923,21 +975,15 @@ using namespace fusedrive;
             int accessResult = fudr_access(to, W_OK);
             if (accessResult)
             {
-                free(toFileId);
-                free(fromFileId);
                 return -EACCES;
             }
         }
-        else 
-        {
-            free(rootId);
-        }
+        
 
         Gdrive_Path* pFromPath = gdrive_path_create(from);
         if (!pFromPath)
         {
             // Memory error
-            free(fromFileId);
             return -ENOMEM;
         }
         Gdrive_Path* pToPath = gdrive_path_create(to);
@@ -945,29 +991,27 @@ using namespace fusedrive;
         {
             // Memory error
             gdrive_path_free(pFromPath);
-            free(fromFileId);
             return -ENOMEM;
         }
-
-        char* fromParentId = 
-            gdrive_filepath_to_id(gdrive_path_get_dirname(pFromPath));
-        if (!fromParentId)
+        
+        string fromParentIdStr = 
+                gInfo.gdrive_filepath_to_id(gdrive_path_get_dirname(pFromPath));
+        const char* fromParentId = fromParentIdStr.c_str();
+        if (!fromParentId || !fromParentId[0])
         {
             // from path doesn't exist
             gdrive_path_free(pToPath);
             gdrive_path_free(pFromPath);
-            free(fromFileId);
             return -ENOENT;
         }
-        char* toParentId = 
-            gdrive_filepath_to_id(gdrive_path_get_dirname(pToPath));
-        if (!toParentId)
+        string toParentIdStr = 
+                gInfo.gdrive_filepath_to_id(gdrive_path_get_dirname(pToPath));
+        const char* toParentId = toParentIdStr.c_str();
+        if (!toParentId || !toParentId[0])
         {
             // from path doesn't exist
-            free(fromParentId);
             gdrive_path_free(pToPath);
             gdrive_path_free(pFromPath);
-            free(fromFileId);
             return -ENOENT;
         }
 
@@ -975,11 +1019,8 @@ using namespace fusedrive;
         int accessResult = fudr_access(gdrive_path_get_dirname(pToPath), W_OK);
         if (accessResult)
         {
-            free(toParentId);
-            free(fromParentId);
             gdrive_path_free(pToPath);
             gdrive_path_free(pFromPath);
-            free(fromFileId);
             return accessResult;
         }
 
@@ -988,26 +1029,20 @@ using namespace fusedrive;
         // because different paths could refer to the same directory.
         if (strcmp(fromParentId, toParentId))
         {
-            int result = gdrive_add_parent(fromFileId, toParentId);
+            int result = gInfo.gdrive_add_parent(fromFileId, toParentId);
             if (result != 0)
             {
                 // An error occurred
-                free(toParentId);
-                free(fromParentId);
                 gdrive_path_free(pToPath);
                 gdrive_path_free(pFromPath);
-                free(fromFileId);
                 return result;
             }
             result = fudr_unlink(from);
             if (result != 0)
             {
                 // An error occurred
-                free(toParentId);
-                free(fromParentId);
                 gdrive_path_free(pToPath);
                 gdrive_path_free(pFromPath);
-                free(fromFileId);
                 return result;
             }
         }
@@ -1020,22 +1055,18 @@ using namespace fusedrive;
         const char* toBasename = gdrive_path_get_basename(pToPath);
         if (strcmp(fromBasename, toBasename))
         {
-            returnVal = gdrive_change_basename(fromFileId, toBasename);
+            returnVal = gInfo.gdrive_change_basename(fromFileId, toBasename);
         }
 
         // If successful, and if to already existed, delete it
         if (toFileId && !returnVal)
         {
-            returnVal = fudr_rm_file_or_dir_by_id(toFileId, toParentId);
+            returnVal = fudr_rm_file_or_dir_by_id(gInfo, toFileId, toParentId);
         }
 
 
-        free(toFileId);
-        free(toParentId);
-        free(fromParentId);
         gdrive_path_free(pFromPath);
         gdrive_path_free(pToPath);
-        free(fromFileId);
         return returnVal;
     }
 
@@ -1046,32 +1077,34 @@ using namespace fusedrive;
         {
             return -EBUSY;
         }
+        
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
 
-        char* fileId = gdrive_filepath_to_id(path);
-        if (fileId == NULL)
+        const char* fileId = gInfo.gdrive_filepath_to_id(path).c_str();
+        if (!fileId || !fileId[0])
         {
             // No such file
             return -ENOENT;
         }
 
         // Make sure path refers to an empty directory
-        const Gdrive_Fileinfo* pFileinfo = gdrive_finfo_get_by_id(fileId);
-        if (pFileinfo == NULL)
+        const Gdrive_Fileinfo* pFileinfo = gdrive_finfo_get_by_id(gInfo, fileId);
+        if (!pFileinfo)
         {
             // Couldn't retrieve file info
-            free(fileId);
             return -ENOENT;
         }
         if (pFileinfo->type != GDRIVE_FILETYPE_FOLDER)
         {
             // Not a directory
-            free(fileId);
             return -ENOTDIR;
         }
         if (pFileinfo->nChildren > 0)
         {
             // Not empty
-            free(fileId);
             return -ENOTEMPTY;
         }
 
@@ -1079,7 +1112,6 @@ using namespace fusedrive;
         int accessResult = fudr_access(path, W_OK);
         if (accessResult)
         {
-            free(fileId);
             return accessResult;
         }
 
@@ -1088,16 +1120,13 @@ using namespace fusedrive;
         if (pGpath == NULL)
         {
             // Memory error
-            free(fileId);
             return -ENOMEM;
         }
-        char* parentId = 
-            gdrive_filepath_to_id(gdrive_path_get_dirname(pGpath));
+        const char* parentId = 
+            gInfo.gdrive_filepath_to_id(gdrive_path_get_dirname(pGpath)).c_str();
         gdrive_path_free(pGpath);
 
-        int returnVal = fudr_rm_file_or_dir_by_id(fileId, parentId);
-        free(parentId);
-        free(fileId);
+        int returnVal = fudr_rm_file_or_dir_by_id(gInfo, fileId, parentId);
         return returnVal;
     }
 
@@ -1112,10 +1141,15 @@ using namespace fusedrive;
     {
         // Suppress compiler warning about unused parameter
         (void) path;
+        
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
 
-        unsigned long blockSize = gdrive_get_minchunksize();
-        unsigned long bytesTotal = gdrive_sysinfo_get_size();
-        unsigned long bytesFree = bytesTotal - gdrive_sysinfo_get_used();
+        unsigned long blockSize = gInfo.gdrive_get_minchunksize();
+        unsigned long bytesTotal = gdrive_sysinfo_get_size(gInfo);
+        unsigned long bytesFree = bytesTotal - gdrive_sysinfo_get_used(gInfo);
 
         memset(stbuf, 0, sizeof(struct statvfs));
         stbuf->f_bsize = blockSize;
@@ -1134,8 +1168,13 @@ using namespace fusedrive;
 
     static int fudr_truncate(const char* path, off_t size)
     {
-        char* fileId = gdrive_filepath_to_id(path);
-        if (fileId == NULL)
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
+        
+        const char* fileId = gInfo.gdrive_filepath_to_id(path).c_str();
+        if (!fileId || !fileId[0])
         {
             // File not found
             return -ENOENT;
@@ -1145,14 +1184,12 @@ using namespace fusedrive;
         int accessResult = fudr_access(path, W_OK);
         if (accessResult)
         {
-            free(fileId);
             return accessResult;
         }
 
         // Open the file
         int error = 0;
-        Gdrive_File* fh = gdrive_file_open(fileId, O_RDWR, &error);
-        free(fileId);
+        Gdrive_File* fh = gdrive_file_open(gInfo, fileId, O_RDWR, &error);
         if (fh == NULL)
         {
             // Error
@@ -1160,18 +1197,24 @@ using namespace fusedrive;
         }
 
         // Truncate
-        int result = gdrive_file_truncate(fh, size);
+        int result = gdrive_file_truncate(gInfo, fh, size);
 
         // Close
-        gdrive_file_close(fh, O_RDWR);
+        gdrive_file_close(gInfo, fh, O_RDWR);
 
         return result;
     }
 
     static int fudr_unlink(const char* path)
     {
-        char* fileId = gdrive_filepath_to_id(path);
-        if (fileId == NULL)
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
+        
+        string fileIdStr = gInfo.gdrive_filepath_to_id(path);
+        const char* fileId = fileIdStr.c_str();
+        if (!fileId || !fileId[0])
         {
             // No such file
             return -ENOENT;
@@ -1181,7 +1224,6 @@ using namespace fusedrive;
         int accessResult = fudr_access(path, W_OK);
         if (accessResult)
         {
-            free(fileId);
             return accessResult;
         }
 
@@ -1189,15 +1231,13 @@ using namespace fusedrive;
         if (pGpath == NULL)
         {
             // Memory error
-            free(fileId);
             return -ENOMEM;
         }
-        char* parentId = gdrive_filepath_to_id(gdrive_path_get_dirname(pGpath));
+        string parentIdStr = gInfo.gdrive_filepath_to_id(gdrive_path_get_dirname(pGpath));
+        const char* parentId = parentIdStr.c_str();
         gdrive_path_free(pGpath);
 
-        int returnVal = fudr_rm_file_or_dir_by_id(fileId, parentId);
-        free(parentId);
-        free(fileId);
+        int returnVal = fudr_rm_file_or_dir_by_id(gInfo, fileId, parentId);
         return returnVal;
     }
 
@@ -1209,15 +1249,19 @@ using namespace fusedrive;
 
     static int fudr_utimens(const char* path, const struct timespec ts[2])
     {
-        char* fileId = gdrive_filepath_to_id(path);
-        if (fileId == NULL)
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
+        
+        const char* fileId = gInfo.gdrive_filepath_to_id(path).c_str();
+        if (!fileId || !fileId[0])
         {
             return -ENOENT;
         }
 
         int error = 0;
-        Gdrive_File* fh = gdrive_file_open(fileId, O_RDWR, &error);
-        free(fileId);
+        Gdrive_File* fh = gdrive_file_open(gInfo, fileId, O_RDWR, &error);
         if (fh == NULL)
         {
             return -error;
@@ -1225,29 +1269,29 @@ using namespace fusedrive;
 
         if (ts[0].tv_nsec == UTIME_NOW)
         {
-            error = gdrive_file_set_atime(fh, NULL);
+            error = gdrive_file_set_atime(gInfo, fh, NULL);
         }
         else if (ts[0].tv_nsec != UTIME_OMIT)
         {
-            error = gdrive_file_set_atime(fh, &(ts[0]));
+            error = gdrive_file_set_atime(gInfo, fh, &(ts[0]));
         }
 
         if (error != 0)
         {
-            gdrive_file_close(fh, O_RDWR);
+            gdrive_file_close(gInfo, fh, O_RDWR);
             return error;
         }
 
         if (ts[1].tv_nsec == UTIME_NOW)
         {
-            gdrive_file_set_mtime(fh, NULL);
+            gdrive_file_set_mtime(gInfo, fh, NULL);
         }
         else if (ts[1].tv_nsec != UTIME_OMIT)
         {
-            gdrive_file_set_mtime(fh, &(ts[1]));
+            gdrive_file_set_mtime(gInfo, fh, &(ts[1]));
         }
 
-        gdrive_file_close(fh, O_RDWR);
+        gdrive_file_close(gInfo, fh, O_RDWR);
         return error;
     }
 
@@ -1270,8 +1314,13 @@ using namespace fusedrive;
             // Bad file handle
             return -EBADFD;
         }
+        
+        struct fuse_context* context = fuse_get_context();
+        FuseDrivePrivateData* pPrivateData = 
+                (FuseDrivePrivateData*) context->private_data;
+        Gdrive& gInfo = pPrivateData->getGdrive();
 
-        return gdrive_file_write(fh, buf, size, offset);
+        return gdrive_file_write(gInfo, fh, buf, size, offset);
     }
 
     /* static int fudr_write_buf(const char* path, struct fuse_bufvec* buf, 
@@ -1379,22 +1428,26 @@ using namespace fusedrive;
             }
             return 1;
         }
-
-        if (gdrive_init(pOptions->gdrive_access, pOptions->gdrive_auth_file->c_str(), 
-                        pOptions->gdrive_cachettl, 
-                        pOptions->gdrive_interaction_type, 
-                        pOptions->gdrive_chunk_size, pOptions->gdrive_max_chunks)
-                )
+        
+        FuseDrivePrivateData* pPrivateData;
+        try
         {
+            pPrivateData = new FuseDrivePrivateData(*pOptions);
+        }
+        catch (const exception& e)
+        {
+            delete pOptions;
             fputs("Could not set up a Google Drive connection.\n", stderr);
             return 1;
         }
+        
+        
         int returnVal;
         returnVal = fuse_main(pOptions->fuse_argc, pOptions->fuse_argv, &fo, 
-                              (void*) ((pOptions->dir_perms << 9) + 
-                              pOptions->file_perms));
-
+                              (void*) pPrivateData);
+        
         delete pOptions;
+        delete pPrivateData;
         return returnVal;
     }
 

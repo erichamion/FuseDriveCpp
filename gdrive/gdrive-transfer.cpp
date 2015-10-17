@@ -1,11 +1,14 @@
 
 
 
-#include "gdrive-transfer.h"
-#include "gdrive-query.h"
+
+#include "gdrive-transfer.hpp"
+#include "gdrive-query.hpp"
 #include "gdrive-info.h"
 
 #include <string.h>
+
+using namespace fusedrive;
 
 
 #define GDRIVE_RETRY_LIMIT 5
@@ -30,13 +33,14 @@ typedef struct Gdrive_Transfer
     gdrive_xfer_upload_callback uploadCallback;
     void* userdata;
     off_t uploadOffset;
+    Gdrive* pGdrive;
 } Gdrive_Transfer;
 
 
 /*
  * Returns 0 on success, other on failure.
  */
-static int gdrive_xfer_add_query_or_post(Gdrive_Query** ppQuery, 
+static int gdrive_xfer_add_query_or_post(Gdrive& gInfo, Gdrive_Query** ppQuery, 
                                          const char* field, const char* value);
 
 static size_t gdrive_xfer_upload_callback_internal(char* buffer, size_t size, 
@@ -44,7 +48,7 @@ static size_t gdrive_xfer_upload_callback_internal(char* buffer, size_t size,
                                                    void* instream);
 
 static struct curl_slist* 
-gdrive_get_authbearer_header(struct curl_slist* pHeaders);
+gdrive_get_authbearer_header(Gdrive& gInfo, struct curl_slist* pHeaders);
 
 
 /*************************************************************************
@@ -55,14 +59,14 @@ gdrive_get_authbearer_header(struct curl_slist* pHeaders);
  * Constructors, factory methods, destructors and similar
  ******************/
 
-Gdrive_Transfer* gdrive_xfer_create()
+Gdrive_Transfer* gdrive_xfer_create(Gdrive& gInfo)
 {
-    Gdrive_Transfer* returnVal = malloc(sizeof(Gdrive_Transfer));
+    Gdrive_Transfer* returnVal = (Gdrive_Transfer*) malloc(sizeof(Gdrive_Transfer));
     if (returnVal != NULL)
     {
         memset(returnVal, 0, sizeof(Gdrive_Transfer));
         returnVal->retryOnAuthError = true;
-        returnVal->pHeaders = gdrive_get_authbearer_header(NULL);
+        returnVal->pHeaders = gdrive_get_authbearer_header(gInfo, NULL);
     }
     
     return returnVal;
@@ -99,6 +103,16 @@ void gdrive_xfer_free(Gdrive_Transfer* pTransfer)
  * Getter and setter functions
  ******************/
 
+void gdrive_xfer_set_gdrive(Gdrive_Transfer* pTransfer, Gdrive& gdrive)
+{
+    pTransfer->pGdrive = &gdrive;
+}
+
+Gdrive& gdrive_xfer_get_gdrive(Gdrive_Transfer* pTransfer)
+{
+    return *(pTransfer->pGdrive);
+}
+
 void gdrive_xfer_set_requesttype(Gdrive_Transfer* pTransfer, 
                                  enum Gdrive_Request_Type requestType)
 {
@@ -113,7 +127,7 @@ void gdrive_xfer_set_retryonautherror(Gdrive_Transfer* pTransfer, bool retry)
 int gdrive_xfer_set_url(Gdrive_Transfer* pTransfer, const char* url)
 {
     size_t size = strlen(url) + 1;
-    pTransfer->url = malloc(size);
+    pTransfer->url = (char*) malloc(size);
     if (pTransfer->url == NULL)
     {
         // Memory error
@@ -147,17 +161,17 @@ void gdrive_xfer_set_uploadcallback(Gdrive_Transfer* pTransfer,
  * Other accessible functions
  ******************/
 
-int gdrive_xfer_add_query(Gdrive_Transfer* pTransfer, 
+int gdrive_xfer_add_query(Gdrive& gInfo, Gdrive_Transfer* pTransfer, 
                           const char* field, 
                           const char* value)
 {
-    return gdrive_xfer_add_query_or_post(&(pTransfer->pQuery), field, value);
+    return gdrive_xfer_add_query_or_post(gInfo, &(pTransfer->pQuery), field, value);
 }
 
-int gdrive_xfer_add_postfield(Gdrive_Transfer* pTransfer, const char* field, 
+int gdrive_xfer_add_postfield(Gdrive& gInfo, Gdrive_Transfer* pTransfer, const char* field, 
                               const char* value)
 {
-    return gdrive_xfer_add_query_or_post(&(pTransfer->pPostData), field, value);
+    return gdrive_xfer_add_query_or_post(gInfo, &(pTransfer->pPostData), field, value);
 }
 
 int gdrive_xfer_add_header(Gdrive_Transfer* pTransfer, const char* header)
@@ -166,7 +180,7 @@ int gdrive_xfer_add_header(Gdrive_Transfer* pTransfer, const char* header)
     return (pTransfer->pHeaders == NULL);
 }
 
-Gdrive_Download_Buffer* gdrive_xfer_execute(Gdrive_Transfer* pTransfer)
+Gdrive_Download_Buffer* gdrive_xfer_execute(Gdrive& gInfo, Gdrive_Transfer* pTransfer)
 {
     if (pTransfer->url == NULL)
     {
@@ -174,7 +188,7 @@ Gdrive_Download_Buffer* gdrive_xfer_execute(Gdrive_Transfer* pTransfer)
         return NULL;
     }
     
-    CURL* curlHandle = gdrive_get_curlhandle();
+    CURL* curlHandle = gInfo.gdrive_get_curlhandle();
     
     bool needsBody = false;
     
@@ -258,6 +272,7 @@ Gdrive_Download_Buffer* gdrive_xfer_execute(Gdrive_Transfer* pTransfer)
     // Set upload data callback, if applicable
     if (pTransfer->uploadCallback != NULL)
     {
+        gdrive_xfer_set_gdrive(pTransfer, gInfo);
         gdrive_xfer_add_header(pTransfer, "Transfer-Encoding: chunked");
         curl_easy_setopt(curlHandle, 
                          CURLOPT_READFUNCTION, 
@@ -283,7 +298,7 @@ Gdrive_Download_Buffer* gdrive_xfer_execute(Gdrive_Transfer* pTransfer)
         return NULL;
     }
     
-    gdrive_dlbuf_download_with_retry(pBuf, curlHandle, 
+    gdrive_dlbuf_download_with_retry(gInfo, pBuf, curlHandle, 
                                      pTransfer->retryOnAuthError, 
                                      0, GDRIVE_RETRY_LIMIT
             );
@@ -307,10 +322,10 @@ Gdrive_Download_Buffer* gdrive_xfer_execute(Gdrive_Transfer* pTransfer)
  * Implementations of private functions for use within this file
  *************************************************************************/
 
-static int gdrive_xfer_add_query_or_post(Gdrive_Query** ppQuery, 
+static int gdrive_xfer_add_query_or_post(Gdrive& gInfo, Gdrive_Query** ppQuery, 
                                          const char* field, const char* value)
 {
-    *ppQuery = gdrive_query_add(*ppQuery, field, value);
+    *ppQuery = gdrive_query_add(gInfo, *ppQuery, field, value);
     return (*ppQuery == NULL);
 }
 
@@ -321,7 +336,7 @@ static size_t gdrive_xfer_upload_callback_internal(char* buffer, size_t size,
     // Get the transfer struct.
     Gdrive_Transfer* pTransfer = (Gdrive_Transfer*) instream;
     size_t bytesTransferred = 
-            pTransfer->uploadCallback(buffer, pTransfer->uploadOffset, 
+            pTransfer->uploadCallback(gdrive_xfer_get_gdrive(pTransfer), buffer, pTransfer->uploadOffset, 
                                       size * nitems, pTransfer->userdata
             );
     if (bytesTransferred == (size_t)(-1))
@@ -339,9 +354,9 @@ static size_t gdrive_xfer_upload_callback_internal(char* buffer, size_t size,
  * pHeaders can be NULL, or an existing set of headers can be given.
  */
 static struct curl_slist* 
-gdrive_get_authbearer_header(struct curl_slist* pHeaders)
+gdrive_get_authbearer_header(Gdrive& gInfo, struct curl_slist* pHeaders)
 {
-    const char* token = gdrive_get_access_token();
+    const char* token = gInfo.gdrive_get_access_token().c_str();
     
     // If we don't have any access token yet, do nothing
     if (!token)
@@ -350,7 +365,7 @@ gdrive_get_authbearer_header(struct curl_slist* pHeaders)
     }
     
     // First form a string with the required text and the access token.
-    char* header = malloc(strlen("Authorization: Bearer ") + 
+    char* header = (char*) malloc(strlen("Authorization: Bearer ") + 
                           strlen(token) + 1
     );
     if (!header)

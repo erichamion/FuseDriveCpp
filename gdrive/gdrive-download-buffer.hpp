@@ -1,4 +1,14 @@
 /* 
+ * File:   gdrive-download-buffer.hpp
+ * Author: me
+ *
+ * Created on October 16, 2015, 10:10 PM
+ */
+
+#ifndef GDRIVE_DOWNLOAD_BUFFER_HPP
+#define	GDRIVE_DOWNLOAD_BUFFER_HPP
+
+/* 
  * File:   gdrive-download-buffer.h
  * Author: me
  * 
@@ -12,18 +22,15 @@
  * Created on May 3, 2015, 4:12 PM
  */
 
-#ifndef GDRIVE_DOWNLOAD_BUFFER_H
-#define	GDRIVE_DOWNLOAD_BUFFER_H
 
-#ifdef	__cplusplus
-extern "C" {
-#endif
+//#ifdef	__cplusplus
+//extern "C" {
+//#endif
     
-#include "gdrive.h"
+#include "Gdrive.hpp"
     
 #include <curl/curl.h>
     
-
 typedef struct Gdrive_Download_Buffer Gdrive_Download_Buffer;
 
 enum Gdrive_Retry_Method
@@ -33,14 +40,14 @@ enum Gdrive_Retry_Method
     GDRIVE_RETRY_RENEWAUTH
 };
 
-enum Gdrive_Request_Type
-{
-    GDRIVE_REQUEST_GET,
-    GDRIVE_REQUEST_POST,
-    GDRIVE_REQUEST_PUT,
-    GDRIVE_REQUEST_PATCH,
-    GDRIVE_REQUEST_DELETE
-};
+//enum Gdrive_Request_Type
+//{
+//    GDRIVE_REQUEST_GET,
+//    GDRIVE_REQUEST_POST,
+//    GDRIVE_REQUEST_PUT,
+//    GDRIVE_REQUEST_PATCH,
+//    GDRIVE_REQUEST_DELETE
+//};
 
 
 /*************************************************************************
@@ -169,14 +176,17 @@ CURLcode gdrive_dlbuf_download(Gdrive_Download_Buffer* pBuf, CURL* curlHandle);
  * Return value (int):
  *      0 on success, other on failure.
  */
-int gdrive_dlbuf_download_with_retry(Gdrive_Download_Buffer* pBuf, 
+int gdrive_dlbuf_download_with_retry(fusedrive::Gdrive& gInfo, Gdrive_Download_Buffer* pBuf, 
                                      CURL* curlHandle, bool retryOnAuthError, 
                                      int tryNum, int maxTries);
 
 
-#ifdef	__cplusplus
-}
-#endif
+//#ifdef	__cplusplus
+//}
+//#endif
 
-#endif	/* GDRIVE_DOWNLOAD_BUFFER_H */
+
+
+
+#endif	/* GDRIVE_DOWNLOAD_BUFFER_HPP */
 

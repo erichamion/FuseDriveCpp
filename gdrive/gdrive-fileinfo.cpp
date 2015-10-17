@@ -1,9 +1,10 @@
 
-#include "gdrive-fileinfo.h"
 
-#include "gdrive-info.h"
-#include "gdrive-cache.h"
-#include "gdrive-file.h"
+#include "gdrive-fileinfo.hpp"
+
+#include "Gdrive.hpp"
+#include "gdrive-cache.hpp"
+#include "gdrive-file.hpp"
 
 #include <sys/stat.h>
 #include <string.h>
@@ -12,6 +13,8 @@
 #include <assert.h>
 
 
+
+using namespace fusedrive;
 
 /*************************************************************************
  * Constants needed only internally within this file
@@ -50,14 +53,14 @@ static int gdrive_finfo_set_time(Gdrive_Fileinfo* pFileinfo,
  * Constructors, factory methods, destructors and similar
  ******************/
 
-const Gdrive_Fileinfo* gdrive_finfo_get_by_id(const char* fileId)
+const Gdrive_Fileinfo* gdrive_finfo_get_by_id(Gdrive& gInfo, const char* fileId)
 {
     // Get the information from the cache, or put it in the cache if it isn't
     // already there.
     bool alreadyCached = false;
     
     Gdrive_Fileinfo* pFileinfo = 
-            gdrive_cache_get_item(fileId, true, &alreadyCached);
+            gdrive_cache_get_item(gInfo, fileId, true, &alreadyCached);
     if (pFileinfo == NULL)
     {
         // An error occurred, probably out of memory.
@@ -72,7 +75,7 @@ const Gdrive_Fileinfo* gdrive_finfo_get_by_id(const char* fileId)
     // else it wasn't cached, need to fill in the struct
     
     // Prepare the request
-    Gdrive_Transfer* pTransfer = gdrive_xfer_create();
+    Gdrive_Transfer* pTransfer = gdrive_xfer_create(gInfo);
     if (pTransfer == NULL)
     {
         // Memory error
@@ -83,14 +86,14 @@ const Gdrive_Fileinfo* gdrive_finfo_get_by_id(const char* fileId)
     // Add the URL.
     // String to hold the url.  Add 2 to the end to account for the '/' before
     // the file ID, as well as the terminating null.
-    char* baseUrl = malloc(strlen(GDRIVE_URL_FILES) + strlen(fileId) + 2);
+    char* baseUrl = (char*) malloc(Gdrive::GDRIVE_URL_FILES.length() + strlen(fileId) + 2);
     if (baseUrl == NULL)
     {
         // Memory error.
         gdrive_xfer_free(pTransfer);
         return NULL;
     }
-    strcpy(baseUrl, GDRIVE_URL_FILES);
+    strcpy(baseUrl, Gdrive::GDRIVE_URL_FILES.c_str());
     strcat(baseUrl, "/");
     strcat(baseUrl, fileId);
     if (gdrive_xfer_set_url(pTransfer, baseUrl) != 0)
@@ -103,7 +106,7 @@ const Gdrive_Fileinfo* gdrive_finfo_get_by_id(const char* fileId)
     free(baseUrl);
     
     // Add query parameters
-    if (gdrive_xfer_add_query(pTransfer, "fields", 
+    if (gdrive_xfer_add_query(gInfo, pTransfer, "fields", 
                               "title,id,mimeType,fileSize,createdDate,"
                               "modifiedDate,lastViewedByMeDate,parents(id),"
                               "userPermission") != 0)
@@ -114,7 +117,7 @@ const Gdrive_Fileinfo* gdrive_finfo_get_by_id(const char* fileId)
     }
     
     // Perform the request
-    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(pTransfer);
+    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
     gdrive_xfer_free(pTransfer);
     
     if (pBuf == NULL)
@@ -151,7 +154,7 @@ const Gdrive_Fileinfo* gdrive_finfo_get_by_id(const char* fileId)
     // If it's a folder, get the number of children.
     if (pFileinfo->type == GDRIVE_FILETYPE_FOLDER)
     {
-        Gdrive_Fileinfo_Array* pFileArray = gdrive_folder_list(fileId);
+        Gdrive_Fileinfo_Array* pFileArray = gInfo.gdrive_folder_list(fileId);
         if (pFileArray != NULL)
         {
             
@@ -168,7 +171,7 @@ void gdrive_finfo_cleanup(Gdrive_Fileinfo* pFileinfo)
     pFileinfo->id = NULL;
     free(pFileinfo->filename);
     pFileinfo->filename = NULL;
-    pFileinfo->type = 0;
+    pFileinfo->type = (Gdrive_Filetype) 0;
     pFileinfo->size = 0;
     memset(&(pFileinfo->creationTime), 0, sizeof(struct timespec));
     memset(&(pFileinfo->modificationTime), 0, sizeof(struct timespec));
@@ -338,11 +341,11 @@ void gdrive_finfo_read_json(Gdrive_Fileinfo* pFileinfo,
     pFileinfo->dirtyMetainfo = false;
 }
 
-unsigned int gdrive_finfo_real_perms(const Gdrive_Fileinfo* pFileinfo)
+unsigned int gdrive_finfo_real_perms(Gdrive& gInfo, const Gdrive_Fileinfo* pFileinfo)
 {
     // Get the overall system permissions, which are different for a folder
     // or for a regular file.
-    int systemPerm = gdrive_get_filesystem_perms(pFileinfo->type);
+    int systemPerm = gInfo.gdrive_get_filesystem_perms(pFileinfo->type);
     
     // Combine the system permissions with the actual file permissions.
     return systemPerm & pFileinfo->basePermission;

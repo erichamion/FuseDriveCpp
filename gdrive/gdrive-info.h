@@ -11,8 +11,13 @@
  * Created on April 14, 2015, 9:31 PM
  */
 
+#define IGNOREME
+#ifndef IGNOREME
+
 #ifndef GDRIVE_INFO_H
 #define	GDRIVE_INFO_H
+
+#ifndef GDRIVEINFO_HPP
 
 #ifdef	__cplusplus
 extern "C" {
@@ -38,10 +43,10 @@ extern "C" {
     
 
     
-#define GDRIVE_URL_FILES "https://www.googleapis.com/drive/v2/files"
-#define GDRIVE_URL_UPLOAD "https://www.googleapis.com/upload/drive/v2/files"
-#define GDRIVE_URL_ABOUT "https://www.googleapis.com/drive/v2/about"
-#define GDRIVE_URL_CHANGES "https://www.googleapis.com/drive/v2/changes"
+const char* GDRIVE_URL_FILES = "https://www.googleapis.com/drive/v2/files";
+const char*  GDRIVE_URL_UPLOAD = "https://www.googleapis.com/upload/drive/v2/files";
+const char*  GDRIVE_URL_ABOUT = "https://www.googleapis.com/drive/v2/about";
+const char*  GDRIVE_URL_CHANGES = "https://www.googleapis.com/drive/v2/changes";
     
 
 /******************
@@ -110,5 +115,8 @@ int gdrive_auth(void);
 }
 #endif
 
+#endif  /* GDRIVEINFO_HPP */
 #endif	/* GDRIVE_INTERNAL_H */
 
+#endif  /* IGNOREME */
+#undef IGNOREME

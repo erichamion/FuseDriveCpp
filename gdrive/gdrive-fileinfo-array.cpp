@@ -1,7 +1,9 @@
 
-#include "gdrive-fileinfo-array.h"
+#include "gdrive-fileinfo-array.hpp"
 
 #include <string.h>
+
+using namespace fusedrive;
 
 
 /*************************************************************************
@@ -29,13 +31,13 @@ typedef struct Gdrive_Fileinfo_Array
 
 Gdrive_Fileinfo_Array* gdrive_finfoarray_create(int maxSize)
 {
-    Gdrive_Fileinfo_Array* pArray = malloc(sizeof(Gdrive_Fileinfo_Array));
+    Gdrive_Fileinfo_Array* pArray = (Gdrive_Fileinfo_Array*) malloc(sizeof(Gdrive_Fileinfo_Array));
     if (pArray != NULL)
     {
         size_t byteSize = maxSize * sizeof(Gdrive_Fileinfo);
         pArray->nItems = 0;
         pArray->nMax = maxSize;
-        pArray->pArray = malloc(byteSize);
+        pArray->pArray = (Gdrive_Fileinfo*) malloc(byteSize);
         if (pArray->pArray == NULL)
         {
             // Memory error

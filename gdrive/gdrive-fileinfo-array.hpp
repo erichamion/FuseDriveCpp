@@ -1,4 +1,14 @@
 /* 
+ * File:   gdrive-fileinfo-array.hpp
+ * Author: me
+ *
+ * Created on October 16, 2015, 11:11 PM
+ */
+
+#ifndef GDRIVE_FILEINFO_ARRAY_HPP
+#define	GDRIVE_FILEINFO_ARRAY_HPP
+
+/* 
  * File:   gdrive-fileinfo-array.h
  * Author: me
  * 
@@ -10,17 +20,14 @@
  * Created on May 7, 2015, 9:04 PM
  */
 
-#ifndef GDRIVE_FILEINFO_ARRAY_H
-#define	GDRIVE_FILEINFO_ARRAY_H
-
-#ifdef	__cplusplus
-extern "C" {
-#endif
+//#ifdef	__cplusplus
+//extern "C" {
+//#endif
     
     
 typedef struct Gdrive_Fileinfo_Array Gdrive_Fileinfo_Array;
 
-#include "gdrive-fileinfo.h"
+#include "gdrive-fileinfo.hpp"
 #include "gdrive-json.h"
     
  
@@ -128,9 +135,12 @@ int gdrive_finfoarray_add_from_json(Gdrive_Fileinfo_Array* pArray,
                                         Gdrive_Json_Object* pObj);
 
 
-#ifdef	__cplusplus
-}
-#endif
+//#ifdef	__cplusplus
+//}
+//#endif
 
-#endif	/* GDRIVE_FILEINFO_ARRAY_H */
+
+
+
+#endif	/* GDRIVE_FILEINFO_ARRAY_HPP */
 

@@ -35,8 +35,11 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/FuseDrivePrivateData.o \
 	${OBJECTDIR}/Options.o \
 	${OBJECTDIR}/fuse-drive.o \
+	${OBJECTDIR}/gdrive/Gdrive.o \
+	${OBJECTDIR}/gdrive/GdriveInfo.o \
 	${OBJECTDIR}/gdrive/gdrive-cache-node.o \
 	${OBJECTDIR}/gdrive/gdrive-cache.o \
 	${OBJECTDIR}/gdrive/gdrive-download-buffer.o \
@@ -76,6 +79,11 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/fusedrive__: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/fusedrive__ ${OBJECTFILES} ${LDLIBSOPTIONS}
 
+${OBJECTDIR}/FuseDrivePrivateData.o: FuseDrivePrivateData.cpp 
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/FuseDrivePrivateData.o FuseDrivePrivateData.cpp
+
 ${OBJECTDIR}/Options.o: Options.cpp 
 	${MKDIR} -p ${OBJECTDIR}
 	${RM} "$@.d"
@@ -86,40 +94,50 @@ ${OBJECTDIR}/fuse-drive.o: fuse-drive.cpp
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/fuse-drive.o fuse-drive.cpp
 
-${OBJECTDIR}/gdrive/gdrive-cache-node.o: gdrive/gdrive-cache-node.c 
+${OBJECTDIR}/gdrive/Gdrive.o: gdrive/Gdrive.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-cache-node.o gdrive/gdrive-cache-node.c
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/Gdrive.o gdrive/Gdrive.cpp
 
-${OBJECTDIR}/gdrive/gdrive-cache.o: gdrive/gdrive-cache.c 
+${OBJECTDIR}/gdrive/GdriveInfo.o: gdrive/GdriveInfo.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-cache.o gdrive/gdrive-cache.c
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/GdriveInfo.o gdrive/GdriveInfo.cpp
 
-${OBJECTDIR}/gdrive/gdrive-download-buffer.o: gdrive/gdrive-download-buffer.c 
+${OBJECTDIR}/gdrive/gdrive-cache-node.o: gdrive/gdrive-cache-node.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-download-buffer.o gdrive/gdrive-download-buffer.c
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-cache-node.o gdrive/gdrive-cache-node.cpp
 
-${OBJECTDIR}/gdrive/gdrive-file-contents.o: gdrive/gdrive-file-contents.c 
+${OBJECTDIR}/gdrive/gdrive-cache.o: gdrive/gdrive-cache.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-file-contents.o gdrive/gdrive-file-contents.c
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-cache.o gdrive/gdrive-cache.cpp
+
+${OBJECTDIR}/gdrive/gdrive-download-buffer.o: gdrive/gdrive-download-buffer.cpp 
+	${MKDIR} -p ${OBJECTDIR}/gdrive
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-download-buffer.o gdrive/gdrive-download-buffer.cpp
+
+${OBJECTDIR}/gdrive/gdrive-file-contents.o: gdrive/gdrive-file-contents.cpp 
+	${MKDIR} -p ${OBJECTDIR}/gdrive
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-file-contents.o gdrive/gdrive-file-contents.cpp
 
 ${OBJECTDIR}/gdrive/gdrive-fileid-cache-node.o: gdrive/gdrive-fileid-cache-node.c 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-fileid-cache-node.o gdrive/gdrive-fileid-cache-node.c
 
-${OBJECTDIR}/gdrive/gdrive-fileinfo-array.o: gdrive/gdrive-fileinfo-array.c 
+${OBJECTDIR}/gdrive/gdrive-fileinfo-array.o: gdrive/gdrive-fileinfo-array.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-fileinfo-array.o gdrive/gdrive-fileinfo-array.c
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-fileinfo-array.o gdrive/gdrive-fileinfo-array.cpp
 
-${OBJECTDIR}/gdrive/gdrive-fileinfo.o: gdrive/gdrive-fileinfo.c 
+${OBJECTDIR}/gdrive/gdrive-fileinfo.o: gdrive/gdrive-fileinfo.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-fileinfo.o gdrive/gdrive-fileinfo.c
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-fileinfo.o gdrive/gdrive-fileinfo.cpp
 
 ${OBJECTDIR}/gdrive/gdrive-info.o: gdrive/gdrive-info.c 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
@@ -131,20 +149,20 @@ ${OBJECTDIR}/gdrive/gdrive-json.o: gdrive/gdrive-json.c
 	${RM} "$@.d"
 	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-json.o gdrive/gdrive-json.c
 
-${OBJECTDIR}/gdrive/gdrive-query.o: gdrive/gdrive-query.c 
+${OBJECTDIR}/gdrive/gdrive-query.o: gdrive/gdrive-query.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-query.o gdrive/gdrive-query.c
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-query.o gdrive/gdrive-query.cpp
 
-${OBJECTDIR}/gdrive/gdrive-sysinfo.o: gdrive/gdrive-sysinfo.c 
+${OBJECTDIR}/gdrive/gdrive-sysinfo.o: gdrive/gdrive-sysinfo.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-sysinfo.o gdrive/gdrive-sysinfo.c
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-sysinfo.o gdrive/gdrive-sysinfo.cpp
 
-${OBJECTDIR}/gdrive/gdrive-transfer.o: gdrive/gdrive-transfer.c 
+${OBJECTDIR}/gdrive/gdrive-transfer.o: gdrive/gdrive-transfer.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-transfer.o gdrive/gdrive-transfer.c
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-transfer.o gdrive/gdrive-transfer.cpp
 
 ${OBJECTDIR}/gdrive/gdrive-util.o: gdrive/gdrive-util.c 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
