@@ -24,6 +24,7 @@
         <itemPath>gdrive/gdrive-transfer.hpp</itemPath>
         <itemPath>gdrive/gdrive-util.h</itemPath>
       </logicalFolder>
+      <itemPath>gdrive/CacheNode.hpp</itemPath>
       <itemPath>FuseDrivePrivateData.hpp</itemPath>
       <itemPath>Options.hpp</itemPath>
       <itemPath>fuse-drive.hpp</itemPath>
@@ -52,6 +53,7 @@
         <itemPath>gdrive/gdrive-transfer.cpp</itemPath>
         <itemPath>gdrive/gdrive-util.c</itemPath>
       </logicalFolder>
+      <itemPath>gdrive/CacheNode.cpp</itemPath>
       <itemPath>FuseDrivePrivateData.cpp</itemPath>
       <itemPath>Options.cpp</itemPath>
       <itemPath>fuse-drive.cpp</itemPath>
@@ -124,6 +126,10 @@
       <item path="gdrive/Cache.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/Cache.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="gdrive/CacheNode.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/CacheNode.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/FileidCacheNode.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -226,6 +232,10 @@
       <item path="gdrive/Cache.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/Cache.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="gdrive/CacheNode.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/CacheNode.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/FileidCacheNode.cpp" ex="false" tool="1" flavor2="0">
       </item>

@@ -39,6 +39,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/Options.o \
 	${OBJECTDIR}/fuse-drive.o \
 	${OBJECTDIR}/gdrive/Cache.o \
+	${OBJECTDIR}/gdrive/CacheNode.o \
 	${OBJECTDIR}/gdrive/FileidCacheNode.o \
 	${OBJECTDIR}/gdrive/Fileinfo.o \
 	${OBJECTDIR}/gdrive/Gdrive.o \
@@ -98,6 +99,11 @@ ${OBJECTDIR}/gdrive/Cache.o: gdrive/Cache.cpp
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/Cache.o gdrive/Cache.cpp
+
+${OBJECTDIR}/gdrive/CacheNode.o: gdrive/CacheNode.cpp 
+	${MKDIR} -p ${OBJECTDIR}/gdrive
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/CacheNode.o gdrive/CacheNode.cpp
 
 ${OBJECTDIR}/gdrive/FileidCacheNode.o: gdrive/FileidCacheNode.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
