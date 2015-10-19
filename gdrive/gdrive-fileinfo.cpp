@@ -1,4 +1,7 @@
 
+#define IGNOREME
+#ifndef IGNOREME
+
 
 #include "gdrive-fileinfo.hpp"
 
@@ -514,3 +517,6 @@ static int gdrive_finfo_set_time(Gdrive_Fileinfo* pFileinfo,
     *pDest = *pTime;
     return 0;
 }
+
+#endif  /* IGNOREME */
+#undef IGNOREME

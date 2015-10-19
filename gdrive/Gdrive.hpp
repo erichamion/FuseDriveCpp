@@ -26,10 +26,9 @@ namespace fusedrive
 }
 
 //#include "GdriveInfo.hpp"
-#include "gdrive-fileinfo.hpp"
 #include "gdrive-fileinfo-array.hpp"
 #include "gdrive-sysinfo.hpp"
-#include "gdrive-file.hpp"
+//#include "gdrive-file.hpp"
 
 #include <string>
 

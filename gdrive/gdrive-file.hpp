@@ -24,7 +24,7 @@
 //extern "C" {
 //#endif
     
-#include "gdrive-fileinfo.hpp"
+#include "Fileinfo.hpp"
     
 #include <stdbool.h>
     
@@ -207,7 +207,7 @@ int gdrive_file_set_mtime(fusedrive::Gdrive& gInfo, Gdrive_File* fh, const struc
  *      The pointer to a Gdrive_Fileinfo struct holding information on the file.
  *      The pointed-to location should not be freed by the caller.
  */
-Gdrive_Fileinfo* gdrive_file_get_info(Gdrive_File* fh);
+fusedrive::Fileinfo* gdrive_file_get_info(Gdrive_File* fh);
 
 /*
  * gdrive_file_get_perms(): Retrieve the effective file permissions of an open

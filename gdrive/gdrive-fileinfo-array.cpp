@@ -2,7 +2,10 @@
 #include "gdrive-fileinfo-array.hpp"
 
 #include <string.h>
+//#include <exception>
 
+
+using namespace std;
 using namespace fusedrive;
 
 
@@ -15,7 +18,7 @@ typedef struct Gdrive_Fileinfo_Array
 {
     int nItems;
     int nMax;
-    Gdrive_Fileinfo* pArray;
+    Fileinfo* pArray;
 } Gdrive_Fileinfo_Array;
 
 // No private functions
@@ -29,22 +32,29 @@ typedef struct Gdrive_Fileinfo_Array
  * Constructors, factory methods, destructors and similar
  ******************/
 
-Gdrive_Fileinfo_Array* gdrive_finfoarray_create(int maxSize)
+Gdrive_Fileinfo_Array* gdrive_finfoarray_create(Gdrive& gInfo, int maxSize)
 {
     Gdrive_Fileinfo_Array* pArray = (Gdrive_Fileinfo_Array*) malloc(sizeof(Gdrive_Fileinfo_Array));
     if (pArray != NULL)
     {
-        size_t byteSize = maxSize * sizeof(Gdrive_Fileinfo);
+        size_t byteSize = maxSize * sizeof(Fileinfo);
         pArray->nItems = 0;
         pArray->nMax = maxSize;
-        pArray->pArray = (Gdrive_Fileinfo*) malloc(byteSize);
-        if (pArray->pArray == NULL)
+        pArray->pArray = (Fileinfo*) malloc(byteSize);
+        try
+        {
+            for (int i = 0; i < pArray->nMax; i++)
+            {
+                new(pArray->pArray + i) Fileinfo(gInfo);
+            }
+        }
+        catch (const bad_alloc& e)
         {
             // Memory error
             free(pArray);
             return NULL;
         }
-        memset(pArray->pArray, 0, byteSize);
+        //memset(pArray->pArray, 0, byteSize);
     }
     // else memory error, do nothing and return NULL (the value of pArray).
     
@@ -62,7 +72,7 @@ void gdrive_finfoarray_free(Gdrive_Fileinfo_Array* pArray)
     
     for (int i = 0; i < pArray->nItems; i++)
     {
-        gdrive_finfo_cleanup(pArray->pArray + i);
+        (pArray->pArray + i)->gdrive_finfo_cleanup();
     }
     
     if (pArray->nItems > 0)
@@ -82,23 +92,23 @@ void gdrive_finfoarray_free(Gdrive_Fileinfo_Array* pArray)
  * Getter and setter functions
  ******************/
 
-const Gdrive_Fileinfo* 
+const Fileinfo* 
 gdrive_finfoarray_get_first(Gdrive_Fileinfo_Array* pArray)
 {
     return (pArray->nItems > 0) ? pArray->pArray : NULL;
 }
 
-const Gdrive_Fileinfo* 
+const Fileinfo* 
 gdrive_finfoarray_get_next(Gdrive_Fileinfo_Array* pArray, 
-                           const Gdrive_Fileinfo* pPrev)
+                           const Fileinfo* pPrev)
 {
     if (pArray == NULL || pPrev == NULL)
     {
         // Invalid arguments
         return NULL;
     }
-    const Gdrive_Fileinfo* pEnd = pArray->pArray + pArray->nMax;
-    const Gdrive_Fileinfo* pNext = pPrev + 1;
+    const Fileinfo* pEnd = pArray->pArray + pArray->nMax;
+    const Fileinfo* pNext = pPrev + 1;
     return (pNext < pEnd) ? pNext : NULL;
 }
 
@@ -126,7 +136,7 @@ int gdrive_finfoarray_add_from_json(Gdrive_Fileinfo_Array* pArray,
     }
     
     // Read the info in, and increment nItems to show the new count.
-    gdrive_finfo_read_json(pArray->pArray + pArray->nItems++, pObj);
+    (pArray->pArray + pArray->nItems++)->gdrive_finfo_read_json(pObj);
     
     return 0;
     

@@ -29,6 +29,10 @@
 #include <sys/types.h>
 
 typedef struct Gdrive_Sysinfo Gdrive_Sysinfo; 
+namespace fusedrive
+{
+    class Gdrive;
+}
 
 
 /*************************************************************************

@@ -303,7 +303,7 @@ int gdrive_cache_update(Gdrive& gInfo)
     return returnVal;
 }
 
-Gdrive_Fileinfo* gdrive_cache_get_item(Gdrive& gInfo, const char* fileId, 
+Fileinfo* gdrive_cache_get_item(Gdrive& gInfo, const char* fileId, 
                                        bool addIfDoesntExist, 
                                        bool* pAlreadyExists)
 {

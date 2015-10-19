@@ -76,50 +76,50 @@ void gdrive_path_free(Gdrive_Path* gpath);
    
 
 
-/*
- * gdrive_divide_round_up():    Divide a dividend by a divisor. If there is a
- *                              remainder, round UP to the next integer.
- * Parameters:
- *      dividend (long):    
- *              The dividend.
- *      divisor (long):     
- *              The divisor.
- * Return value (long):
- *      The smallest integer greater than or equal to the result of 
- *      dividend / divisor.
- */
-long gdrive_divide_round_up(long dividend, long divisor);
-
-
-/*
- * gdrive_power_fopen():    Opens a file in a way similar to the fopen() system
- *                          call, but creates the parent directory (and the 
- *                          grandparent directory, and so on) if it doesn't
- *                          exist.
- * Parameters:
- *      path (const char*): 
- *              The path of the file to open.
- *      mode (const char*): 
- *              The mode parameter of the fopen() system call.
- * Return value:
- *      A valid FILE* handle on success, or NULL on failure.
- */
-FILE* gdrive_power_fopen(const char* path, const char* mode);
-
-/*
- * gdrive_recursive_mkdir():    Creates a directory in a way similar to the 
- *                              mkdir() system call, but creates the parent 
- *                              directory (and the grandparent directory, and so
- *                              on) if it doesn't exist.
- * Parameters:
- *      path (const char*): 
- *              The path of the directory to create.
- * Return value:
- *      Return value (int):
- *      0 on success. On error, returns a negative value whose absolute value
- *      is defined in <errors.h>
- */
-int gdrive_recursive_mkdir(const char* path);
+///*
+// * gdrive_divide_round_up():    Divide a dividend by a divisor. If there is a
+// *                              remainder, round UP to the next integer.
+// * Parameters:
+// *      dividend (long):    
+// *              The dividend.
+// *      divisor (long):     
+// *              The divisor.
+// * Return value (long):
+// *      The smallest integer greater than or equal to the result of 
+// *      dividend / divisor.
+// */
+//long gdrive_divide_round_up(long dividend, long divisor);
+//
+//
+///*
+// * gdrive_power_fopen():    Opens a file in a way similar to the fopen() system
+// *                          call, but creates the parent directory (and the 
+// *                          grandparent directory, and so on) if it doesn't
+// *                          exist.
+// * Parameters:
+// *      path (const char*): 
+// *              The path of the file to open.
+// *      mode (const char*): 
+// *              The mode parameter of the fopen() system call.
+// * Return value:
+// *      A valid FILE* handle on success, or NULL on failure.
+// */
+//FILE* gdrive_power_fopen(const char* path, const char* mode);
+//
+///*
+// * gdrive_recursive_mkdir():    Creates a directory in a way similar to the 
+// *                              mkdir() system call, but creates the parent 
+// *                              directory (and the grandparent directory, and so
+// *                              on) if it doesn't exist.
+// * Parameters:
+// *      path (const char*): 
+// *              The path of the directory to create.
+// * Return value:
+// *      Return value (int):
+// *      0 on success. On error, returns a negative value whose absolute value
+// *      is defined in <errors.h>
+// */
+//int gdrive_recursive_mkdir(const char* path);
 
 
 #ifdef	__cplusplus

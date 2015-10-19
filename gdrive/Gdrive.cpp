@@ -5,6 +5,7 @@
 #include "Gdrive.hpp"
 #include "gdrive-cache.hpp"
 #include "gdrive-query.hpp"
+#include "Util.hpp"
 
 
 #include <string.h>
@@ -140,7 +141,7 @@ namespace fusedrive
                 {
                     // Create an array of Gdrive_Fileinfo structs large enough to
                     // hold all the items.
-                    pArray = gdrive_finfoarray_create(fileCount);
+                    pArray = gdrive_finfoarray_create(*this, fileCount);
                     if (pArray != NULL)
                     {
                         // Extract the file info from each member of the array.
@@ -397,7 +398,7 @@ namespace fusedrive
             // before the cache expires. (For example, if there was only one parent
             // before, and the user deletes one of the links, we don't want to
             // delete the entire file because of a bad parent count).
-            Gdrive_Fileinfo* pFileinfo = gdrive_cache_get_item(*this, fileId.c_str(), false, NULL);
+            Fileinfo* pFileinfo = gdrive_cache_get_item(*this, fileId.c_str(), false, NULL);
             if (pFileinfo)
             {
                 pFileinfo->nParents++;
@@ -686,7 +687,7 @@ namespace fusedrive
 
         // Set chunk size
         minChunkSize = (minFileChunkSize > 0) ? 
-            gdrive_divide_round_up(minFileChunkSize, Gdrive::GDRIVE_BASE_CHUNK_SIZE) * 
+            Util::gdrive_divide_round_up(minFileChunkSize, Gdrive::GDRIVE_BASE_CHUNK_SIZE) * 
                 Gdrive::GDRIVE_BASE_CHUNK_SIZE :
             Gdrive::GDRIVE_BASE_CHUNK_SIZE;
 
@@ -1105,7 +1106,7 @@ namespace fusedrive
         if (pTransfer == NULL)
         {
             // Memory error
-            return NULL;
+            return string("");
         }
         gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
         if (
@@ -1116,7 +1117,7 @@ namespace fusedrive
         {
             // Error
             gdrive_xfer_free(pTransfer);
-            return NULL;
+            return string("");
         }
 
         Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
@@ -1126,7 +1127,7 @@ namespace fusedrive
         {
             // Download error
             gdrive_dlbuf_free(pBuf);
-            return NULL;
+            return string("");
         }
 
 
@@ -1140,7 +1141,7 @@ namespace fusedrive
         if (pObj == NULL)
         {
             // Couldn't convert to JSON object.
-            return NULL;
+            return string("");
         }
 
         string childId;
@@ -1165,7 +1166,7 @@ namespace fusedrive
 
         // Create a JSON object, fill it with the necessary details, 
         // convert to a string, and write to the file.
-        FILE* outFile = gdrive_power_fopen(authFilename.c_str(), "w");
+        FILE* outFile = Util::gdrive_power_fopen(authFilename, "w");
         if (outFile == NULL)
         {
             // Couldn't open file for writing.

@@ -34,7 +34,7 @@
 //#endif
     
 #include "gdrive-file-contents.hpp"
-#include "gdrive-fileinfo.hpp"
+#include "Fileinfo.hpp"
 
 
     
@@ -157,7 +157,7 @@ enum fusedrive::Gdrive_Filetype gdrive_cnode_get_filetype(Gdrive_Cache_Node* pNo
  * Return value (Gdrive_Fileinfo*):
  *      A pointer to the node's Gdrive_Fileinfo struct.
  */
-Gdrive_Fileinfo* gdrive_cnode_get_fileinfo(Gdrive_Cache_Node* pNode);
+fusedrive::Fileinfo* gdrive_cnode_get_fileinfo(Gdrive_Cache_Node* pNode);
 
 
 /*************************************************************************

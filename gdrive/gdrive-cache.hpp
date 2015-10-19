@@ -154,7 +154,7 @@ int gdrive_cache_update(fusedrive::Gdrive& gInfo);
  *      Any modifications made to this struct will be reflected in the cache.
  *      The pointed-to memory should NOT be freed.
  */
-Gdrive_Fileinfo* gdrive_cache_get_item(fusedrive::Gdrive& gInfo, const char* fileId, 
+fusedrive::Fileinfo* gdrive_cache_get_item(fusedrive::Gdrive& gInfo, const char* fileId, 
                                        bool addIfDoesntExist, 
                                        bool* pAlreadyExists);
 

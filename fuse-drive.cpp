@@ -30,6 +30,7 @@
 #include "gdrive/Gdrive.hpp"
 #include "Options.hpp"
 #include "FuseDrivePrivateData.hpp"
+#include "gdrive/gdrive-file.hpp"
 
 using namespace std;
 using namespace fusedrive;
@@ -52,7 +53,7 @@ using namespace fusedrive;
 //{
 
     static int fudr_stat_from_fileinfo(Gdrive& gInfo, 
-            const Gdrive_Fileinfo* pFileinfo, bool isRoot, struct stat* stbuf);
+            const Fileinfo* pFileinfo, bool isRoot, struct stat* stbuf);
 
     static int fudr_rm_file_or_dir_by_id(Gdrive& gInfo, const char* fileId, const char* parentId);
 
@@ -176,7 +177,7 @@ using namespace fusedrive;
 
 
     static int fudr_stat_from_fileinfo(Gdrive& gInfo, 
-            const Gdrive_Fileinfo* pFileinfo, bool isRoot, struct stat* stbuf)
+            const Fileinfo* pFileinfo, bool isRoot, struct stat* stbuf)
     {
         switch (pFileinfo->type)
         {
@@ -198,7 +199,7 @@ using namespace fusedrive;
                 }
         }
 
-        unsigned int perms = gdrive_finfo_real_perms(gInfo, pFileinfo);
+        unsigned int perms = pFileinfo->gdrive_finfo_real_perms();
         unsigned int maxPerms = 
             fudr_get_max_perms(pFileinfo->type == GDRIVE_FILETYPE_FOLDER);
         // Owner permissions.
@@ -228,12 +229,17 @@ using namespace fusedrive;
         assert(fileId != NULL);
 
         // Find the number of parents, which is the number of "hard" links.
-        const Gdrive_Fileinfo* pFileinfo = gdrive_finfo_get_by_id(gInfo, fileId);
-        if (pFileinfo == NULL)
+        const Fileinfo* pFileinfo;
+        try
+        {
+            pFileinfo = &(Fileinfo::gdrive_finfo_get_by_id(gInfo, fileId));
+        }
+        catch (const exception& e)
         {
             // Error
             return -ENOENT;
         }
+        
         if (pFileinfo->nParents > 1)
         {
             // Multiple "hard" links, just remove the parent
@@ -312,9 +318,12 @@ using namespace fusedrive;
             // File doesn't exist
             return -ENOENT;
         }
-        const Gdrive_Fileinfo* pFileinfo = gdrive_finfo_get_by_id(gInfo, fileId);
-        
-        if (!pFileinfo)
+        const Fileinfo* pFileinfo;
+        try
+        {
+            pFileinfo = &(Fileinfo::gdrive_finfo_get_by_id(gInfo, fileId));
+        }
+        catch (const exception& e)
         {
             // Unknown error
             return -EIO;
@@ -326,7 +335,7 @@ using namespace fusedrive;
             return 0;
         }
 
-        unsigned int filePerms = gdrive_finfo_real_perms(gInfo, pFileinfo);
+        unsigned int filePerms = pFileinfo->gdrive_finfo_real_perms();
         unsigned int maxPerms = 
             fudr_get_max_perms(pFileinfo->type == GDRIVE_FILETYPE_FOLDER);
 
@@ -449,7 +458,7 @@ using namespace fusedrive;
                              struct fuse_file_info* fi)
     {
         Gdrive_File* fh = (Gdrive_File*) fi->fh;
-        const Gdrive_Fileinfo* pFileinfo = (fi->fh == (uint64_t) NULL) ? 
+        const Fileinfo* pFileinfo = (fi->fh == (uint64_t) NULL) ? 
             NULL : gdrive_file_get_info(fh);
 
         if (pFileinfo == NULL)
@@ -553,8 +562,12 @@ using namespace fusedrive;
             return -ENOENT;
         }
 
-        const Gdrive_Fileinfo* pFileinfo = gdrive_finfo_get_by_id(gInfo, fileId);
-        if (pFileinfo == NULL)
+        const Fileinfo* pFileinfo;
+        try
+        {
+            pFileinfo = &(Fileinfo::gdrive_finfo_get_by_id(gInfo, fileId));
+        }
+        catch (const exception& e)
         {
             // An error occurred.
             return -ENOENT;
@@ -673,13 +686,11 @@ using namespace fusedrive;
         Gdrive& gInfo = pPrivateData->getGdrive();
 
         // Determine whether the folder already exists, 
-        char* dummyFileId = strdup(gInfo.gdrive_filepath_to_id(path).c_str());
-        if (!dummyFileId || !dummyFileId[0])
+        string dummyFileId = gInfo.gdrive_filepath_to_id(path);
+        if (!dummyFileId.empty())
         {
-            free(dummyFileId);
             return -EEXIST;
         }
-        free(dummyFileId);
 
         // Need write access to the parent directory
         Gdrive_Path* pGpath = gdrive_path_create(path);
@@ -697,8 +708,8 @@ using namespace fusedrive;
 
         // Create the folder
         int error = 0;
-        dummyFileId = gdrive_file_new(gInfo, path, true, &error);
-        free(dummyFileId);
+        char* dummyNewId = gdrive_file_new(gInfo, path, true, &error);
+        free(dummyNewId);
 
         // TODO: If fudr_chmod is ever implemented, change the folder permissions 
         // using the (currently unused) mode parameter we were given.
@@ -843,7 +854,7 @@ using namespace fusedrive;
 
         filler(buf, ".", NULL, 0);
         filler(buf, "..", NULL, 0);
-        const Gdrive_Fileinfo* pCurrentFile;
+        const Fileinfo* pCurrentFile;
         for (pCurrentFile = gdrive_finfoarray_get_first(pFileArray); 
                 pCurrentFile != NULL; 
                 pCurrentFile = gdrive_finfoarray_get_next(pFileArray, pCurrentFile)
@@ -860,7 +871,7 @@ using namespace fusedrive;
                     st.st_mode = S_IFDIR;
                     break;
             }
-            filler(buf, pCurrentFile->filename, &st, 0);
+            filler(buf, pCurrentFile->filename.c_str(), &st, 0);
         }
 
         gdrive_finfoarray_free(pFileArray);
@@ -939,7 +950,7 @@ using namespace fusedrive;
         // toFileId may be NULL.
 
         // Special handling if the destination exists
-        if (toFileId)
+        if (toFileId && toFileId[0])
         {
             if (!strcmp(toFileId, rootId))
             {
@@ -955,16 +966,36 @@ using namespace fusedrive;
             }
 
             // If the source is a directory, destination must be an empty directory
-            const Gdrive_Fileinfo* pFromInfo = gdrive_finfo_get_by_id(gInfo, fromFileId);
-            if (pFromInfo && pFromInfo->type == GDRIVE_FILETYPE_FOLDER)
+            const Fileinfo* pFromInfo;
+            try
             {
-                const Gdrive_Fileinfo* pToInfo = gdrive_finfo_get_by_id(gInfo, toFileId);
-                if (pToInfo && pToInfo->type != GDRIVE_FILETYPE_FOLDER)
+                pFromInfo = &(Fileinfo::gdrive_finfo_get_by_id(gInfo, fromFileId));
+            }
+            catch (const exception& e)
+            {
+                // Unknown error
+                return -EIO;
+            }
+            if (pFromInfo->type == GDRIVE_FILETYPE_FOLDER)
+            {
+                bool toExists = true;
+                const Fileinfo* pToInfo = NULL;
+                try
+                {
+                    const Fileinfo& toInfo = 
+                        Fileinfo::gdrive_finfo_get_by_id(gInfo, toFileId);
+                    pToInfo = &toInfo;
+                }
+                catch (...)
+                {
+                    toExists = false;
+                }
+                if (toExists && pToInfo->type != GDRIVE_FILETYPE_FOLDER)
                 {
                     // Destination is not a directory
                     return -ENOTDIR;
                 }
-                if (pToInfo && pToInfo->nChildren > 0)
+                if (toExists && pToInfo->nChildren > 0)
                 {
                     // Destination is not empty
                     return -ENOTEMPTY;
@@ -1059,7 +1090,7 @@ using namespace fusedrive;
         }
 
         // If successful, and if to already existed, delete it
-        if (toFileId && !returnVal)
+        if (toFileId && toFileId[0] && !returnVal)
         {
             returnVal = fudr_rm_file_or_dir_by_id(gInfo, toFileId, toParentId);
         }
@@ -1091,8 +1122,12 @@ using namespace fusedrive;
         }
 
         // Make sure path refers to an empty directory
-        const Gdrive_Fileinfo* pFileinfo = gdrive_finfo_get_by_id(gInfo, fileId);
-        if (!pFileinfo)
+        const Fileinfo* pFileinfo;
+        try
+        {
+            pFileinfo = &(Fileinfo::gdrive_finfo_get_by_id(gInfo, fileId));
+        }
+        catch (const exception& e)
         {
             // Couldn't retrieve file info
             return -ENOENT;
@@ -1122,8 +1157,9 @@ using namespace fusedrive;
             // Memory error
             return -ENOMEM;
         }
-        const char* parentId = 
-            gInfo.gdrive_filepath_to_id(gdrive_path_get_dirname(pGpath)).c_str();
+        string parentIdStr = 
+                gInfo.gdrive_filepath_to_id(gdrive_path_get_dirname(pGpath));
+        const char* parentId = parentIdStr.c_str();
         gdrive_path_free(pGpath);
 
         int returnVal = fudr_rm_file_or_dir_by_id(gInfo, fileId, parentId);

@@ -38,8 +38,10 @@ OBJECTFILES= \
 	${OBJECTDIR}/FuseDrivePrivateData.o \
 	${OBJECTDIR}/Options.o \
 	${OBJECTDIR}/fuse-drive.o \
+	${OBJECTDIR}/gdrive/Fileinfo.o \
 	${OBJECTDIR}/gdrive/Gdrive.o \
 	${OBJECTDIR}/gdrive/GdriveInfo.o \
+	${OBJECTDIR}/gdrive/Util.o \
 	${OBJECTDIR}/gdrive/gdrive-cache-node.o \
 	${OBJECTDIR}/gdrive/gdrive-cache.o \
 	${OBJECTDIR}/gdrive/gdrive-download-buffer.o \
@@ -47,7 +49,6 @@ OBJECTFILES= \
 	${OBJECTDIR}/gdrive/gdrive-fileid-cache-node.o \
 	${OBJECTDIR}/gdrive/gdrive-fileinfo-array.o \
 	${OBJECTDIR}/gdrive/gdrive-fileinfo.o \
-	${OBJECTDIR}/gdrive/gdrive-info.o \
 	${OBJECTDIR}/gdrive/gdrive-json.o \
 	${OBJECTDIR}/gdrive/gdrive-query.o \
 	${OBJECTDIR}/gdrive/gdrive-sysinfo.o \
@@ -94,6 +95,11 @@ ${OBJECTDIR}/fuse-drive.o: fuse-drive.cpp
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/fuse-drive.o fuse-drive.cpp
 
+${OBJECTDIR}/gdrive/Fileinfo.o: gdrive/Fileinfo.cpp 
+	${MKDIR} -p ${OBJECTDIR}/gdrive
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/Fileinfo.o gdrive/Fileinfo.cpp
+
 ${OBJECTDIR}/gdrive/Gdrive.o: gdrive/Gdrive.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
@@ -103,6 +109,11 @@ ${OBJECTDIR}/gdrive/GdriveInfo.o: gdrive/GdriveInfo.cpp
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/GdriveInfo.o gdrive/GdriveInfo.cpp
+
+${OBJECTDIR}/gdrive/Util.o: gdrive/Util.cpp 
+	${MKDIR} -p ${OBJECTDIR}/gdrive
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/Util.o gdrive/Util.cpp
 
 ${OBJECTDIR}/gdrive/gdrive-cache-node.o: gdrive/gdrive-cache-node.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
@@ -138,11 +149,6 @@ ${OBJECTDIR}/gdrive/gdrive-fileinfo.o: gdrive/gdrive-fileinfo.cpp
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-fileinfo.o gdrive/gdrive-fileinfo.cpp
-
-${OBJECTDIR}/gdrive/gdrive-info.o: gdrive/gdrive-info.c 
-	${MKDIR} -p ${OBJECTDIR}/gdrive
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-info.o gdrive/gdrive-info.c
 
 ${OBJECTDIR}/gdrive/gdrive-json.o: gdrive/gdrive-json.c 
 	${MKDIR} -p ${OBJECTDIR}/gdrive

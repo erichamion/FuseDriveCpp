@@ -26,9 +26,15 @@
     
     
 typedef struct Gdrive_Fileinfo_Array Gdrive_Fileinfo_Array;
+namespace fusedrive
+{
+    class Fileinfo;
+    class Gdrive;
+}
 
-#include "gdrive-fileinfo.hpp"
+#include "Fileinfo.hpp"
 #include "gdrive-json.h"
+#include "Gdrive.hpp"
     
  
 
@@ -48,7 +54,7 @@ typedef struct Gdrive_Fileinfo_Array Gdrive_Fileinfo_Array;
  *      Gdrive_Fileinfo structs. The caller is responsible for passing this
  *      return value to gdrive_finfoarray_free() once it is no longer needed.
  */
-Gdrive_Fileinfo_Array* gdrive_finfoarray_create(int maxSize);
+Gdrive_Fileinfo_Array* gdrive_finfoarray_create(fusedrive::Gdrive& gInfo, int maxSize);
 
 /*
  * gdrive_finfoarray_free():    Safely frees the memory associated with a
@@ -78,7 +84,7 @@ void gdrive_finfoarray_free(Gdrive_Fileinfo_Array* pArray);
  *      no items. NOTE: The memory pointed to by the return value will be freed
  *      when gdrive_finfoarray_free() is called.
  */
-const Gdrive_Fileinfo* 
+const fusedrive::Fileinfo* 
 gdrive_finfoarray_get_first(Gdrive_Fileinfo_Array* pArray);
 
 /*
@@ -96,9 +102,9 @@ gdrive_finfoarray_get_first(Gdrive_Fileinfo_Array* pArray);
  *      no items remain. NOTE: The memory pointed to by the return value will be
  *      freed when gdrive_finfoarray_free() is called.
  */
-const Gdrive_Fileinfo* 
+const fusedrive::Fileinfo* 
 gdrive_finfoarray_get_next(Gdrive_Fileinfo_Array* pArray, 
-                               const Gdrive_Fileinfo* pPrev);
+                               const fusedrive::Fileinfo* pPrev);
 
 /*
  * gdrive_finfoarray_get_count():   Retrieves the number of items currently

@@ -5,6 +5,9 @@
  * Created on October 16, 2015, 10:58 PM
  */
 
+foo bar;
+
+#define GDRIVE_FILEINFO_HPP
 #ifndef GDRIVE_FILEINFO_HPP
 #define	GDRIVE_FILEINFO_HPP
 
@@ -36,7 +39,7 @@ namespace fusedrive
 #include "gdrive-json.h"
 
 
-#define GDRIVE_TIMESTRING_LENGTH 31
+//#define GDRIVE_TIMESTRING_LENGTH 31
 
     
 typedef struct Gdrive_Fileinfo
