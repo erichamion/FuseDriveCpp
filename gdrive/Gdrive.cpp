@@ -3,9 +3,10 @@
 
 
 #include "Gdrive.hpp"
-#include "gdrive-cache.hpp"
+#include "Cache.hpp"
 #include "gdrive-query.hpp"
 #include "Util.hpp"
+#include "Json.hpp"
 
 
 #include <string.h>
@@ -42,7 +43,8 @@ namespace fusedrive
             enum Gdrive_Interaction interactionMode, 
             size_t minFileChunkSize, int maxChunksPerFile, bool initCurl) 
     : maxChunks(maxChunksPerFile), authFilename(authFilename), 
-            needsCurlCleanup(initCurl), curlHandle(NULL)
+            needsCurlCleanup(initCurl), curlHandle(NULL), 
+            cache(*this, cacheTTL)
     {
         if (initCurl)
         {
@@ -132,11 +134,11 @@ namespace fusedrive
         {
             // Transfer was successful.  Convert result to a JSON object and extract
             // the file meta-info.
-            Gdrive_Json_Object* pObj = 
-                    gdrive_json_from_string(gdrive_dlbuf_get_data(pBuf));
-            if (pObj != NULL)
+            Json jsonObj(gdrive_dlbuf_get_data(pBuf));
+            if (jsonObj.gdrive_json_is_valid())
             {
-                fileCount = gdrive_json_array_length(pObj, "items");
+                bool dummy;
+                fileCount = jsonObj.gdrive_json_array_length("items", dummy);
                 if (fileCount > 0)
                 {
                     // Create an array of Gdrive_Fileinfo structs large enough to
@@ -147,14 +149,12 @@ namespace fusedrive
                         // Extract the file info from each member of the array.
                         for (int index = 0; index < fileCount; index++)
                         {
-                            Gdrive_Json_Object* pFile = gdrive_json_array_get(
-                                    pObj, 
-                                    "items", 
-                                    index
-                                    );
-                            if (pFile != NULL)
+                            Json jsonFile = 
+                                    jsonObj.gdrive_json_array_get("items",
+                                    index);
+                            if (jsonFile.gdrive_json_is_valid())
                             {
-                                gdrive_finfoarray_add_from_json(pArray, pFile);
+                                gdrive_finfoarray_add_from_json(pArray, jsonFile);
                             }
                         }
                     }
@@ -167,7 +167,6 @@ namespace fusedrive
                 // else either failure (return -1) or 0-length array (return 0),
                 // nothing special needs to be done.
 
-                gdrive_json_kill(pObj);
             }
             // else do nothing.  Already prepared to return error.
         }
@@ -187,9 +186,7 @@ namespace fusedrive
         }
 
         // Try to get the ID from the cache.
-        char* tmpStr = gdrive_cache_get_fileid(*this, path.c_str());
-        string cachedId(tmpStr ? tmpStr : "");
-        free(tmpStr);
+        string cachedId(cache.gdrive_cache_get_fileid(path.c_str()));
         if (!cachedId.empty())
         {
             return cachedId;
@@ -204,7 +201,7 @@ namespace fusedrive
             if (!result.empty())
             {
                 // Add to the fileId cache.
-                gdrive_cache_add_fileid(path.c_str(), result.c_str());
+                cache.gdrive_cache_add_fileid(path.c_str(), result.c_str());
             }
             return result;
         }
@@ -247,7 +244,7 @@ namespace fusedrive
         // Add the ID to the fileId cache.
         if (!childId.empty())
         {
-            gdrive_cache_add_fileid(path.c_str(), childId.c_str());
+            cache.gdrive_cache_add_fileid(path.c_str(), childId.c_str());
         }
         
         return childId;
@@ -331,12 +328,12 @@ namespace fusedrive
         gdrive_dlbuf_free(pBuf);
         if (returnVal == 0)
         {
-            gdrive_cache_delete_id(*this, fileId.c_str());
+            cache.gdrive_cache_delete_id(fileId.c_str());
             if (!parentId.empty() && parentId.compare("/") != 0)
             {
                 // Remove the parent from the cache because the child count will be
                 // wrong.
-                gdrive_cache_delete_id(*this, parentId.c_str());
+                cache.gdrive_cache_delete_id(parentId.c_str());
             }
         }
         return returnVal;
@@ -358,15 +355,9 @@ namespace fusedrive
         string url = GDRIVE_URL_FILES + "/" + fileId + "/parents";
 
         // Create the Parent resource for the request body
-        Gdrive_Json_Object* pObj = gdrive_json_new();
-        if (!pObj)
-        {
-            // Memory error
-            return -ENOMEM;
-        }
-        gdrive_json_add_string(pObj, "id", parentId.c_str());
-        string body = string(gdrive_json_to_string(pObj, false));
-        gdrive_json_kill(pObj);
+        Json jsonObj;
+        jsonObj.gdrive_json_add_string("id", parentId);
+        string body = string(jsonObj.gdrive_json_to_string(false));
         
 
         Gdrive_Transfer* pTransfer = gdrive_xfer_create(*this);
@@ -398,7 +389,8 @@ namespace fusedrive
             // before the cache expires. (For example, if there was only one parent
             // before, and the user deletes one of the links, we don't want to
             // delete the entire file because of a bad parent count).
-            Fileinfo* pFileinfo = gdrive_cache_get_item(*this, fileId.c_str(), false, NULL);
+            Fileinfo* pFileinfo = 
+                    cache.gdrive_cache_get_item(fileId.c_str(), false, NULL);
             if (pFileinfo)
             {
                 pFileinfo->nParents++;
@@ -418,15 +410,9 @@ namespace fusedrive
         }
 
         // Create the request body with the new name
-        Gdrive_Json_Object* pObj = gdrive_json_new();
-        if (!pObj)
-        {
-            // Memory error
-            return -ENOMEM;
-        }
-        gdrive_json_add_string(pObj, "title", newName.c_str());
-        string body = string(gdrive_json_to_string(pObj, false));
-        gdrive_json_kill(pObj);
+        Json jsonObj;
+        jsonObj.gdrive_json_add_string("title", newName);
+        string body(jsonObj.gdrive_json_to_string(false));
 
         // Create the url in the form of:
         // "<GDRIVE_URL_FILES>/<fileId>"
@@ -564,6 +550,11 @@ namespace fusedrive
         return curl_easy_duphandle(curlHandle);
     }
 
+    Cache& Gdrive::gdrive_get_cache()
+    {
+        return cache;
+    }
+    
     const string& Gdrive::gdrive_get_access_token()
     {
         return accessToken;
@@ -677,14 +668,9 @@ namespace fusedrive
         // Can we continue prompting for authentication if needed later?
         userInteractionAllowed = 
                 (interactionMode == GDRIVE_INTERACTION_ALWAYS);
-
-        // Initialize the cache
-        if (gdrive_cache_init(*this, cacheTTL) != 0)
-        {
-            // Cache initialization error, probably a memory error
-            throw new exception();
-        }
-
+        
+        cache.gdrive_cache_init();
+        
         // Set chunk size
         minChunkSize = (minFileChunkSize > 0) ? 
             Util::gdrive_divide_round_up(minFileChunkSize, Gdrive::GDRIVE_BASE_CHUNK_SIZE) * 
@@ -725,8 +711,8 @@ namespace fusedrive
             buffer[bytesRead >= 0 ? bytesRead : 0] = '\0';
             int returnVal = 0;
 
-            Gdrive_Json_Object* pObj = gdrive_json_from_string(buffer);
-            if (pObj == NULL)
+            Json jsonObj = Json(string(buffer));
+            if (!jsonObj.gdrive_json_is_valid())
             {
                 // Couldn't convert the file contents to a JSON object, prepare to
                 // return failure.
@@ -734,21 +720,16 @@ namespace fusedrive
             }
             else
             {
-                char* tmpStr = gdrive_json_get_new_string(pObj, 
-                        GDRIVE_FIELDNAME_ACCESSTOKEN.c_str(), NULL);
-                accessToken.assign(tmpStr);
-                free(tmpStr);
-                tmpStr = gdrive_json_get_new_string(pObj, 
-                        GDRIVE_FIELDNAME_REFRESHTOKEN.c_str(), NULL);
-                refreshToken.assign(tmpStr);
-                free(tmpStr);
-
+                accessToken.assign(jsonObj.gdrive_json_get_string( 
+                        GDRIVE_FIELDNAME_ACCESSTOKEN));
+                refreshToken.assign(jsonObj.gdrive_json_get_string( 
+                        GDRIVE_FIELDNAME_REFRESHTOKEN));
+                
                 if (accessToken.empty() || refreshToken.empty())
                 {
                     // Didn't get one or more auth tokens from the file.
                     returnVal = -1;
                 }
-                gdrive_json_kill(pObj);
             }
             free(buffer);
             fclose(inFile);
@@ -850,10 +831,9 @@ namespace fusedrive
         // need to pull the access_token string (and refresh token string if
         // present) out of it.
 
-        Gdrive_Json_Object* pObj = 
-                gdrive_json_from_string(gdrive_dlbuf_get_data(pBuf));
+        Json jsonObj(gdrive_dlbuf_get_data(pBuf));
         gdrive_dlbuf_free(pBuf);
-        if (pObj == NULL)
+        if (!jsonObj.gdrive_json_is_valid())
         {
             // Couldn't locate JSON-formatted information in the server's 
             // response.  Return error.
@@ -866,44 +846,30 @@ namespace fusedrive
 //                &(pInfo->accessToken),
 //                &(pInfo->accessTokenLength)
 //                );
-        char* tmpStr = gdrive_json_get_new_string(pObj, 
-                GDRIVE_FIELDNAME_ACCESSTOKEN.c_str(), NULL);
-        if (!tmpStr)
+        string tmpStr = 
+                jsonObj.gdrive_json_get_string(GDRIVE_FIELDNAME_ACCESSTOKEN);
+        if (tmpStr.empty())
         {
-            gdrive_json_kill(pObj);
+            // Couldn't get access token
             return -1;
         }
         accessToken.assign(tmpStr);
-        free(tmpStr);
+        
         // Only try to get refresh token if we successfully got the access 
         // token.
-        if (!accessToken.empty())
-        {
-            // We won't always have a refresh token.  Specifically, if we were
-            // already sending a refresh token, we may not get one back.
-            // Don't treat the lack of a refresh token as an error or a failure,
-            // and don't clobber the existing refresh token if we don't get a
-            // new one.
+        
+        // We won't always have a refresh token.  Specifically, if we were
+        // already sending a refresh token, we may not get one back.
+        // Don't treat the lack of a refresh token as an error or a failure,
+        // and don't clobber the existing refresh token if we don't get a
+        // new one.
 
-            long length = gdrive_json_get_string(pObj, 
-                                            GDRIVE_FIELDNAME_REFRESHTOKEN.c_str(), 
-                                            NULL, 0
-                    );
-            if (length < 0 && length != INT64_MIN)
-            {
-                // We were given a refresh token, so store it.
-                char* tmpStr = gdrive_json_get_new_string(pObj, 
-                        GDRIVE_FIELDNAME_REFRESHTOKEN.c_str(), NULL);
-                if (!tmpStr)
-                {
-                    gdrive_json_kill(pObj);
-                    return -1;
-                }
-                refreshToken.assign(tmpStr);
-                free(tmpStr);
-            }
+        tmpStr = jsonObj.gdrive_json_get_string(GDRIVE_FIELDNAME_REFRESHTOKEN);
+        if (!tmpStr.empty())
+        {
+            // We were given a refresh token, so store it.
+            refreshToken.assign(tmpStr);
         }
-        gdrive_json_kill(pObj);
 
         return 0;
     }
@@ -1017,18 +983,14 @@ namespace fusedrive
         // from the JSON array that should have been returned, and compare them
         // with the expected scopes.
 
-        Gdrive_Json_Object* pObj = 
-                gdrive_json_from_string(gdrive_dlbuf_get_data(pBuf));
+        Json jsonObj(gdrive_dlbuf_get_data(pBuf));
         gdrive_dlbuf_free(pBuf);
-        if (pObj == NULL)
+        if (!jsonObj.gdrive_json_is_valid())
         {
             // Couldn't interpret the response as JSON, return error.
             return -1;
         }
-        char* tmpStr = gdrive_json_get_new_string(pObj, "scope", NULL);
-        string grantedScopes = string(tmpStr);
-        free(tmpStr);
-        gdrive_json_kill(pObj);
+        string grantedScopes = jsonObj.gdrive_json_get_string("scope");
         if (grantedScopes.empty())
         {
             // Key not found, or value not a string.  Return error.
@@ -1135,24 +1097,20 @@ namespace fusedrive
         // response.
 
         // Convert to a JSON object.
-        Gdrive_Json_Object* pObj = 
-                gdrive_json_from_string(gdrive_dlbuf_get_data(pBuf));
+        Json jsonObj(gdrive_dlbuf_get_data(pBuf));
         gdrive_dlbuf_free(pBuf);
-        if (pObj == NULL)
+        if (!jsonObj.gdrive_json_is_valid())
         {
             // Couldn't convert to JSON object.
             return string("");
         }
 
         string childId;
-        Gdrive_Json_Object* pArrayItem = gdrive_json_array_get(pObj, "items", 0);
-        if (pArrayItem != NULL)
+        Json arrayItem = jsonObj.gdrive_json_array_get("items", 0);
+        if (arrayItem.gdrive_json_is_valid())
         {
-            char* tmpStr = gdrive_json_get_new_string(pArrayItem, "id", NULL);
-            childId.assign(tmpStr);
-            free(tmpStr);
+            childId.assign(arrayItem.gdrive_json_get_string("id"));
         }
-        gdrive_json_kill(pObj);
         return childId;
     }
 
@@ -1173,15 +1131,13 @@ namespace fusedrive
             return -1;
         }
 
-        Gdrive_Json_Object* pObj = gdrive_json_new();
-        gdrive_json_add_string(pObj, GDRIVE_FIELDNAME_ACCESSTOKEN.c_str(), 
-                               accessToken.c_str()
-                );
-        gdrive_json_add_string(pObj, GDRIVE_FIELDNAME_REFRESHTOKEN.c_str(), 
-                               refreshToken.c_str()
-                );
-        int success = fputs(gdrive_json_to_string(pObj, true), outFile);
-        gdrive_json_kill(pObj);
+        Json jsonObj;
+        jsonObj.gdrive_json_add_string(GDRIVE_FIELDNAME_ACCESSTOKEN, 
+                accessToken);
+        jsonObj.gdrive_json_add_string(GDRIVE_FIELDNAME_REFRESHTOKEN, 
+                refreshToken);
+        int success = fputs(jsonObj.gdrive_json_to_string(true).c_str(), 
+                outFile);
         fclose(outFile);
 
         return (success >= 0) ? 0 : -1;

@@ -1,7 +1,6 @@
 
 #include "Gdrive.hpp"
 #include "gdrive-query.hpp"
-#include "gdrive-info.h"
 
 #include <stdlib.h>
 #include <string.h>

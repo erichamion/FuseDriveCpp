@@ -1,6 +1,6 @@
 
 #include "gdrive-cache-node.hpp"
-#include "gdrive-cache.hpp"
+#include "Cache.hpp"
 #include "Gdrive.hpp"
 #include "gdrive-file.hpp"
 #include "Util.hpp"
@@ -137,16 +137,14 @@ Gdrive_Cache_Node* gdrive_cnode_get(Gdrive& gInfo, Gdrive_Cache_Node* pParent,
             free(pBuf);
             return NULL;
         }
-        Gdrive_Json_Object* pObj = 
-                gdrive_json_from_string(gdrive_dlbuf_get_data(pBuf));
+        Json jsonObj(gdrive_dlbuf_get_data(pBuf));
         gdrive_dlbuf_free(pBuf);
-        if (!pObj)
+        if (!jsonObj.gdrive_json_is_valid())
         {
             // Couldn't convert network response to JSON
             return NULL;
         }
-        gdrive_cnode_update_from_json(pNode, pObj);
-        gdrive_json_kill(pObj);
+        gdrive_cnode_update_from_json(pNode, jsonObj);
 
         return pNode;
     }
@@ -327,17 +325,15 @@ Fileinfo* gdrive_cnode_get_fileinfo(Gdrive_Cache_Node* pNode)
  * Other accessible functions
  ******************/
 
-void gdrive_cnode_update_from_json(Gdrive_Cache_Node* pNode, 
-                                       Gdrive_Json_Object* pObj
-)
+void gdrive_cnode_update_from_json(Gdrive_Cache_Node* pNode, Json& jsonObj)
 {
-    if (pNode == NULL || pObj == NULL)
+    if (pNode == NULL)
     {
         // Nothing to do
         return;
     }
     pNode->pFileinfo->gdrive_finfo_cleanup();
-    pNode->pFileinfo->gdrive_finfo_read_json(pObj);
+    pNode->pFileinfo->gdrive_finfo_read_json(jsonObj);
     
     // Mark the node as having been updated.
     pNode->lastUpdateTime = time(NULL);
@@ -375,7 +371,8 @@ Gdrive_File* gdrive_file_open(Gdrive& gInfo, const char* fileId, int flags, int*
     // gdrive_file_info_from_id() to create the node and fill out the struct, 
     // then try again to get the node.
     Gdrive_Cache_Node* pNode;
-    while ((pNode = gdrive_cache_get_node(gInfo, fileId, false, NULL)) == NULL)
+    while ((pNode = gInfo.gdrive_get_cache()
+            .gdrive_cache_get_node(fileId, false, NULL)) == NULL)
     {
         try
         {
@@ -461,7 +458,7 @@ void gdrive_file_close(Gdrive& gInfo, Gdrive_File* pFile, int flags)
         gdrive_fcontents_free_all(&(pNode->pContents));
         if (gdrive_cnode_isdeleted(pNode))
         {
-            gdrive_cache_delete_node(pNode);
+            gInfo.gdrive_get_cache().gdrive_cache_delete_node(pNode);
         }
     }
 }
@@ -858,8 +855,8 @@ char* gdrive_file_new(Gdrive& gInfo, const char* path, bool createFolder, int* p
         gdrive_path_free(pGpath);
         return NULL;
     }
-    Gdrive_Cache_Node* pFolderNode = 
-            gdrive_cache_get_node(gInfo, parentId, true, NULL);
+    Gdrive_Cache_Node* pFolderNode = gInfo.gdrive_get_cache()
+            .gdrive_cache_get_node(parentId, true, NULL);
     if (pFolderNode == NULL)
     {
         // Couldn't get a node for the parent folder
@@ -894,7 +891,8 @@ char* gdrive_file_new(Gdrive& gInfo, const char* path, bool createFolder, int* p
     // pointer to the cached ID (which is a new copy of the ID that was passed
     // in). This will avoid the need to look up the ID again after adding it,
     // and it will also help with multiple files that have identical paths.
-    int result = gdrive_cache_add_fileid(path, fileId);
+    int result = 
+        gInfo.gdrive_get_cache().gdrive_cache_add_fileid(path, fileId);
     free(fileId);
     if (result != 0)
     {
@@ -1290,33 +1288,31 @@ static char* gdrive_file_sync_metadata_or_create(Gdrive& gInfo, Fileinfo* pFilei
     
     
     // Set up the file resource as a JSON object
-    Gdrive_Json_Object* uploadResourceJson = gdrive_json_new();
-    if (uploadResourceJson == NULL)
+    Json uploadResourceJson;
+    if (!uploadResourceJson.gdrive_json_is_valid())
     {
         *pError = ENOMEM;
         return NULL;
     }
-    gdrive_json_add_string(uploadResourceJson, "title", pMyFileinfo->filename.c_str());
+    uploadResourceJson.gdrive_json_add_string("title", pMyFileinfo->filename);
     if (pFileinfo == NULL)
     {
         // Only set parents when creating a new file
-        Gdrive_Json_Object* parentsArray = 
-                gdrive_json_add_new_array(uploadResourceJson, "parents");
-        if (parentsArray == NULL)
+        Json parentsArray = 
+                uploadResourceJson.gdrive_json_add_new_array("parents");
+        if (!parentsArray.gdrive_json_is_valid())
         {
             *pError = ENOMEM;
-            gdrive_json_kill(uploadResourceJson);
             return NULL;
         }
-        Gdrive_Json_Object* parentIdObj = gdrive_json_new();
-        gdrive_json_add_string(parentIdObj, "id", parentId);
-        gdrive_json_array_append_object(parentsArray, parentIdObj);
+        Json parentIdObj;
+        parentIdObj.gdrive_json_add_string("id", parentId);
+        parentsArray.gdrive_json_array_append_object(parentIdObj);
     }
     if (isFolder)
     {
-        gdrive_json_add_string(uploadResourceJson, "mimeType", 
-                               "application/vnd.google-apps.folder"
-                );
+        uploadResourceJson.gdrive_json_add_string("mimeType", 
+                "application/vnd.google-apps.folder");
     }
 //    char* timeString = (char*) malloc(Fileinfo::GDRIVE_TIMESTRING_LENGTH);
 //    if (timeString == NULL)
@@ -1327,32 +1323,24 @@ static char* gdrive_file_sync_metadata_or_create(Gdrive& gInfo, Fileinfo* pFilei
 //        return NULL;
 //    }
 //    // Reuse the same timeString for atime and mtime. Can't change ctime.
-    const char* timeString;
-    
-    string timeStringStr = 
-            pMyFileinfo->gdrive_finfo_get_atime_string();
-    timeString = timeStringStr.c_str();
-    if (timeString && timeString[0])
+    string timeString = pMyFileinfo->gdrive_finfo_get_atime_string();
+    if (!timeString.empty())
     {
-        gdrive_json_add_string(uploadResourceJson, "lastViewedByMeDate", 
+        uploadResourceJson.gdrive_json_add_string("lastViewedByMeDate", 
                 timeString);
     }
     
     bool hasMtime = false;
-    timeStringStr = pMyFileinfo->gdrive_finfo_get_mtime_string();
-    timeString = timeStringStr.c_str();
-    if (timeString && timeString[0])
+    timeString = pMyFileinfo->gdrive_finfo_get_mtime_string();
+    if (!timeString.empty())
     {
-        gdrive_json_add_string(uploadResourceJson, "modifiedDate", timeString);
+        uploadResourceJson.gdrive_json_add_string("modifiedDate", timeString);
         hasMtime = true;
     }
-    timeString = NULL;
     
     // Convert the JSON into a string
-    char* uploadResourceStr = 
-        gdrive_json_to_new_string(uploadResourceJson, false);
-    gdrive_json_kill(uploadResourceJson);
-    if (uploadResourceStr == NULL)
+    string uploadResourceStr = uploadResourceJson.gdrive_json_to_string(false);
+    if (uploadResourceStr.empty())
     {
         *pError = ENOMEM;
         return NULL;
@@ -1396,7 +1384,6 @@ static char* gdrive_file_sync_metadata_or_create(Gdrive& gInfo, Fileinfo* pFilei
     {
         *pError = ENOMEM;
         gdrive_xfer_free(pTransfer);
-        free(uploadResourceStr);
         return NULL;
     }
     // URL, header, and updateViewedDate query parameter always get added. The 
@@ -1412,19 +1399,17 @@ static char* gdrive_file_sync_metadata_or_create(Gdrive& gInfo, Fileinfo* pFilei
     {
         *pError = ENOMEM;
         gdrive_xfer_free(pTransfer);
-        free(uploadResourceStr);
         free(url);
         return NULL;
     }
     free(url);
     gdrive_xfer_set_requesttype(pTransfer, (pFileinfo != NULL) ? 
         GDRIVE_REQUEST_PATCH : GDRIVE_REQUEST_POST);
-    gdrive_xfer_set_body(pTransfer, uploadResourceStr);
+    gdrive_xfer_set_body(pTransfer, uploadResourceStr.c_str());
     
     // Do the transfer
     Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
     gdrive_xfer_free(pTransfer);
-    free(uploadResourceStr);
     
     if (pBuf == NULL || gdrive_dlbuf_get_httpresp(pBuf) >= 400)
     {
@@ -1435,19 +1420,17 @@ static char* gdrive_file_sync_metadata_or_create(Gdrive& gInfo, Fileinfo* pFilei
     }
     
     // Extract the file ID from the returned resource
-    Gdrive_Json_Object* pObj = 
-            gdrive_json_from_string(gdrive_dlbuf_get_data(pBuf));
+    Json jsonObj(gdrive_dlbuf_get_data(pBuf));
     gdrive_dlbuf_free(pBuf);
-    if (pObj == NULL)
+    if (!jsonObj.gdrive_json_is_valid())
     {
         // Either memory error, or couldn't convert the response to JSON.
         // More likely memory.
         *pError = ENOMEM;
         return NULL;
     }
-    char* fileId = gdrive_json_get_new_string(pObj, "id", NULL);
-    gdrive_json_kill(pObj);
-    if (fileId == NULL)
+    string fileId = jsonObj.gdrive_json_get_string("id");
+    if (fileId.empty())
     {
         // Either memory error, or couldn't extract the desired string, can't
         // tell which.
@@ -1456,7 +1439,7 @@ static char* gdrive_file_sync_metadata_or_create(Gdrive& gInfo, Fileinfo* pFilei
     }
     
     pMyFileinfo->dirtyMetainfo = false;
-    return fileId;
+    return strdup(fileId.c_str());
 }
 
 

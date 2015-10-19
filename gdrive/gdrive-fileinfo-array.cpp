@@ -122,9 +122,9 @@ int gdrive_finfoarray_get_count(Gdrive_Fileinfo_Array* pArray)
  ******************/
 
 int gdrive_finfoarray_add_from_json(Gdrive_Fileinfo_Array* pArray, 
-                                        Gdrive_Json_Object* pObj)
+                                        Json& jsonObj)
 {
-    if (pArray == NULL || pObj == NULL)
+    if (pArray == NULL || !jsonObj.gdrive_json_is_valid())
     {
         // Invalid parameters
         return -1;
@@ -136,7 +136,7 @@ int gdrive_finfoarray_add_from_json(Gdrive_Fileinfo_Array* pArray,
     }
     
     // Read the info in, and increment nItems to show the new count.
-    (pArray->pArray + pArray->nItems++)->gdrive_finfo_read_json(pObj);
+    (pArray->pArray + pArray->nItems++)->gdrive_finfo_read_json(jsonObj);
     
     return 0;
     

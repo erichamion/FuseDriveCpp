@@ -38,18 +38,17 @@ OBJECTFILES= \
 	${OBJECTDIR}/FuseDrivePrivateData.o \
 	${OBJECTDIR}/Options.o \
 	${OBJECTDIR}/fuse-drive.o \
+	${OBJECTDIR}/gdrive/Cache.o \
+	${OBJECTDIR}/gdrive/FileidCacheNode.o \
 	${OBJECTDIR}/gdrive/Fileinfo.o \
 	${OBJECTDIR}/gdrive/Gdrive.o \
 	${OBJECTDIR}/gdrive/GdriveInfo.o \
+	${OBJECTDIR}/gdrive/Json.o \
 	${OBJECTDIR}/gdrive/Util.o \
 	${OBJECTDIR}/gdrive/gdrive-cache-node.o \
-	${OBJECTDIR}/gdrive/gdrive-cache.o \
 	${OBJECTDIR}/gdrive/gdrive-download-buffer.o \
 	${OBJECTDIR}/gdrive/gdrive-file-contents.o \
-	${OBJECTDIR}/gdrive/gdrive-fileid-cache-node.o \
 	${OBJECTDIR}/gdrive/gdrive-fileinfo-array.o \
-	${OBJECTDIR}/gdrive/gdrive-fileinfo.o \
-	${OBJECTDIR}/gdrive/gdrive-json.o \
 	${OBJECTDIR}/gdrive/gdrive-query.o \
 	${OBJECTDIR}/gdrive/gdrive-sysinfo.o \
 	${OBJECTDIR}/gdrive/gdrive-transfer.o \
@@ -95,6 +94,16 @@ ${OBJECTDIR}/fuse-drive.o: fuse-drive.cpp
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/fuse-drive.o fuse-drive.cpp
 
+${OBJECTDIR}/gdrive/Cache.o: gdrive/Cache.cpp 
+	${MKDIR} -p ${OBJECTDIR}/gdrive
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/Cache.o gdrive/Cache.cpp
+
+${OBJECTDIR}/gdrive/FileidCacheNode.o: gdrive/FileidCacheNode.cpp 
+	${MKDIR} -p ${OBJECTDIR}/gdrive
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/FileidCacheNode.o gdrive/FileidCacheNode.cpp
+
 ${OBJECTDIR}/gdrive/Fileinfo.o: gdrive/Fileinfo.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
@@ -110,6 +119,11 @@ ${OBJECTDIR}/gdrive/GdriveInfo.o: gdrive/GdriveInfo.cpp
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/GdriveInfo.o gdrive/GdriveInfo.cpp
 
+${OBJECTDIR}/gdrive/Json.o: gdrive/Json.cpp 
+	${MKDIR} -p ${OBJECTDIR}/gdrive
+	${RM} "$@.d"
+	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/Json.o gdrive/Json.cpp
+
 ${OBJECTDIR}/gdrive/Util.o: gdrive/Util.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
@@ -119,11 +133,6 @@ ${OBJECTDIR}/gdrive/gdrive-cache-node.o: gdrive/gdrive-cache-node.cpp
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-cache-node.o gdrive/gdrive-cache-node.cpp
-
-${OBJECTDIR}/gdrive/gdrive-cache.o: gdrive/gdrive-cache.cpp 
-	${MKDIR} -p ${OBJECTDIR}/gdrive
-	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-cache.o gdrive/gdrive-cache.cpp
 
 ${OBJECTDIR}/gdrive/gdrive-download-buffer.o: gdrive/gdrive-download-buffer.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
@@ -135,25 +144,10 @@ ${OBJECTDIR}/gdrive/gdrive-file-contents.o: gdrive/gdrive-file-contents.cpp
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-file-contents.o gdrive/gdrive-file-contents.cpp
 
-${OBJECTDIR}/gdrive/gdrive-fileid-cache-node.o: gdrive/gdrive-fileid-cache-node.c 
-	${MKDIR} -p ${OBJECTDIR}/gdrive
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-fileid-cache-node.o gdrive/gdrive-fileid-cache-node.c
-
 ${OBJECTDIR}/gdrive/gdrive-fileinfo-array.o: gdrive/gdrive-fileinfo-array.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-fileinfo-array.o gdrive/gdrive-fileinfo-array.cpp
-
-${OBJECTDIR}/gdrive/gdrive-fileinfo.o: gdrive/gdrive-fileinfo.cpp 
-	${MKDIR} -p ${OBJECTDIR}/gdrive
-	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-fileinfo.o gdrive/gdrive-fileinfo.cpp
-
-${OBJECTDIR}/gdrive/gdrive-json.o: gdrive/gdrive-json.c 
-	${MKDIR} -p ${OBJECTDIR}/gdrive
-	${RM} "$@.d"
-	$(COMPILE.c) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-json.o gdrive/gdrive-json.c
 
 ${OBJECTDIR}/gdrive/gdrive-query.o: gdrive/gdrive-query.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive

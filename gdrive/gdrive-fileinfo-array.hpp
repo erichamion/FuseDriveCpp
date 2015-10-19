@@ -33,7 +33,7 @@ namespace fusedrive
 }
 
 #include "Fileinfo.hpp"
-#include "gdrive-json.h"
+#include "Json.hpp"
 #include "Gdrive.hpp"
     
  
@@ -138,7 +138,7 @@ int gdrive_finfoarray_get_count(Gdrive_Fileinfo_Array* pArray);
  *      maximum number of stored fileinfo structs.
  */
 int gdrive_finfoarray_add_from_json(Gdrive_Fileinfo_Array* pArray, 
-                                        Gdrive_Json_Object* pObj);
+                                        fusedrive::Json& jsonObj);
 
 
 //#ifdef	__cplusplus

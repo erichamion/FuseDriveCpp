@@ -8,7 +8,7 @@
 #include "Fileinfo.hpp"
 
 #include "Gdrive.hpp"
-#include "gdrive-cache.hpp"
+#include "Cache.hpp"
 #include "gdrive-file.hpp"
 #include "Util.hpp"
 
@@ -46,8 +46,8 @@ namespace fusedrive
         // already there.
         bool alreadyCached = false;
 
-        Fileinfo* pFileinfo = 
-                gdrive_cache_get_item(gInfo, fileId.c_str(), true, &alreadyCached);
+        Fileinfo* pFileinfo = gInfo.gdrive_get_cache()
+                .gdrive_cache_get_item(fileId.c_str(), true, &alreadyCached);
         if (pFileinfo == NULL)
         {
             // An error occurred, probably out of memory.
@@ -116,18 +116,15 @@ namespace fusedrive
         // response.
 
         // Convert to a JSON object.
-        Gdrive_Json_Object* pObj = 
-                gdrive_json_from_string(gdrive_dlbuf_get_data(pBuf));
+        Json jsonObj(gdrive_dlbuf_get_data(pBuf));
         gdrive_dlbuf_free(pBuf);
-        if (pObj == NULL)
+        if (!jsonObj.gdrive_json_is_valid())
         {
-            // Couldn't convert to JSON object.
-            gdrive_dlbuf_free(pBuf);
+            // Couldn't convert to Json object
             throw new exception();
         }
-
-        pFileinfo->gdrive_finfo_read_json(pObj);
-        gdrive_json_kill(pObj);
+        
+        pFileinfo->gdrive_finfo_read_json(jsonObj);
 
         // If it's a folder, get the number of children.
         if (pFileinfo->type == GDRIVE_FILETYPE_FOLDER)
@@ -180,28 +177,22 @@ namespace fusedrive
         return gdrive_finfo_set_time(GDRIVE_FINFO_MTIME, ts);
     }
 
-    void Fileinfo::gdrive_finfo_read_json(Gdrive_Json_Object* pObj)
+    void Fileinfo::gdrive_finfo_read_json(Json& jsonObj)
     {
         TestStop();
-        long length = 0;
-        char* tmpStr = gdrive_json_get_new_string(pObj, "title", &length);
-        filename.assign(tmpStr ? tmpStr : "");
-        gdrive_json_realloc_string(pObj, "id", &tmpStr, &length);
-        id.assign(tmpStr ? tmpStr : "");
-        free(tmpStr);
+        filename.assign(jsonObj.gdrive_json_get_string("title"));
+        id.assign(jsonObj.gdrive_json_get_string("id"));
         
         bool success;
-        size = gdrive_json_get_int64(pObj, "fileSize", true, &success);
+        size = jsonObj.gdrive_json_get_int64("fileSize", true, success);
         if (!success)
         {
             size = 0;
         }
         
-        tmpStr = gdrive_json_get_new_string(pObj, "mimeType", NULL);
-        if (tmpStr != NULL)
+        string mimeType(jsonObj.gdrive_json_get_string("mimeType"));
+        if (!mimeType.empty())
         {
-            string mimeType(tmpStr);
-            free(tmpStr);
             if (mimeType == GDRIVE_MIMETYPE_FOLDER)
             {
                 // Folder
@@ -220,11 +211,9 @@ namespace fusedrive
         }
 
         // Get the user's permissions for the file on the Google Drive account.
-        tmpStr = gdrive_json_get_new_string(pObj, "userPermission/role", NULL);
-        if (tmpStr != NULL)
+        string role(jsonObj.gdrive_json_get_string("userPermission/role"));
+        if (!role.empty())
         {
-            string role(tmpStr);
-            free(tmpStr);
             int basePerm = 0;
             if (role == "owner")
             {
@@ -252,9 +241,7 @@ namespace fusedrive
             }
         }
 
-        tmpStr = gdrive_json_get_new_string(pObj, "createdDate", NULL);
-        string cTime(tmpStr ? tmpStr : "");
-        free(tmpStr);
+        string cTime(jsonObj.gdrive_json_get_string("createdDate"));
         if (cTime.empty() || 
                 gdrive_rfc3339_to_epoch_timens(cTime.c_str(), &creationTime) != 0)
         {
@@ -262,9 +249,7 @@ namespace fusedrive
             memset(&creationTime, 0, sizeof(struct timespec));
         }
 
-        tmpStr = gdrive_json_get_new_string(pObj, "modifiedDate", NULL);
-        string mTime(tmpStr ? tmpStr : "");
-        free(tmpStr);
+        string mTime(jsonObj.gdrive_json_get_string("modifiedDate"));
         if (mTime.empty() || 
                 gdrive_rfc3339_to_epoch_timens
                 (mTime.c_str(), &modificationTime) != 0)
@@ -273,12 +258,7 @@ namespace fusedrive
             memset(&modificationTime, 0, sizeof(struct timespec));
         }
 
-        tmpStr = gdrive_json_get_new_string(pObj, 
-                "lastViewedByMeDate", 
-                NULL
-        );
-        string aTime(tmpStr ? tmpStr : "");
-        free(tmpStr);
+        string aTime(jsonObj.gdrive_json_get_string("lastViewedByMeDate"));
         if (aTime.empty() || 
                 gdrive_rfc3339_to_epoch_timens
                 (aTime.c_str(), &accessTime) != 0)
@@ -286,8 +266,9 @@ namespace fusedrive
             // Didn't get an accessed date or failed to convert it.
             memset(&accessTime, 0, sizeof(struct timespec));
         }
-
-        nParents = gdrive_json_array_length(pObj, "parents");
+        
+        bool dummy;
+        nParents = jsonObj.gdrive_json_array_length("parents", dummy);
 
         dirtyMetainfo = false;
     }

@@ -178,7 +178,7 @@ fusedrive::Fileinfo* gdrive_cnode_get_fileinfo(Gdrive_Cache_Node* pNode);
  *              https://developers.google.com/drive/v2/reference/files
  */
 void gdrive_cnode_update_from_json(Gdrive_Cache_Node* pNode, 
-                                   Gdrive_Json_Object* pObj);
+                                   fusedrive::Json& jsonObj);
 
 /*
  * gdrive_cnode_delete_file_contents(): Removes a single Gdrive_File_Contents

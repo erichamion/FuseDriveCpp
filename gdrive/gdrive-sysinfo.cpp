@@ -2,7 +2,7 @@
 #include "gdrive-sysinfo.hpp"
 
 #include "Gdrive.hpp"
-#include "gdrive-cache.hpp"
+#include "Cache.hpp"
 
 #include <string.h>
 #include <stdbool.h>
@@ -33,7 +33,7 @@ static const Gdrive_Sysinfo* gdrive_sysinfo_get_or_clear(Gdrive& gInfo, bool cle
 static void gdrive_sysinfo_cleanup_internal(Gdrive_Sysinfo* pSysinfo);
 
 static int gdrive_sysinfo_fill_from_json(Gdrive_Sysinfo* pDest, 
-                                         Gdrive_Json_Object* pObj);
+                                         Json& jsonObj);
 
 static int gdrive_sysinfo_update(Gdrive& gInfo, Gdrive_Sysinfo* pDest);
 
@@ -104,13 +104,13 @@ static const Gdrive_Sysinfo* gdrive_sysinfo_get_or_clear(Gdrive& gInfo, bool cle
 
     // Is the info current?
     // First, make sure the cache is up to date.
-    gdrive_cache_update_if_stale(gInfo);
+    Cache& cache = gInfo.gdrive_get_cache();
+    cache.gdrive_cache_update_if_stale();
 
     // If the Sysinfo's next change ID is at least as high as the cache's
     // next change ID, then our info is current.  No need to do anything
     // else. Otherwise, it needs updated.
-    int64_t cacheChangeId = 
-            gdrive_cache_get_nextchangeid();
+    int64_t cacheChangeId = cache.gdrive_cache_get_nextchangeid();
     if (sysinfo.nextChangeId < cacheChangeId)
     {
         // Either we don't have any sysinfo, or it needs updated.
@@ -129,32 +129,24 @@ static void gdrive_sysinfo_cleanup_internal(Gdrive_Sysinfo* pSysinfo)
 }
 
 static int gdrive_sysinfo_fill_from_json(Gdrive_Sysinfo* pDest, 
-                                         Gdrive_Json_Object* pObj)
+                                         Json& jsonObj)
 {
     bool currentSuccess = true;
     bool totalSuccess = true;
-    pDest->nextChangeId = gdrive_json_get_int64(pObj, 
-                                                "largestChangeId", 
-                                                true, 
-                                                &currentSuccess
-            ) + 1;
+    pDest->nextChangeId = jsonObj.gdrive_json_get_int64("largestChangeId", 
+            true, currentSuccess) + 1;
     totalSuccess = totalSuccess && currentSuccess;
     
-    pDest->quotaBytesTotal = gdrive_json_get_int64(pObj, 
-                                                   "quotaBytesTotal", 
-                                                   true,
-                                                   &currentSuccess
-            );
+    pDest->quotaBytesTotal = jsonObj.gdrive_json_get_int64("quotaBytesTotal", 
+            true,currentSuccess);
     totalSuccess = totalSuccess && currentSuccess;
     
-    pDest->quotaBytesUsed = gdrive_json_get_int64(pObj, 
-                                                  "quotaBytesUsed", 
-                                                   true,
-                                                   &currentSuccess
-            );
+    pDest->quotaBytesUsed = jsonObj.gdrive_json_get_int64("quotaBytesUsed", 
+            true, currentSuccess);
     totalSuccess = totalSuccess && currentSuccess;
     
-    pDest->rootId = gdrive_json_get_new_string(pObj, "rootFolderId", NULL);
+    pDest->rootId = 
+            strdup(jsonObj.gdrive_json_get_string("rootFolderId").c_str());
     currentSuccess = totalSuccess && (pDest->rootId != NULL);
     
     // For now, we'll ignore the importFormats and exportFormats.
@@ -200,13 +192,11 @@ static int gdrive_sysinfo_update(Gdrive& gInfo, Gdrive_Sysinfo* pDest)
     if (pBuf != NULL && gdrive_dlbuf_get_httpresp(pBuf) < 400)
     {
         // Response was good, try extracting the data.
-        Gdrive_Json_Object* pObj = 
-                gdrive_json_from_string(gdrive_dlbuf_get_data(pBuf));
-        if (pObj != NULL)
+        Json jsonObj(gdrive_dlbuf_get_data(pBuf));
+        if (jsonObj.gdrive_json_is_valid())
         {
-            returnVal = gdrive_sysinfo_fill_from_json(pDest, pObj);
+            returnVal = gdrive_sysinfo_fill_from_json(pDest, jsonObj);
         }
-        gdrive_json_kill(pObj);
     }
     
     gdrive_dlbuf_free(pBuf);

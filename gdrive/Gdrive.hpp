@@ -25,10 +25,9 @@ namespace fusedrive
     };
 }
 
-//#include "GdriveInfo.hpp"
 #include "gdrive-fileinfo-array.hpp"
 #include "gdrive-sysinfo.hpp"
-//#include "gdrive-file.hpp"
+#include "Cache.hpp"
 
 #include <string>
 
@@ -36,9 +35,6 @@ namespace fusedrive
 #include "gdrive-transfer.hpp"
 #include "gdrive-util.h"
 #include "gdrive-download-buffer.hpp"
-//#include "gdrive-query.hpp"
-//#include "gdrive.h"
-#include "gdrive-fileinfo-array.hpp"
     
 #include <curl/curl.h>
 
@@ -103,6 +99,8 @@ namespace fusedrive
         static const std::string GDRIVE_URL_CHANGES;
         
         CURL* gdrive_get_curlhandle();
+        
+        Cache& gdrive_get_cache();
 
         const std::string& gdrive_get_access_token();
 
@@ -160,6 +158,7 @@ namespace fusedrive
         std::string redirectUri;
         bool needsCurlCleanup;
         CURL* curlHandle;
+        Cache cache;
         
         void initWithCurl(int access, time_t cacheTTL, 
             enum Gdrive_Interaction interactionMode, size_t minFileChunkSize);

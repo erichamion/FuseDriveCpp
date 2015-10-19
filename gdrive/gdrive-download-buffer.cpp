@@ -4,7 +4,7 @@
 
 #include <string.h>
 
-
+using namespace std;
 using namespace fusedrive;
 
 
@@ -352,23 +352,23 @@ static enum Gdrive_Retry_Method gdrive_dlbuf_retry_on_error(Gdrive& gInfo,
     {
         // Retry ONLY if the reason for the 403 was an exceeded rate limit
         bool retry = false;
-        int reasonLength = strlen(GDRIVE_403_USERRATELIMIT) + 1;
-        char* reason = (char*) malloc(reasonLength);
-        if (reason == NULL)
+//        int reasonLength = strlen(GDRIVE_403_USERRATELIMIT) + 1;
+//        char* reason = (char*) malloc(reasonLength);
+//        if (reason == NULL)
+//        {
+//            // Memory error
+//            return (Gdrive_Retry_Method) (-1);
+//        }
+//        reason[0] = '\0';
+        Json jsonRoot(gdrive_dlbuf_get_data(pBuf));
+        if (jsonRoot.gdrive_json_is_valid())
         {
-            // Memory error
-            return (Gdrive_Retry_Method) (-1);
-        }
-        reason[0] = '\0';
-        Gdrive_Json_Object* pRoot = 
-                gdrive_json_from_string(gdrive_dlbuf_get_data(pBuf));
-        if (pRoot != NULL)
-        {
-            Gdrive_Json_Object* pErrors = 
-                    gdrive_json_get_nested_object(pRoot, "error/errors");
-            gdrive_json_get_string(pErrors, "reason", reason, reasonLength);
-            if ((strcmp(reason, GDRIVE_403_RATELIMIT) == 0) || 
-                    (strcmp(reason, GDRIVE_403_USERRATELIMIT) == 0))
+            Json jsonErrors = 
+                    jsonRoot.gdrive_json_get_nested_object("error/errors");
+            string reasonStr = 
+                    jsonErrors.gdrive_json_get_string("reason");
+            if ((strcmp(reasonStr.c_str(), GDRIVE_403_RATELIMIT) == 0) || 
+                    (strcmp(reasonStr.c_str(), GDRIVE_403_USERRATELIMIT) == 0))
             {
                 // Rate limit exceeded, retry.
                 retry = true;
@@ -376,10 +376,8 @@ static enum Gdrive_Retry_Method gdrive_dlbuf_retry_on_error(Gdrive& gInfo,
             // else do nothing (retry remains false for all other 403 
             // errors)
 
-            // Cleanup
-            gdrive_json_kill(pRoot);
         }
-        free(reason);
+//        free(reason);
         if (retry)
         {
             return GDRIVE_RETRY_RENEWAUTH;

@@ -4,7 +4,6 @@
 
 #include "gdrive-transfer.hpp"
 #include "gdrive-query.hpp"
-#include "gdrive-info.h"
 
 #include <string.h>
 

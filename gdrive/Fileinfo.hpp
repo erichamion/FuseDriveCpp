@@ -10,7 +10,7 @@
 
 #include <time.h>
 #include "Gdrive.hpp"
-#include "gdrive-json.h"
+#include "Json.hpp"
 
 #include <string>
 
@@ -168,7 +168,7 @@ namespace fusedrive
          *              A JSON object representing a File resource on Google Drive.
          */
         // TODO: Should this be a constructor?
-        void gdrive_finfo_read_json(Gdrive_Json_Object* pObj);
+        void gdrive_finfo_read_json(Json& jsonObj);
 
         /*
          * gdrive_finfo_real_perms():   Retrieve the actual effective permissions for
