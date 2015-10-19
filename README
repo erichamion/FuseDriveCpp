@@ -43,7 +43,7 @@ BEFORE BUILDING: There is a header file intentionally missing from the Git
 
 BUILDING:
     Requirements:
-        gcc (I've been using gcc 4.8.4 on Linux Mint 17)
+        g++ (I've been using g++ 4.8.4 on Linux Mint 17)
         libcurl
         json-c
         libfuse
