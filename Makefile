@@ -58,6 +58,9 @@ build: .build-post
 
 .build-post: .build-impl
 # Add your post 'build' code here...
+	@${CP} "${CND_BASEDIR}/fusedrive-test.bash" "${CND_DISTDIR}/${CONF}/${CND_PLATFORM_${CONF}}/fusedrive-test" && \
+	chmod +x "${CND_DISTDIR}/${CONF}/${CND_PLATFORM_${CONF}}/fusedrive-test" \
+	
 
 
 # clean

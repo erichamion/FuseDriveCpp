@@ -5,6 +5,10 @@
  * Created on October 19, 2015, 11:11 AM
  */
 
+#define IGNOREME
+#ifndef IGNOREME
+
+
 #include "CacheNode.hpp"
 #include "Cache.hpp"
 #include "Gdrive.hpp"
@@ -32,3 +36,5 @@ namespace fusedrive
     }
 
 }
+#endif  /* IGNOREME */
+#undef IGNOREME

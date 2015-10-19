@@ -123,6 +123,8 @@
       </item>
       <item path="fuse-drive.hpp" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="fusedrive-test.bash" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="gdrive/Cache.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/Cache.hpp" ex="false" tool="3" flavor2="0">
@@ -228,6 +230,8 @@
       <item path="fuse-drive.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="fuse-drive.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="fusedrive-test.bash" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/Cache.cpp" ex="false" tool="1" flavor2="0">
       </item>

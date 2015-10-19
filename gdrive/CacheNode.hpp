@@ -5,18 +5,23 @@
  * Created on October 19, 2015, 11:11 AM
  */
 
+#define IGNOREME
+#ifndef IGNOREME
+
 #ifndef CACHENODE_HPP
 #define	CACHENODE_HPP
 
 #include "gdrive-file-contents.hpp"
 #include "Fileinfo.hpp"
 
+typedef struct Gdrive_Cache_Node Gdrive_File;
+
 namespace fusedrive
 {
     class CacheNode {
     public:
-        Gdrive_Cache_Node* gdrive_cnode_get(fusedrive::Gdrive& gInfo, Gdrive_Cache_Node* pParent, 
-                                    Gdrive_Cache_Node** ppNode, 
+        CacheNode* gdrive_cnode_get(fusedrive::Gdrive& gInfo, CacheNode* pParent, 
+                                    CacheNode** ppNode, 
                                     const char* fileId, bool addIfDoesntExist, 
                                     bool* pAlreadyExists);
 
@@ -100,3 +105,5 @@ namespace fusedrive
 
 #endif	/* CACHENODE_HPP */
 
+#endif  /* IGNOREME */
+#undef IGNOREME
