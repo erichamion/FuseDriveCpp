@@ -16,19 +16,13 @@
 
 namespace fusedrive
 {
-    class Gdrive;
-    
     class GdriveFile {
+        friend GdriveFile* openFileHelper(CacheNode& cacheNode);
+        
     public:
         //GdriveFile(const GdriveFile& orig);
         virtual ~GdriveFile();
         
-        static GdriveFile* openFile(Gdrive& gInfo, const std::string& fileId, 
-            int flags, int& error);
-
-        static std::string createFile(Gdrive& gInfo, const std::string& path, 
-            bool createFolder, int& error);
-
         void close(int flags);
 
         int read(char* buf, size_t size, off_t offset);
@@ -71,6 +65,8 @@ namespace fusedrive
         GdriveFile(CacheNode& cacheNode);
         
     };
+    
+    GdriveFile* openFileHelper(CacheNode& cacheNode);
 }
 
 #endif	/* FILE_HPP */

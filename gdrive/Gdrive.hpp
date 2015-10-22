@@ -13,6 +13,7 @@
 #include "gdrive-fileinfo-array.hpp"
 #include "gdrive-sysinfo.hpp"
 #include "Cache.hpp"
+//#include "GdriveFile.hpp"
 
 #include <string>
 
@@ -26,6 +27,7 @@
 namespace fusedrive
 {
     class Cache;
+    class GdriveFile;
     
     class Gdrive
     {
@@ -64,6 +66,11 @@ namespace fusedrive
         std::string getFileIdFromPath(const std::string& path);
         
         const Fileinfo& getFileinfoById(const std::string& fileId);
+        
+        GdriveFile* openFile(const std::string& fileId, int flags, int& error);
+
+        std::string createFile(const std::string& path, bool createFolder, 
+            int& error);
 
         int removeParent(const std::string& fileId, 
             const std::string& parentId);
@@ -87,6 +94,10 @@ namespace fusedrive
         static const std::string GDRIVE_URL_CHANGES;
         
         CURL* getCurlHandle();
+        
+        std::string syncMetadataOrCreate(Fileinfo* pFileinfo, 
+            const std::string& parentId, const std::string& filename, 
+            bool isFolder, int& error);
         
         Cache& getCache();
 

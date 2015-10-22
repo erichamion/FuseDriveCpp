@@ -3,6 +3,7 @@
 
 
 #include "Gdrive.hpp"
+#include "GdriveFile.hpp"
 #include "Cache.hpp"
 #include "gdrive-query.hpp"
 #include "Util.hpp"
@@ -14,7 +15,9 @@
 #include <assert.h>
 #include <errno.h>
 #include <string>
+#include <sstream>
 #include <exception>
+#include <fcntl.h>
 
 #include "gdrive-client-secret.h"
 
@@ -349,6 +352,152 @@ namespace fusedrive
         }
         return *pFileinfo;
     }
+    
+    GdriveFile* Gdrive::openFile(const std::string& fileId, int flags, 
+            int& error)
+    {
+        assert(!fileId.empty());
+
+        // Get the cache node from the cache if it exists.  If it doesn't exist,
+        // don't make a node with an empty Gdrive_Fileinfo.  Instead, use 
+        // gdrive_file_info_from_id() to create the node and fill out the struct, 
+        // then try again to get the node.
+        CacheNode* pNode;
+        while ((pNode = mCache.getNode(fileId, false)) 
+                == NULL)
+        {
+            try
+            {
+                getFileinfoById(fileId);
+            }
+            catch (const exception& e)
+            {
+                // Problem getting the file info.  Return failure.
+                error = ENOENT;
+                throw new exception();
+            }
+        }
+
+        // If the file is deleted, existing filehandles will still work, but nobody
+        // new can open it.
+        if (pNode->isDeleted())
+        {
+            error = ENOENT;
+            throw new exception();
+        }
+
+        // Don't open directories, only regular files.
+        if (pNode->getFileinfo().type == GDRIVE_FILETYPE_FOLDER)
+        {
+            // Return failure
+            error = EISDIR;
+            throw new exception();
+        }
+
+
+        if (!pNode->checkPermissions(flags))
+        {
+            // Access error
+            error = EACCES;
+            throw new exception();
+        }
+
+
+        // Increment the open counter
+        pNode->incrementOpenCount((flags & O_WRONLY) || (flags & O_RDWR));
+
+        // Return file handle containing the cache node
+        return openFileHelper(*pNode);
+    }
+
+    string Gdrive::createFile(const string& path, bool createFolder, 
+            int& error)
+    {
+        assert(!path.empty() && path[0] == '/');
+            
+        // Separate path into basename and parent folder.
+        Gdrive_Path* pGpath = gdrive_path_create(path.c_str());
+        if (pGpath == NULL)
+        {
+            // Memory error
+            error = ENOMEM;
+            return "";
+        }
+        const char* folderName = gdrive_path_get_dirname(pGpath);
+        const char* filename = gdrive_path_get_basename(pGpath);
+
+        // Check basename for validity (non-NULL, not a directory link such as "..")
+        if (filename == NULL || filename[0] == '/' || 
+                strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0)
+        {
+            error = EISDIR;
+            gdrive_path_free(pGpath);
+            return "";
+        }
+
+        // Check folder for validity (non-NULL, starts with '/', and is an existing
+        // folder)
+        if (folderName == NULL || folderName[0] != '/')
+        {
+            // Path wasn't in the form of an absolute path
+            error = ENOTDIR;
+            gdrive_path_free(pGpath);
+            return "";
+        }
+        string parentId = getFileIdFromPath(folderName);
+        if (parentId.empty())
+        {
+            // Folder doesn't exist
+            error = ENOTDIR;
+            gdrive_path_free(pGpath);
+            return "";
+        }
+        CacheNode* pFolderNode = 
+                mCache.getNode(parentId, true);
+        if (pFolderNode == NULL)
+        {
+            // Couldn't get a node for the parent folder
+            error = EIO;
+            gdrive_path_free(pGpath);
+            return "";
+        }
+        const Fileinfo& folderinfo = pFolderNode->getFileinfo();
+        if (folderinfo.type != GDRIVE_FILETYPE_FOLDER)
+        {
+            // Not an actual folder
+            error = ENOTDIR;
+            gdrive_path_free(pGpath);
+            return "";
+        }
+
+        // Make sure we have write access to the folder
+        if (!pFolderNode->checkPermissions(O_WRONLY))
+        {
+            // Don't have the needed permission
+            error = EACCES;
+            gdrive_path_free(pGpath);
+            return "";
+        }
+
+
+        string fileId = syncMetadataOrCreate(NULL, parentId, filename, 
+                createFolder, error);
+        gdrive_path_free(pGpath);
+
+        // TODO: See if gdrive_cache_add_fileid() can be modified to return a 
+        // pointer to the cached ID (which is a new copy of the ID that was passed
+        // in). This will avoid the need to look up the ID again after adding it,
+        // and it will also help with multiple files that have identical paths.
+        int result = mCache.addFileid(path, fileId);
+        if (result != 0)
+        {
+            // Probably a memory error
+            error = ENOMEM;
+            return "";
+        }
+
+        return getFileIdFromPath(path);
+    }
 
     int Gdrive::removeParent(const string& fileId, const string& parentId)
     {
@@ -647,7 +796,173 @@ namespace fusedrive
         }
         return curl_easy_duphandle(mCurlHandle);
     }
+    
+    string Gdrive::syncMetadataOrCreate(Fileinfo* pFileinfo, 
+            const std::string& parentId, const std::string& filename, 
+            bool isFolder, int& error)
+    {
+        // For existing file, pFileinfo must be non-NULL. For creating new file,
+        // both parentId and filename must be non-empty.
+        assert(pFileinfo || !(parentId.empty() || filename.empty()));
+        
+        bool isReallyFolder = isFolder;
+        Fileinfo myFileinfo(*this);
+        Fileinfo* pMyFileinfo;
+        if (pFileinfo != NULL)
+        {
+            pMyFileinfo = pFileinfo;
+            isReallyFolder = (pMyFileinfo->type == GDRIVE_FILETYPE_FOLDER);
+        }
+        else
+        {
+            myFileinfo.filename = filename;
+            myFileinfo.type = isReallyFolder ? 
+                GDRIVE_FILETYPE_FOLDER : GDRIVE_FILETYPE_FILE;
+            struct timespec ts;
+            if (clock_gettime(CLOCK_REALTIME, &ts) == 0)
+            {
+                myFileinfo.creationTime = ts;
+                myFileinfo.accessTime = ts;
+                myFileinfo.modificationTime = ts;
+            }
+            // else leave the times at 0 on failure
 
+            pMyFileinfo = &myFileinfo;
+        }
+
+
+        // Set up the file resource as a JSON object
+        Json uploadResourceJson;
+        if (!uploadResourceJson.gdrive_json_is_valid())
+        {
+            error = ENOMEM;
+            return NULL;
+        }
+        uploadResourceJson.gdrive_json_add_string("title", pMyFileinfo->filename);
+        if (pFileinfo == NULL)
+        {
+            // Only set parents when creating a new file
+            Json parentsArray = 
+                    uploadResourceJson.gdrive_json_add_new_array("parents");
+            if (!parentsArray.gdrive_json_is_valid())
+            {
+                error = ENOMEM;
+                return NULL;
+            }
+            Json parentIdObj;
+            parentIdObj.gdrive_json_add_string("id", parentId);
+            parentsArray.gdrive_json_array_append_object(parentIdObj);
+        }
+        if (isReallyFolder)
+        {
+            uploadResourceJson.gdrive_json_add_string("mimeType", 
+                    "application/vnd.google-apps.folder");
+        }
+    //    char* timeString = (char*) malloc(Fileinfo::GDRIVE_TIMESTRING_LENGTH);
+    //    if (timeString == NULL)
+    //    {
+    //        // Memory error
+    //        gdrive_json_kill(uploadResourceJson);
+    //        *pError = ENOMEM;
+    //        return NULL;
+    //    }
+    //    // Reuse the same timeString for atime and mtime. Can't change ctime.
+        string timeString = pMyFileinfo->getAtimeString();
+        if (!timeString.empty())
+        {
+            uploadResourceJson.gdrive_json_add_string("lastViewedByMeDate", 
+                    timeString);
+        }
+
+        bool hasMtime = false;
+        timeString = pMyFileinfo->getMtimeString();
+        if (!timeString.empty())
+        {
+            uploadResourceJson.gdrive_json_add_string("modifiedDate", timeString);
+            hasMtime = true;
+        }
+
+        // Convert the JSON into a string
+        string uploadResourceStr = uploadResourceJson.gdrive_json_to_string(false);
+        if (uploadResourceStr.empty())
+        {
+            error = ENOMEM;
+            return NULL;
+        }
+
+
+        // Full URL has '/' and the file ID appended for an existing file, or just
+        // the base URL for a new one.
+        stringstream url;
+        url << GDRIVE_URL_FILES;
+        if (pFileinfo)
+        {
+            // Existing file, need base URL + '/' + file ID
+            url << '/' << pMyFileinfo->id;
+        }
+
+        // Set up the network request
+        Gdrive_Transfer* pTransfer = gdrive_xfer_create(*this);
+        if (pTransfer == NULL)
+        {
+            error = ENOMEM;
+            gdrive_xfer_free(pTransfer);
+            return NULL;
+        }
+        // URL, header, and updateViewedDate query parameter always get added. The 
+        // setModifiedDate query parameter only gets set when hasMtime is true. Any 
+        // of these can fail with an out of memory error (returning non-zero).
+        if ((gdrive_xfer_set_url(pTransfer, url.str().c_str()) || 
+                gdrive_xfer_add_header(pTransfer, "Content-Type: application/json"))
+                || 
+                (hasMtime && 
+                gdrive_xfer_add_query(*this, pTransfer, "setModifiedDate", "true")) || 
+                gdrive_xfer_add_query(*this, pTransfer, "updateViewedDate", "false")
+            )
+        {
+            error = ENOMEM;
+            gdrive_xfer_free(pTransfer);
+            return NULL;
+        }
+        gdrive_xfer_set_requesttype(pTransfer, (pFileinfo != NULL) ? 
+            GDRIVE_REQUEST_PATCH : GDRIVE_REQUEST_POST);
+        gdrive_xfer_set_body(pTransfer, uploadResourceStr.c_str());
+
+        // Do the transfer
+        Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
+        gdrive_xfer_free(pTransfer);
+
+        if (pBuf == NULL || gdrive_dlbuf_get_httpresp(pBuf) >= 400)
+        {
+            // Transfer was unsuccessful
+            error = EIO;
+            gdrive_dlbuf_free(pBuf);
+            return NULL;
+        }
+
+        // Extract the file ID from the returned resource
+        Json jsonObj(gdrive_dlbuf_get_data(pBuf));
+        gdrive_dlbuf_free(pBuf);
+        if (!jsonObj.gdrive_json_is_valid())
+        {
+            // Either memory error, or couldn't convert the response to JSON.
+            // More likely memory.
+            error = ENOMEM;
+            return NULL;
+        }
+        string fileId = jsonObj.gdrive_json_get_string("id");
+        if (fileId.empty())
+        {
+            // Either memory error, or couldn't extract the desired string, can't
+            // tell which.
+            error = EIO;
+            return NULL;
+        }
+
+        pMyFileinfo->dirtyMetainfo = false;
+        return fileId;
+    }
+    
     Cache& Gdrive::getCache()
     {
         return mCache;

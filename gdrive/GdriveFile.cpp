@@ -30,154 +30,6 @@ namespace fusedrive
 
     
     
-    GdriveFile* GdriveFile::openFile(Gdrive& gInfo, 
-            const std::string& fileId, int flags, int& error)
-    {
-        assert(!fileId.empty());
-
-        // Get the cache node from the cache if it exists.  If it doesn't exist,
-        // don't make a node with an empty Gdrive_Fileinfo.  Instead, use 
-        // gdrive_file_info_from_id() to create the node and fill out the struct, 
-        // then try again to get the node.
-        Cache& cache = gInfo.getCache();
-        CacheNode* pNode;
-        while ((pNode = cache.getNode(fileId, false)) 
-                == NULL)
-        {
-            try
-            {
-                gInfo.getFileinfoById(fileId);
-            }
-            catch (const exception& e)
-            {
-                // Problem getting the file info.  Return failure.
-                error = ENOENT;
-                throw new exception();
-            }
-        }
-
-        // If the file is deleted, existing filehandles will still work, but nobody
-        // new can open it.
-        if (pNode->isDeleted())
-        {
-            error = ENOENT;
-            throw new exception();
-        }
-
-        // Don't open directories, only regular files.
-        if (pNode->getFileinfo().type == GDRIVE_FILETYPE_FOLDER)
-        {
-            // Return failure
-            error = EISDIR;
-            throw new exception();
-        }
-
-
-        if (!pNode->checkPermissions(flags))
-        {
-            // Access error
-            error = EACCES;
-            throw new exception();
-        }
-
-
-        // Increment the open counter
-        pNode->incrementOpenCount((flags & O_WRONLY) || (flags & O_RDWR));
-
-        // Return file handle containing the cache node
-        return new GdriveFile(*pNode);
-    }
-
-    std::string GdriveFile::createFile(Gdrive& gInfo, const std::string& path, 
-        bool createFolder, int& error)
-    {
-        assert(!path.empty() && path[0] == '/');
-            
-        // Separate path into basename and parent folder.
-        Gdrive_Path* pGpath = gdrive_path_create(path.c_str());
-        if (pGpath == NULL)
-        {
-            // Memory error
-            error = ENOMEM;
-            return "";
-        }
-        const char* folderName = gdrive_path_get_dirname(pGpath);
-        const char* filename = gdrive_path_get_basename(pGpath);
-
-        // Check basename for validity (non-NULL, not a directory link such as "..")
-        if (filename == NULL || filename[0] == '/' || 
-                strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0)
-        {
-            error = EISDIR;
-            gdrive_path_free(pGpath);
-            return "";
-        }
-
-        // Check folder for validity (non-NULL, starts with '/', and is an existing
-        // folder)
-        if (folderName == NULL || folderName[0] != '/')
-        {
-            // Path wasn't in the form of an absolute path
-            error = ENOTDIR;
-            gdrive_path_free(pGpath);
-            return "";
-        }
-        string parentId = gInfo.getFileIdFromPath(folderName);
-        if (parentId.empty())
-        {
-            // Folder doesn't exist
-            error = ENOTDIR;
-            gdrive_path_free(pGpath);
-            return "";
-        }
-        CacheNode* pFolderNode = 
-                gInfo.getCache().getNode(parentId, true);
-        if (pFolderNode == NULL)
-        {
-            // Couldn't get a node for the parent folder
-            error = EIO;
-            gdrive_path_free(pGpath);
-            return "";
-        }
-        const Fileinfo& folderinfo = pFolderNode->getFileinfo();
-        if (folderinfo.type != GDRIVE_FILETYPE_FOLDER)
-        {
-            // Not an actual folder
-            error = ENOTDIR;
-            gdrive_path_free(pGpath);
-            return "";
-        }
-
-        // Make sure we have write access to the folder
-        if (!pFolderNode->checkPermissions(O_WRONLY))
-        {
-            // Don't have the needed permission
-            error = EACCES;
-            gdrive_path_free(pGpath);
-            return "";
-        }
-
-
-        string fileId = syncMetadataOrCreate(gInfo, NULL, 
-                parentId, filename, createFolder, error);
-        gdrive_path_free(pGpath);
-
-        // TODO: See if gdrive_cache_add_fileid() can be modified to return a 
-        // pointer to the cached ID (which is a new copy of the ID that was passed
-        // in). This will avoid the need to look up the ID again after adding it,
-        // and it will also help with multiple files that have identical paths.
-        int result = 
-            gInfo.getCache().addFileid(path, fileId);
-        if (result != 0)
-        {
-            // Probably a memory error
-            error = ENOMEM;
-            return "";
-        }
-
-        return gInfo.getFileIdFromPath(path);
-    }
-
     void GdriveFile::close(int flags)
     {
         if ((flags & O_WRONLY) || (flags & O_RDWR))
@@ -805,7 +657,11 @@ namespace fusedrive
     {
         // No body needed
     }
-    
+
+    GdriveFile* openFileHelper(CacheNode& cacheNode)
+    {
+        return new GdriveFile(cacheNode);
+    }    
     
 
 }

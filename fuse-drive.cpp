@@ -425,7 +425,7 @@ using namespace fusedrive;
 
         // Create the file
         int error = 0;
-        const string fileId = GdriveFile::createFile(gInfo, pathStr, false, error);
+        const string fileId = gInfo.createFile(pathStr, false, error);
         if (fileId.empty())
         {
             // Some error occurred
@@ -436,7 +436,7 @@ using namespace fusedrive;
         // using the (currently unused) mode parameter we were given.
 
         // File was successfully created. Open it.
-        fi->fh = (uint64_t) GdriveFile::openFile(gInfo, fileId, O_RDWR, error);
+        fi->fh = (uint64_t) gInfo.openFile(fileId, O_RDWR, error);
 
         return -error;
     }
@@ -700,7 +700,7 @@ using namespace fusedrive;
 
         // Create the folder
         int error = 0;
-        GdriveFile::createFile(gInfo, path, true, error);
+        gInfo.createFile(path, true, error);
 
         // TODO: If fudr_chmod is ever implemented, change the folder permissions 
         // using the (currently unused) mode parameter we were given.
@@ -752,7 +752,7 @@ using namespace fusedrive;
 
         // Open the file
         int error = 0;
-        GdriveFile* pFile = GdriveFile::openFile(gInfo, fileId, fi->flags, error);
+        GdriveFile* pFile = gInfo.openFile(fileId, fi->flags, error);
 
         if (pFile == NULL)
         {
@@ -1210,7 +1210,7 @@ using namespace fusedrive;
 
         // Open the file
         int error = 0;
-        GdriveFile* fh = GdriveFile::openFile(gInfo, fileId, O_RDWR, error);
+        GdriveFile* fh = gInfo.openFile(fileId, O_RDWR, error);
         if (fh == NULL)
         {
             // Error
@@ -1282,7 +1282,7 @@ using namespace fusedrive;
         }
 
         int error = 0;
-        GdriveFile* fh = GdriveFile::openFile(gInfo, fileId, O_RDWR, error);
+        GdriveFile* fh = gInfo.openFile(fileId, O_RDWR, error);
         if (fh == NULL)
         {
             return -error;
