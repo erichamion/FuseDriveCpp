@@ -39,7 +39,7 @@ namespace fusedrive
         // don't make a node with an empty Gdrive_Fileinfo.  Instead, use 
         // gdrive_file_info_from_id() to create the node and fill out the struct, 
         // then try again to get the node.
-        Cache& cache = gInfo.gdrive_get_cache();
+        Cache& cache = gInfo.getCache();
         CacheNode* pNode;
         while ((pNode = cache.getNode(fileId, false)) 
                 == NULL)
@@ -122,7 +122,7 @@ namespace fusedrive
             gdrive_path_free(pGpath);
             return "";
         }
-        string parentId = gInfo.gdrive_filepath_to_id(folderName);
+        string parentId = gInfo.getFileIdFromPath(folderName);
         if (parentId.empty())
         {
             // Folder doesn't exist
@@ -131,7 +131,7 @@ namespace fusedrive
             return "";
         }
         CacheNode* pFolderNode = 
-                gInfo.gdrive_get_cache().getNode(parentId, true);
+                gInfo.getCache().getNode(parentId, true);
         if (pFolderNode == NULL)
         {
             // Couldn't get a node for the parent folder
@@ -167,7 +167,7 @@ namespace fusedrive
         // in). This will avoid the need to look up the ID again after adding it,
         // and it will also help with multiple files that have identical paths.
         int result = 
-            gInfo.gdrive_get_cache().addFileid(path, fileId);
+            gInfo.getCache().addFileid(path, fileId);
         if (result != 0)
         {
             // Probably a memory error
@@ -175,7 +175,7 @@ namespace fusedrive
             return "";
         }
 
-        return gInfo.gdrive_filepath_to_id(path);
+        return gInfo.getFileIdFromPath(path);
     }
 
     void GdriveFile::gdrive_file_close(int flags)
@@ -204,7 +204,7 @@ namespace fusedrive
             cacheNode.clearContents();
             if (cacheNode.isDeleted())
             {
-                gInfo.gdrive_get_cache().deleteNode(&cacheNode);
+                gInfo.getCache().deleteNode(&cacheNode);
             }
         }
         

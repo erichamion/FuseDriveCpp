@@ -213,7 +213,7 @@ int gdrive_dlbuf_download_with_retry(Gdrive& gInfo, Gdrive_Download_Buffer* pBuf
                 // auth fails).
                 if (retryOnAuthError)
                 {
-                    retry = (gInfo.gdrive_auth() == 0);
+                    retry = (gInfo.authenticate() == 0);
                     break;
                 }
                 // else fall through

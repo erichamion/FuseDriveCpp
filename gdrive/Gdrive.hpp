@@ -53,26 +53,26 @@ namespace fusedrive
                 enum Gdrive_Interaction interactionMode, 
                 size_t minFileChunkSize, int maxChunksPerFile, bool initCurl=true);
         
-        size_t gdrive_get_minchunksize(void);
+        size_t getMinChunkSize(void) const;
 
-        int gdrive_get_maxchunks(void);
+        int getMaxChunks(void) const;
 
-        int gdrive_get_filesystem_perms(enum Gdrive_Filetype type);
+        int getFilesystemPermissions(enum Gdrive_Filetype type);
 
-        Gdrive_Fileinfo_Array*  gdrive_folder_list(const std::string& folderId);
+        Gdrive_Fileinfo_Array*  ListFolderContents(const std::string& folderId);
 
-        std::string gdrive_filepath_to_id(const std::string& path);
+        std::string getFileIdFromPath(const std::string& path);
         
         const Fileinfo& getFileinfoById(const std::string& fileId);
 
-        int gdrive_remove_parent(const std::string& fileId, 
+        int removeParent(const std::string& fileId, 
             const std::string& parentId);
 
-        int gdrive_delete(const std::string& fileId, const std::string& parentId);
+        int deleteFile(const std::string& fileId, const std::string& parentId);
 
-        int gdrive_add_parent(const std::string& fileId, const std::string& parentId);
+        int addParent(const std::string& fileId, const std::string& parentId);
 
-        int gdrive_change_basename(const std::string& fileId, const std::string& newName);
+        int changeBasename(const std::string& fileId, const std::string& newName);
         
         ~Gdrive();
         
@@ -86,13 +86,13 @@ namespace fusedrive
         static const std::string GDRIVE_URL_ABOUT;
         static const std::string GDRIVE_URL_CHANGES;
         
-        CURL* gdrive_get_curlhandle();
+        CURL* getCurlHandle();
         
-        Cache& gdrive_get_cache();
+        Cache& getCache();
 
-        const std::string& gdrive_get_access_token();
+        const std::string& getAccessToken();
 
-        int gdrive_auth();
+        int authenticate();
         
     private:
         //GdriveInfo gdriveInfo;
@@ -131,22 +131,20 @@ namespace fusedrive
 
         
         
-        size_t minChunkSize;
-        int maxChunks;
+        size_t mMinChunkSize;
+        int mMaxChunks;
         
-        int mode;
-        bool userInteractionAllowed;
-        std::string authFilename;
-        std::string accessToken;
-        std::string refreshToken;
-        // accessTokenLength and refreshTokenLenth are the allocated sizes, not the
-        // actual size of the strings.
-        std::string clientId;
-        std::string clientSecret;
-        std::string redirectUri;
-        bool needsCurlCleanup;
-        CURL* curlHandle;
-        Cache cache;
+        int mMode;
+        bool mUserInteractionAllowed;
+        std::string mAuthFilename;
+        std::string mAccessToken;
+        std::string mRefreshToken;
+        std::string mClientId;
+        std::string mClientSecret;
+        std::string mRedirectUri;
+        bool mNeedsCurlCleanup;
+        CURL* mCurlHandle;
+        Cache mCache;
         
         void initWithCurl(int access, time_t cacheTTL, 
             enum Gdrive_Interaction interactionMode, size_t minFileChunkSize);
@@ -154,23 +152,23 @@ namespace fusedrive
         void initNoCurl(int access, time_t cacheTTL, 
             enum Gdrive_Interaction interactionMode, size_t minFileChunkSize);
         
-        int gdrive_read_auth_file(const std::string& filename);
+        int readAuthFile(const std::string& filename);
         
-        int gdrive_refresh_auth_token(const std::string& grantType, 
-        const std::string& tokenString);
+        int refreshAuthToken(const std::string& grantType, 
+            const std::string& tokenString);
 
-        int gdrive_prompt_for_auth();
+        int promptForAuth();
 
-        int gdrive_check_scopes();
+        int checkScopes();
 
-        std::string gdrive_get_root_folder_id();
+        std::string getRootFolderId();
 
-        std::string gdrive_get_child_id_by_name(const std::string& parentId, 
-        const std::string& childName);
+        std::string getChildFileId(const std::string& parentId, 
+            const std::string& childName);
 
-        int gdrive_save_auth();
+        int writeAuthCredentials();
 
-        void gdrive_curlhandle_setup(CURL* curlHandle);
+        void SetupCurlHandle(CURL* curlHandle);
         
         
         

@@ -187,7 +187,7 @@ Gdrive_Download_Buffer* gdrive_xfer_execute(Gdrive& gInfo, Gdrive_Transfer* pTra
         return NULL;
     }
     
-    CURL* curlHandle = gInfo.gdrive_get_curlhandle();
+    CURL* curlHandle = gInfo.getCurlHandle();
     
     bool needsBody = false;
     
@@ -355,7 +355,7 @@ static size_t gdrive_xfer_upload_callback_internal(char* buffer, size_t size,
 static struct curl_slist* 
 gdrive_get_authbearer_header(Gdrive& gInfo, struct curl_slist* pHeaders)
 {
-    const char* token = gInfo.gdrive_get_access_token().c_str();
+    const char* token = gInfo.getAccessToken().c_str();
     
     // If we don't have any access token yet, do nothing
     if (!token)

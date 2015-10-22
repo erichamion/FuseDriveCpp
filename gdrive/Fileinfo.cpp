@@ -170,7 +170,7 @@ namespace fusedrive
         
         // Get the overall system permissions, which are different for a folder
         // or for a regular file.
-        int systemPerm = gInfo.gdrive_get_filesystem_perms(type);
+        int systemPerm = gInfo.getFilesystemPermissions(type);
 
         // Combine the system permissions with the actual file permissions.
         return systemPerm & basePermission;

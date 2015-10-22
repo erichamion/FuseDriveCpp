@@ -42,9 +42,9 @@ namespace fusedrive
     Gdrive::Gdrive(int access, std::string authFilename, time_t cacheTTL, 
             enum Gdrive_Interaction interactionMode, 
             size_t minFileChunkSize, int maxChunksPerFile, bool initCurl) 
-    : maxChunks(maxChunksPerFile), authFilename(authFilename), 
-            needsCurlCleanup(initCurl), curlHandle(NULL), 
-            cache(*this, cacheTTL)
+    : mMaxChunks(maxChunksPerFile), mAuthFilename(authFilename), 
+            mNeedsCurlCleanup(initCurl), mCurlHandle(NULL), 
+            mCache(*this, cacheTTL)
     {
         if (initCurl)
         {
@@ -63,26 +63,26 @@ namespace fusedrive
 //        
 //    }
     
-    size_t Gdrive::gdrive_get_minchunksize()
+    size_t Gdrive::getMinChunkSize(void) const
     {
-        return minChunkSize;
+        return mMinChunkSize;
     }
     
-    int Gdrive::gdrive_get_maxchunks()
+    int Gdrive::getMaxChunks() const
     {
-        return maxChunks;
+        return mMaxChunks;
     }
 
-    int Gdrive::gdrive_get_filesystem_perms(enum Gdrive_Filetype type)
+    int Gdrive::getFilesystemPermissions(enum Gdrive_Filetype type)
     {
         // Get the permissions for regular files.
         int perms = 0;
-        if (mode & Gdrive::GDRIVE_ACCESS_READ)
+        if (mMode & Gdrive::GDRIVE_ACCESS_READ)
         {
             // Read access
             perms = perms | S_IROTH;
         }
-        if (mode & Gdrive::GDRIVE_ACCESS_WRITE)
+        if (mMode & Gdrive::GDRIVE_ACCESS_WRITE)
         {
             // Write access
             perms = perms | S_IWOTH;
@@ -99,7 +99,7 @@ namespace fusedrive
     }
 
 
-    Gdrive_Fileinfo_Array*  Gdrive::gdrive_folder_list(const string& folderId)
+    Gdrive_Fileinfo_Array*  Gdrive::ListFolderContents(const string& folderId)
     {
         // Allow for an initial quote character in addition to the terminating null
         string filter = string("'") + folderId + 
@@ -177,7 +177,7 @@ namespace fusedrive
     }
 
 
-    string Gdrive::gdrive_filepath_to_id(const string& path)
+    string Gdrive::getFileIdFromPath(const string& path)
     {
         if (path.empty())
         {
@@ -186,7 +186,7 @@ namespace fusedrive
         }
 
         // Try to get the ID from the cache.
-        string cachedId(cache.getFileid(path));
+        string cachedId(mCache.getFileid(path));
         if (!cachedId.empty())
         {
             return cachedId;
@@ -197,11 +197,11 @@ namespace fusedrive
         string result = string();
         if (path.compare("/") == 0)
         {
-            result = gdrive_get_root_folder_id();
+            result = getRootFolderId();
             if (!result.empty())
             {
                 // Add to the fileId cache.
-                cache.addFileid(path, result);
+                mCache.addFileid(path, result);
             }
             return result;
         }
@@ -232,19 +232,19 @@ namespace fusedrive
         string parentPath = path.substr(0, parentLength);
         string childName = path.substr(index + 1);
         
-        string parentId = gdrive_filepath_to_id(parentPath);
+        string parentId = getFileIdFromPath(parentPath);
         if (parentId.empty())
         {
             // An error occurred.
             return string("");
         }
         // Use the parent's ID to find the child's ID.
-        string childId = gdrive_get_child_id_by_name(parentId, childName);
+        string childId = getChildFileId(parentId, childName);
 
         // Add the ID to the fileId cache.
         if (!childId.empty())
         {
-            cache.addFileid(path, childId);
+            mCache.addFileid(path, childId);
         }
         
         return childId;
@@ -257,7 +257,7 @@ namespace fusedrive
         bool alreadyCached = false;
 
         Fileinfo* pFileinfo = 
-                gdrive_get_cache().getItem(fileId, true, alreadyCached);
+                getCache().getItem(fileId, true, alreadyCached);
         if (pFileinfo == NULL)
         {
             // An error occurred, probably out of memory.
@@ -339,7 +339,7 @@ namespace fusedrive
         // If it's a folder, get the number of children.
         if (pFileinfo->type == GDRIVE_FILETYPE_FOLDER)
         {
-            Gdrive_Fileinfo_Array* pFileArray = gdrive_folder_list(fileId);
+            Gdrive_Fileinfo_Array* pFileArray = ListFolderContents(fileId);
             if (pFileArray != NULL)
             {
 
@@ -350,12 +350,12 @@ namespace fusedrive
         return *pFileinfo;
     }
 
-    int Gdrive::gdrive_remove_parent(const string& fileId, const string& parentId)
+    int Gdrive::removeParent(const string& fileId, const string& parentId)
     {
         assert(!(fileId.empty() || parentId.empty()));
 
         // Need write access
-        if (!(mode & Gdrive::GDRIVE_ACCESS_WRITE))
+        if (!(mMode & Gdrive::GDRIVE_ACCESS_WRITE))
         {
             return -EACCES;
         }
@@ -387,7 +387,7 @@ namespace fusedrive
     }
 
 
-    int Gdrive::gdrive_delete(const string& fileId, const string& parentId)
+    int Gdrive::deleteFile(const string& fileId, const string& parentId)
     {
         // TODO: If support for manipulating trashed files is added, we'll need to
         // check whether the specified file is already trashed, and permanently 
@@ -397,7 +397,7 @@ namespace fusedrive
         assert(!fileId.empty());
 
         // Need write access
-        if (!(mode & Gdrive::GDRIVE_ACCESS_WRITE))
+        if (!(mMode & Gdrive::GDRIVE_ACCESS_WRITE))
         {
             return -EACCES;
         }
@@ -427,24 +427,24 @@ namespace fusedrive
         gdrive_dlbuf_free(pBuf);
         if (returnVal == 0)
         {
-            cache.deleteId(fileId);
+            mCache.deleteId(fileId);
             if (!parentId.empty() && parentId.compare("/") != 0)
             {
                 // Remove the parent from the cache because the child count will be
                 // wrong.
-                cache.deleteId(parentId);
+                mCache.deleteId(parentId);
             }
         }
         return returnVal;
     }
 
 
-    int Gdrive::gdrive_add_parent(const string& fileId, const string& parentId)
+    int Gdrive::addParent(const string& fileId, const string& parentId)
     {
         assert(!(fileId.empty() || parentId.empty()));
 
         // Need write access
-        if (!(mode & Gdrive::GDRIVE_ACCESS_WRITE))
+        if (!(mMode & Gdrive::GDRIVE_ACCESS_WRITE))
         {
             return -EACCES;
         }
@@ -488,7 +488,7 @@ namespace fusedrive
             // before the cache expires. (For example, if there was only one parent
             // before, and the user deletes one of the links, we don't want to
             // delete the entire file because of a bad parent count).
-            Fileinfo* pFileinfo = cache.getItem(fileId, false);
+            Fileinfo* pFileinfo = mCache.getItem(fileId, false);
             if (pFileinfo)
             {
                 pFileinfo->nParents++;
@@ -497,12 +497,12 @@ namespace fusedrive
         return returnVal;
     }
 
-    int Gdrive::gdrive_change_basename(const string& fileId, const string& newName)
+    int Gdrive::changeBasename(const string& fileId, const string& newName)
     {
         assert(!(fileId.empty() || newName.empty()));
 
         // Need write access
-        if (!(mode & Gdrive::GDRIVE_ACCESS_WRITE))
+        if (!(mMode & Gdrive::GDRIVE_ACCESS_WRITE))
         {
             return -EACCES;
         }
@@ -547,9 +547,9 @@ namespace fusedrive
 
     Gdrive::~Gdrive() 
     {
-        if (this->needsCurlCleanup && curlHandle != NULL)
+        if (this->mNeedsCurlCleanup && mCurlHandle != NULL)
         {
-            curl_easy_cleanup(curlHandle);
+            curl_easy_cleanup(mCurlHandle);
         }
     }
 
@@ -633,38 +633,38 @@ namespace fusedrive
     * Semi-Public Methods
     **************************/
     
-    CURL* Gdrive::gdrive_get_curlhandle()
+    CURL* Gdrive::getCurlHandle()
     {
-        if (curlHandle == NULL)
+        if (mCurlHandle == NULL)
         {
-            curlHandle = curl_easy_init();
-            if (curlHandle == NULL)
+            mCurlHandle = curl_easy_init();
+            if (mCurlHandle == NULL)
             {
                 // Error
                 return NULL;
             }
-            gdrive_curlhandle_setup(curlHandle);
+            SetupCurlHandle(mCurlHandle);
         }
-        return curl_easy_duphandle(curlHandle);
+        return curl_easy_duphandle(mCurlHandle);
     }
 
-    Cache& Gdrive::gdrive_get_cache()
+    Cache& Gdrive::getCache()
     {
-        return cache;
+        return mCache;
     }
     
-    const string& Gdrive::gdrive_get_access_token()
+    const string& Gdrive::getAccessToken()
     {
-        return accessToken;
+        return mAccessToken;
     }
 
-    int Gdrive::gdrive_auth()
+    int Gdrive::authenticate()
     {
         // Try to refresh existing tokens first.
-        if (!refreshToken.empty())
+        if (!mRefreshToken.empty())
         {
-            int refreshSuccess = gdrive_refresh_auth_token(
-                    GDRIVE_GRANTTYPE_REFRESH, refreshToken
+            int refreshSuccess = refreshAuthToken(
+                    GDRIVE_GRANTTYPE_REFRESH, mRefreshToken
             );
 
             if (refreshSuccess == 0)
@@ -672,7 +672,7 @@ namespace fusedrive
                 // Refresh succeeded, but we don't know what scopes were previously
                 // granted.  Check to make sure we have the required scopes.  If so,
                 // then we don't need to do anything else and can return success.
-                int success = gdrive_check_scopes();
+                int success = checkScopes();
                 if (success == 0)
                 {
                     // Refresh succeeded with correct scopes, return success.
@@ -683,7 +683,7 @@ namespace fusedrive
 
         // Either didn't have a refresh token, or it didn't work.  Need to get new
         // authorization, if allowed.
-        if (!userInteractionAllowed)
+        if (!mUserInteractionAllowed)
         {
             // Need to get new authorization, but not allowed to interact with the
             // user.  Return error.
@@ -693,7 +693,7 @@ namespace fusedrive
         // If we've gotten this far, then we need to interact with the user, and
         // we're allowed to do so.  Prompt for authorization, and return whatever
         // success or failure the prompt returns.
-        return gdrive_prompt_for_auth();
+        return promptForAuth();
     }    
 
     
@@ -728,56 +728,56 @@ namespace fusedrive
         srand(time(NULL));
 
         // Set up the Google Drive client ID and secret.
-        clientId = GDRIVE_CLIENT_ID;
-        clientSecret = GDRIVE_CLIENT_SECRET;
-        redirectUri = GDRIVE_REDIRECT_URI;
+        mClientId = GDRIVE_CLIENT_ID;
+        mClientSecret = GDRIVE_CLIENT_SECRET;
+        mRedirectUri = GDRIVE_REDIRECT_URI;
 
         // Can we prompt the user for authentication during initial setup?
         if (interactionMode == GDRIVE_INTERACTION_STARTUP || 
                 interactionMode == GDRIVE_INTERACTION_ALWAYS)
         {
-            userInteractionAllowed = true;
+            mUserInteractionAllowed = true;
         }
 
         // If a filename was given, attempt to open the file and read its contents.
-        if (!authFilename.empty())
+        if (!mAuthFilename.empty())
         {
-            gdrive_read_auth_file(authFilename);
+            readAuthFile(mAuthFilename);
         }
 
         // Authenticate or refresh access
-        mode = access;
-        if (mode & Gdrive::GDRIVE_ACCESS_WRITE) 
+        mMode = access;
+        if (mMode & Gdrive::GDRIVE_ACCESS_WRITE) 
         {
             // Write access implies read access
-            mode = mode | Gdrive::GDRIVE_ACCESS_READ;
+            mMode = mMode | Gdrive::GDRIVE_ACCESS_READ;
         }
-        if (mode & Gdrive::GDRIVE_ACCESS_READ) 
+        if (mMode & Gdrive::GDRIVE_ACCESS_READ) 
         {
             // Read access implies meta-info access
-            mode = mode | Gdrive::GDRIVE_ACCESS_META;
+            mMode = mMode | Gdrive::GDRIVE_ACCESS_META;
         }
-        if (gdrive_auth() != 0)
+        if (authenticate() != 0)
         {
             // Could not get the required permissions.
             throw new exception();
         }
-        gdrive_save_auth();
+        writeAuthCredentials();
         // Can we continue prompting for authentication if needed later?
-        userInteractionAllowed = 
+        mUserInteractionAllowed = 
                 (interactionMode == GDRIVE_INTERACTION_ALWAYS);
         
-        cache.init();
+        mCache.init();
         
         // Set chunk size
-        minChunkSize = (minFileChunkSize > 0) ? 
+        mMinChunkSize = (minFileChunkSize > 0) ? 
             Util::gdrive_divide_round_up(minFileChunkSize, Gdrive::GDRIVE_BASE_CHUNK_SIZE) * 
                 Gdrive::GDRIVE_BASE_CHUNK_SIZE :
             Gdrive::GDRIVE_BASE_CHUNK_SIZE;
 
     }
     
-    int Gdrive::gdrive_read_auth_file(const std::string& filename)
+    int Gdrive::readAuthFile(const std::string& filename)
     {
         if (filename.empty())
         {
@@ -818,12 +818,12 @@ namespace fusedrive
             }
             else
             {
-                accessToken.assign(jsonObj.gdrive_json_get_string( 
+                mAccessToken.assign(jsonObj.gdrive_json_get_string( 
                         GDRIVE_FIELDNAME_ACCESSTOKEN));
-                refreshToken.assign(jsonObj.gdrive_json_get_string( 
+                mRefreshToken.assign(jsonObj.gdrive_json_get_string( 
                         GDRIVE_FIELDNAME_REFRESHTOKEN));
                 
-                if (accessToken.empty() || refreshToken.empty())
+                if (mAccessToken.empty() || mRefreshToken.empty())
                 {
                     // Didn't get one or more auth tokens from the file.
                     returnVal = -1;
@@ -842,7 +842,7 @@ namespace fusedrive
 
     }
         
-    int Gdrive::gdrive_refresh_auth_token(const std::string& grantType, 
+    int Gdrive::refreshAuthToken(const std::string& grantType, 
     const std::string& tokenString)
     {
         // Make sure we were given a valid grant_type
@@ -951,7 +951,7 @@ namespace fusedrive
             // Couldn't get access token
             return -1;
         }
-        accessToken.assign(tmpStr);
+        mAccessToken.assign(tmpStr);
         
         // Only try to get refresh token if we successfully got the access 
         // token.
@@ -966,13 +966,13 @@ namespace fusedrive
         if (!tmpStr.empty())
         {
             // We were given a refresh token, so store it.
-            refreshToken.assign(tmpStr);
+            mRefreshToken.assign(tmpStr);
         }
 
         return 0;
     }
 
-    int Gdrive::gdrive_prompt_for_auth()
+    int Gdrive::promptForAuth()
     {
         char scopeStr[GDRIVE_SCOPE_MAXLENGTH] = "";
         bool scopeFound = false;
@@ -981,7 +981,7 @@ namespace fusedrive
         // if necessary.
         for (unsigned int i = 0; i < GDRIVE_ACCESS_MODE_COUNT; i++)
         {
-            if (mode & GDRIVE_ACCESS_MODES[i])
+            if (mMode & GDRIVE_ACCESS_MODES[i])
             {
                 // If this isn't the first scope, add a space to separate scopes.
                 if (scopeFound)
@@ -1041,10 +1041,10 @@ namespace fusedrive
         }
 
         // Exchange the authorization code for access and refresh tokens.
-        return gdrive_refresh_auth_token(GDRIVE_GRANTTYPE_CODE, authCode);
+        return refreshAuthToken(GDRIVE_GRANTTYPE_CODE, authCode);
     }
 
-    int Gdrive::gdrive_check_scopes()
+    int Gdrive::checkScopes()
     {
         // Prepare the network request
         Gdrive_Transfer* pTransfer = gdrive_xfer_create(*this);
@@ -1058,7 +1058,7 @@ namespace fusedrive
         if (
                 gdrive_xfer_set_url(pTransfer, GDRIVE_URL_AUTH_TOKENINFO.c_str()) || 
                 gdrive_xfer_add_query(*this, pTransfer, GDRIVE_FIELDNAME_ACCESSTOKEN.c_str(), 
-                                      accessToken.c_str())
+                                      mAccessToken.c_str())
             )
         {
             // Error
@@ -1137,7 +1137,7 @@ namespace fusedrive
         // at a time.  If we don't find what we need, return failure.
         for (unsigned int i = 0; i < GDRIVE_ACCESS_MODE_COUNT; i++)
         {
-            if ((mode & GDRIVE_ACCESS_MODES[i]) && 
+            if ((mMode & GDRIVE_ACCESS_MODES[i]) && 
                     !(matchedScopes & GDRIVE_ACCESS_MODES[i])
                     )
             {
@@ -1149,12 +1149,12 @@ namespace fusedrive
         return 0;
     }
 
-    string Gdrive::gdrive_get_root_folder_id()
+    string Gdrive::getRootFolderId()
     {
         return string(gdrive_sysinfo_get_rootid(*this));
     }
 
-    string Gdrive::gdrive_get_child_id_by_name(const std::string& parentId, 
+    string Gdrive::getChildFileId(const std::string& parentId, 
     const std::string& childName)
     {
         // Construct a filter in the form of 
@@ -1212,9 +1212,9 @@ namespace fusedrive
         return childId;
     }
 
-    int Gdrive::gdrive_save_auth()
+    int Gdrive::writeAuthCredentials()
     {
-        if (authFilename.empty())
+        if (mAuthFilename.empty())
         {
             // Do nothing if there's no filename
             return -1;
@@ -1222,7 +1222,7 @@ namespace fusedrive
 
         // Create a JSON object, fill it with the necessary details, 
         // convert to a string, and write to the file.
-        FILE* outFile = Util::gdrive_power_fopen(authFilename, "w");
+        FILE* outFile = Util::gdrive_power_fopen(mAuthFilename, "w");
         if (outFile == NULL)
         {
             // Couldn't open file for writing.
@@ -1231,9 +1231,9 @@ namespace fusedrive
 
         Json jsonObj;
         jsonObj.gdrive_json_add_string(GDRIVE_FIELDNAME_ACCESSTOKEN, 
-                accessToken);
+                mAccessToken);
         jsonObj.gdrive_json_add_string(GDRIVE_FIELDNAME_REFRESHTOKEN, 
-                refreshToken);
+                mRefreshToken);
         int success = fputs(jsonObj.gdrive_json_to_string(true).c_str(), 
                 outFile);
         fclose(outFile);
@@ -1241,7 +1241,7 @@ namespace fusedrive
         return (success >= 0) ? 0 : -1;
     }
 
-    void Gdrive::gdrive_curlhandle_setup(CURL* curlHandle)
+    void Gdrive::SetupCurlHandle(CURL* curlHandle)
     {
         // Accept compressed responses and let libcurl automatically uncompress
         curl_easy_setopt(curlHandle, CURLOPT_ACCEPT_ENCODING, "");

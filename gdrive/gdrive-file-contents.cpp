@@ -95,7 +95,7 @@ void gdrive_fcontents_delete_after_offset(Gdrive& gInfo, Gdrive_File_Contents** 
     }
     
     // Array to store pointers to the chunks that need deleted
-    int maxChunks = gInfo.gdrive_get_maxchunks();
+    int maxChunks = gInfo.getMaxChunks();
     Gdrive_File_Contents* deleteArray[maxChunks];
     
     // Walk through the list of chunks and find the ones to delete

@@ -366,13 +366,13 @@ namespace fusedrive
     
     CacheNode::CacheNode(CacheNode* pParent)
     : gInfo(pParent->gInfo), fileinfo(pParent->gInfo), 
-            mCache(pParent->gInfo.gdrive_get_cache()), pParent(pParent)
+            mCache(pParent->gInfo.getCache()), pParent(pParent)
     {
         init();
     }
         
     CacheNode::CacheNode(Gdrive& gInfo)
-    : gInfo(gInfo), fileinfo(gInfo), mCache(gInfo.gdrive_get_cache()), 
+    : gInfo(gInfo), fileinfo(gInfo), mCache(gInfo.getCache()), 
             pParent(NULL)
     {
         init();
@@ -502,8 +502,8 @@ namespace fusedrive
         // minChunkSize that results in maxChunks or fewer chunks. Avoid creating
         // a chunk of size 0 by forcing fileSize to be at least 1.
         size_t fileSize = (fileinfo.size > 0) ? fileinfo.size : 1;
-        int maxChunks = gInfo.gdrive_get_maxchunks();
-        size_t minChunkSize = gInfo.gdrive_get_minchunksize();
+        int maxChunks = gInfo.getMaxChunks();
+        size_t minChunkSize = gInfo.getMinChunkSize();
 
         size_t perfectChunkSize = Util::gdrive_divide_round_up(fileSize, maxChunks);
         size_t chunkSize = Util::gdrive_divide_round_up(perfectChunkSize, minChunkSize) * 

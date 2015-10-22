@@ -11,7 +11,6 @@
         <itemPath>gdrive/Fileinfo.hpp</itemPath>
         <itemPath>gdrive/Gdrive.hpp</itemPath>
         <itemPath>gdrive/GdriveFile.hpp</itemPath>
-        <itemPath>gdrive/GdriveInfo.hpp</itemPath>
         <itemPath>gdrive/Json.hpp</itemPath>
         <itemPath>gdrive/Util.hpp</itemPath>
         <itemPath>gdrive/gdrive-client-secret-template.h</itemPath>
@@ -150,8 +149,6 @@
       </item>
       <item path="gdrive/GdriveInfo.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/GdriveInfo.hpp" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="gdrive/Json.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/Json.hpp" ex="false" tool="3" flavor2="0">
@@ -257,8 +254,6 @@
       <item path="gdrive/GdriveFile.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/GdriveInfo.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="gdrive/GdriveInfo.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/Json.cpp" ex="false" tool="1" flavor2="0">
       </item>

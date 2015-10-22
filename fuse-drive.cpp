@@ -249,11 +249,11 @@ using namespace fusedrive;
                 // Invalid ID for parent folder
                 return -ENOENT;
             }
-            return gInfo.gdrive_remove_parent(fileId, parentId);
+            return gInfo.removeParent(fileId, parentId);
         }
         // else this is the only hard link. Delete or trash the file.
 
-        return gInfo.gdrive_delete(fileId, parentId);
+        return gInfo.deleteFile(fileId, parentId);
     }
 
     static unsigned int fudr_get_max_perms(bool isDir)
@@ -312,7 +312,7 @@ using namespace fusedrive;
                 (FuseDrivePrivateData*) context->private_data;
         Gdrive& gInfo = pPrivateData->getGdrive();
         
-        string fileIdStr = gInfo.gdrive_filepath_to_id(path);
+        string fileIdStr = gInfo.getFileIdFromPath(path);
         const char* fileId = fileIdStr.c_str();
         if (!fileId || !fileId[0])
         {
@@ -403,7 +403,7 @@ using namespace fusedrive;
         Gdrive& gInfo = pPrivateData->getGdrive();
 
         // Determine whether the file already exists
-        if (!gInfo.gdrive_filepath_to_id(path).empty())
+        if (!gInfo.getFileIdFromPath(path).empty())
         {
             return -EEXIST;
         }
@@ -546,7 +546,7 @@ using namespace fusedrive;
                 (FuseDrivePrivateData*) context->private_data;
         Gdrive& gInfo = pPrivateData->getGdrive();
         
-        string fileIdStr = gInfo.gdrive_filepath_to_id(path);
+        string fileIdStr = gInfo.getFileIdFromPath(path);
         const char* fileId = fileIdStr.c_str();
         if (!fileId[0])
         {
@@ -609,7 +609,7 @@ using namespace fusedrive;
         Gdrive& gInfo = pPrivateData->getGdrive();
 
         // Determine whether the file already exists
-        const char* dummyFileId = gInfo.gdrive_filepath_to_id(to).c_str();
+        const char* dummyFileId = gInfo.getFileIdFromPath(to).c_str();
         if (dummyFileId && dummyFileId[0])
         {
             return -EEXIST;
@@ -632,14 +632,14 @@ using namespace fusedrive;
             return accessResult;
         }
 
-        const char* fileId = gInfo.gdrive_filepath_to_id(from).c_str();
+        const char* fileId = gInfo.getFileIdFromPath(from).c_str();
         if (!fileId[0])
         {
             // Original file does not exist
             return -ENOENT;
         }
         const char* newParentId = 
-            gInfo.gdrive_filepath_to_id(gdrive_path_get_dirname(pNewPath)).c_str();
+            gInfo.getFileIdFromPath(gdrive_path_get_dirname(pNewPath)).c_str();
         gdrive_path_free(pOldPath);
         gdrive_path_free(pNewPath);
         if (!newParentId[0])
@@ -648,7 +648,7 @@ using namespace fusedrive;
             return -ENOENT;
         }
 
-        int returnVal = gInfo.gdrive_add_parent(fileId, newParentId);
+        int returnVal = gInfo.addParent(fileId, newParentId);
 
         return returnVal;
     }
@@ -678,7 +678,7 @@ using namespace fusedrive;
         Gdrive& gInfo = pPrivateData->getGdrive();
 
         // Determine whether the folder already exists, 
-        string dummyFileId = gInfo.gdrive_filepath_to_id(path);
+        string dummyFileId = gInfo.getFileIdFromPath(path);
         if (!dummyFileId.empty())
         {
             return -EEXIST;
@@ -722,7 +722,7 @@ using namespace fusedrive;
         Gdrive& gInfo = pPrivateData->getGdrive();
         
         // Get the file ID
-        string fileIdStr = gInfo.gdrive_filepath_to_id(path);
+        string fileIdStr = gInfo.getFileIdFromPath(path);
         const char* fileId = fileIdStr.c_str();
         if (!fileId || !fileId[0])
         {
@@ -820,7 +820,7 @@ using namespace fusedrive;
                 (FuseDrivePrivateData*) context->private_data;
         Gdrive& gInfo = pPrivateData->getGdrive();
         
-        string folderIdStr = gInfo.gdrive_filepath_to_id(path);
+        string folderIdStr = gInfo.getFileIdFromPath(path);
         const char* folderId = folderIdStr.c_str();
         if (!folderId || !folderId[0])
         {
@@ -835,7 +835,7 @@ using namespace fusedrive;
         }
 
         Gdrive_Fileinfo_Array* pFileArray = 
-                gInfo.gdrive_folder_list(folderId);
+                gInfo.ListFolderContents(folderId);
         if (pFileArray == NULL)
         {
             // An error occurred.
@@ -911,7 +911,7 @@ using namespace fusedrive;
         Gdrive& gInfo = pPrivateData->getGdrive();
         
         // Neither from nor to should be the root directory
-        string rootIdStr = gInfo.gdrive_filepath_to_id("/");
+        string rootIdStr = gInfo.getFileIdFromPath("/");
         const char* rootId = rootIdStr.c_str();
         if (!rootId || !rootId[0])
         {
@@ -919,7 +919,7 @@ using namespace fusedrive;
             return -ENOMEM;
         }
         
-        string fromFileIdStr = gInfo.gdrive_filepath_to_id(from);
+        string fromFileIdStr = gInfo.getFileIdFromPath(from);
         const char* fromFileId = fromFileIdStr.c_str();
         if (!fromFileId || !fromFileId[0])
         {
@@ -931,7 +931,7 @@ using namespace fusedrive;
             // from is root
             return -EBUSY;
         }
-        string toFileIdStr = gInfo.gdrive_filepath_to_id(to);
+        string toFileIdStr = gInfo.getFileIdFromPath(to);
         const char* toFileId = toFileIdStr.c_str(); 
         // toFileId may be NULL.
 
@@ -1011,7 +1011,7 @@ using namespace fusedrive;
         }
         
         string fromParentIdStr = 
-                gInfo.gdrive_filepath_to_id(gdrive_path_get_dirname(pFromPath));
+                gInfo.getFileIdFromPath(gdrive_path_get_dirname(pFromPath));
         const char* fromParentId = fromParentIdStr.c_str();
         if (!fromParentId || !fromParentId[0])
         {
@@ -1021,7 +1021,7 @@ using namespace fusedrive;
             return -ENOENT;
         }
         string toParentIdStr = 
-                gInfo.gdrive_filepath_to_id(gdrive_path_get_dirname(pToPath));
+                gInfo.getFileIdFromPath(gdrive_path_get_dirname(pToPath));
         const char* toParentId = toParentIdStr.c_str();
         if (!toParentId || !toParentId[0])
         {
@@ -1045,7 +1045,7 @@ using namespace fusedrive;
         // because different paths could refer to the same directory.
         if (strcmp(fromParentId, toParentId))
         {
-            int result = gInfo.gdrive_add_parent(fromFileId, toParentId);
+            int result = gInfo.addParent(fromFileId, toParentId);
             if (result != 0)
             {
                 // An error occurred
@@ -1071,7 +1071,7 @@ using namespace fusedrive;
         const char* toBasename = gdrive_path_get_basename(pToPath);
         if (strcmp(fromBasename, toBasename))
         {
-            returnVal = gInfo.gdrive_change_basename(fromFileId, toBasename);
+            returnVal = gInfo.changeBasename(fromFileId, toBasename);
         }
 
         // If successful, and if to already existed, delete it
@@ -1099,7 +1099,7 @@ using namespace fusedrive;
                 (FuseDrivePrivateData*) context->private_data;
         Gdrive& gInfo = pPrivateData->getGdrive();
 
-        const char* fileId = gInfo.gdrive_filepath_to_id(path).c_str();
+        const char* fileId = gInfo.getFileIdFromPath(path).c_str();
         if (!fileId || !fileId[0])
         {
             // No such file
@@ -1143,7 +1143,7 @@ using namespace fusedrive;
             return -ENOMEM;
         }
         string parentIdStr = 
-                gInfo.gdrive_filepath_to_id(gdrive_path_get_dirname(pGpath));
+                gInfo.getFileIdFromPath(gdrive_path_get_dirname(pGpath));
         const char* parentId = parentIdStr.c_str();
         gdrive_path_free(pGpath);
 
@@ -1168,7 +1168,7 @@ using namespace fusedrive;
                 (FuseDrivePrivateData*) context->private_data;
         Gdrive& gInfo = pPrivateData->getGdrive();
 
-        unsigned long blockSize = gInfo.gdrive_get_minchunksize();
+        unsigned long blockSize = gInfo.getMinChunkSize();
         unsigned long bytesTotal = gdrive_sysinfo_get_size(gInfo);
         unsigned long bytesFree = bytesTotal - gdrive_sysinfo_get_used(gInfo);
 
@@ -1194,7 +1194,7 @@ using namespace fusedrive;
                 (FuseDrivePrivateData*) context->private_data;
         Gdrive& gInfo = pPrivateData->getGdrive();
         
-        const string fileId = gInfo.gdrive_filepath_to_id(path);
+        const string fileId = gInfo.getFileIdFromPath(path);
         if (fileId.empty())
         {
             // File not found
@@ -1233,7 +1233,7 @@ using namespace fusedrive;
                 (FuseDrivePrivateData*) context->private_data;
         Gdrive& gInfo = pPrivateData->getGdrive();
         
-        string fileIdStr = gInfo.gdrive_filepath_to_id(path);
+        string fileIdStr = gInfo.getFileIdFromPath(path);
         const char* fileId = fileIdStr.c_str();
         if (!fileId || !fileId[0])
         {
@@ -1254,7 +1254,7 @@ using namespace fusedrive;
             // Memory error
             return -ENOMEM;
         }
-        string parentIdStr = gInfo.gdrive_filepath_to_id(gdrive_path_get_dirname(pGpath));
+        string parentIdStr = gInfo.getFileIdFromPath(gdrive_path_get_dirname(pGpath));
         const char* parentId = parentIdStr.c_str();
         gdrive_path_free(pGpath);
 
@@ -1275,7 +1275,7 @@ using namespace fusedrive;
                 (FuseDrivePrivateData*) context->private_data;
         Gdrive& gInfo = pPrivateData->getGdrive();
         
-        const char* fileId = gInfo.gdrive_filepath_to_id(path).c_str();
+        const char* fileId = gInfo.getFileIdFromPath(path).c_str();
         if (!fileId || !fileId[0])
         {
             return -ENOENT;

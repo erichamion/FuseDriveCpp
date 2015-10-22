@@ -115,7 +115,7 @@ Gdrive_Query* gdrive_query_add(Gdrive& gInfo, Gdrive_Query* pQuery,
     }
     
     // Populate the newly-created Gdrive_Query with URL-escaped strings
-    CURL* curlHandle = gInfo.gdrive_get_curlhandle();
+    CURL* curlHandle = gInfo.getCurlHandle();
     if (curlHandle == NULL)
     {
         // Error
