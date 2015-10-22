@@ -14,12 +14,10 @@
         <itemPath>gdrive/GdriveInfo.hpp</itemPath>
         <itemPath>gdrive/Json.hpp</itemPath>
         <itemPath>gdrive/Util.hpp</itemPath>
-        <itemPath>gdrive/gdrive-cache-node.hpp</itemPath>
         <itemPath>gdrive/gdrive-client-secret-template.h</itemPath>
         <itemPath>gdrive/gdrive-client-secret.h</itemPath>
         <itemPath>gdrive/gdrive-download-buffer.hpp</itemPath>
         <itemPath>gdrive/gdrive-file-contents.hpp</itemPath>
-        <itemPath>gdrive/gdrive-file.hpp</itemPath>
         <itemPath>gdrive/gdrive-fileinfo-array.hpp</itemPath>
         <itemPath>gdrive/gdrive-query.hpp</itemPath>
         <itemPath>gdrive/gdrive-sysinfo.hpp</itemPath>
@@ -48,7 +46,6 @@
         <itemPath>gdrive/GdriveInfo.cpp</itemPath>
         <itemPath>gdrive/Json.cpp</itemPath>
         <itemPath>gdrive/Util.cpp</itemPath>
-        <itemPath>gdrive/gdrive-cache-node.cpp</itemPath>
         <itemPath>gdrive/gdrive-download-buffer.cpp</itemPath>
         <itemPath>gdrive/gdrive-file-contents.cpp</itemPath>
         <itemPath>gdrive/gdrive-fileinfo-array.cpp</itemPath>
@@ -167,10 +164,6 @@
       </item>
       <item path="gdrive/Util.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-cache-node.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-cache-node.hpp" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="gdrive/gdrive-client-secret-template.h"
             ex="false"
             tool="3"
@@ -185,8 +178,6 @@
       <item path="gdrive/gdrive-file-contents.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/gdrive-file-contents.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-file.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/gdrive-fileinfo-array.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -281,10 +272,6 @@
       </item>
       <item path="gdrive/Util.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-cache-node.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-cache-node.hpp" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="gdrive/gdrive-client-secret-template.h"
             ex="false"
             tool="3"
@@ -299,8 +286,6 @@
       <item path="gdrive/gdrive-file-contents.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/gdrive-file-contents.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-file.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/gdrive-fileinfo-array.cpp" ex="false" tool="1" flavor2="0">
       </item>

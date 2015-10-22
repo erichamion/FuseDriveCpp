@@ -41,7 +41,7 @@ namespace fusedrive
         // then try again to get the node.
         Cache& cache = gInfo.gdrive_get_cache();
         CacheNode* pNode;
-        while ((pNode = cache.gdrive_cache_get_node(fileId, false)) 
+        while ((pNode = cache.getNode(fileId, false)) 
                 == NULL)
         {
             try
@@ -130,8 +130,8 @@ namespace fusedrive
             gdrive_path_free(pGpath);
             return "";
         }
-        CacheNode* pFolderNode = gInfo.gdrive_get_cache()
-                .gdrive_cache_get_node(parentId, true);
+        CacheNode* pFolderNode = 
+                gInfo.gdrive_get_cache().getNode(parentId, true);
         if (pFolderNode == NULL)
         {
             // Couldn't get a node for the parent folder
@@ -167,7 +167,7 @@ namespace fusedrive
         // in). This will avoid the need to look up the ID again after adding it,
         // and it will also help with multiple files that have identical paths.
         int result = 
-            gInfo.gdrive_get_cache().gdrive_cache_add_fileid(path, fileId);
+            gInfo.gdrive_get_cache().addFileid(path, fileId);
         if (result != 0)
         {
             // Probably a memory error
@@ -204,7 +204,7 @@ namespace fusedrive
             cacheNode.gdrive_cnode_clear_contents();
             if (cacheNode.gdrive_cnode_isdeleted())
             {
-                gInfo.gdrive_get_cache().gdrive_cache_delete_node(&cacheNode);
+                gInfo.gdrive_get_cache().deleteNode(&cacheNode);
             }
         }
         

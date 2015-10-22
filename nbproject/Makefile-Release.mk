@@ -48,7 +48,6 @@ OBJECTFILES= \
 	${OBJECTDIR}/gdrive/Json.o \
 	${OBJECTDIR}/gdrive/NullStream.o \
 	${OBJECTDIR}/gdrive/Util.o \
-	${OBJECTDIR}/gdrive/gdrive-cache-node.o \
 	${OBJECTDIR}/gdrive/gdrive-download-buffer.o \
 	${OBJECTDIR}/gdrive/gdrive-file-contents.o \
 	${OBJECTDIR}/gdrive/gdrive-fileinfo-array.o \
@@ -146,11 +145,6 @@ ${OBJECTDIR}/gdrive/Util.o: gdrive/Util.cpp
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/Util.o gdrive/Util.cpp
-
-${OBJECTDIR}/gdrive/gdrive-cache-node.o: gdrive/gdrive-cache-node.cpp 
-	${MKDIR} -p ${OBJECTDIR}/gdrive
-	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-cache-node.o gdrive/gdrive-cache-node.cpp
 
 ${OBJECTDIR}/gdrive/gdrive-download-buffer.o: gdrive/gdrive-download-buffer.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive

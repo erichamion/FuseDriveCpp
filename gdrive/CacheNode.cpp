@@ -26,14 +26,14 @@ namespace fusedrive
 {
     CacheNode** gdrive_cache_get_head_ptr(Cache& cache)
     {
-        return &cache.pCacheHead;
+        return &cache.mpCacheHead;
     }
 
     CacheNode* CacheNode::gdrive_cnode_get(Cache& cache, CacheNode* pParent, 
             CacheNode** ppNode, const string& fileId, bool addIfDoesntExist, 
             bool& alreadyExists)
     {
-        Gdrive& gInfo = cache.gdrive_cache_get_gdrive();
+        Gdrive& gInfo = cache.getGdrive();
         
         alreadyExists = false;
 

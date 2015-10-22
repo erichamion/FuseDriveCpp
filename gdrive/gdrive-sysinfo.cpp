@@ -105,12 +105,12 @@ static const Gdrive_Sysinfo* gdrive_sysinfo_get_or_clear(Gdrive& gInfo, bool cle
     // Is the info current?
     // First, make sure the cache is up to date.
     Cache& cache = gInfo.gdrive_get_cache();
-    cache.gdrive_cache_update_if_stale();
+    cache.UpdateIfStale();
 
     // If the Sysinfo's next change ID is at least as high as the cache's
     // next change ID, then our info is current.  No need to do anything
     // else. Otherwise, it needs updated.
-    int64_t cacheChangeId = cache.gdrive_cache_get_nextchangeid();
+    int64_t cacheChangeId = cache.getNextChangeId();
     if (sysinfo.nextChangeId < cacheChangeId)
     {
         // Either we don't have any sysinfo, or it needs updated.

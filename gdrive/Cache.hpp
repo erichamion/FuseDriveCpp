@@ -13,7 +13,6 @@
 
 #include <sys/types.h>
 
-typedef struct Gdrive_Cache_Node Gdrive_Cache_Node;
 
 namespace fusedrive
 {
@@ -26,59 +25,57 @@ namespace fusedrive
     public:
         Cache(Gdrive& gInfo, time_t cacheTTL);
         
-        void gdrive_cache_init();
+        void init();
         
-        Gdrive& gdrive_cache_get_gdrive();
+        Gdrive& getGdrive() const;
         
-        FileidCacheNode* gdrive_cache_get_fileidcachehead();
+        const FileidCacheNode* getFileidCacheHead() const;
 
-        time_t gdrive_cache_get_ttl();
+        time_t getTTL() const;
 
-        time_t gdrive_cache_get_lastupdatetime();
+        time_t getLastUpdateTime() const;
 
-        int64_t gdrive_cache_get_nextchangeid();
+        int64_t getNextChangeId() const;
 
-        int gdrive_cache_update_if_stale();
+        int UpdateIfStale();
 
-        int gdrive_cache_update();
+        int update();
 
-        Fileinfo* gdrive_cache_get_item(const std::string& fileId, 
-            bool addIfDoesntExist, bool& pAlreadyExists);
+        Fileinfo* getItem(const std::string& fileId, bool addIfDoesntExist, 
+            bool& pAlreadyExists);
         
-        Fileinfo* gdrive_cache_get_item(const std::string& fileId, 
-            bool addIfDoesntExist);
+        Fileinfo* getItem(const std::string& fileId, bool addIfDoesntExist);
         
-        CacheNode* gdrive_cache_get_head();
+        const CacheNode* getHead() const;
         
-        void gdrive_cache_set_head(CacheNode* newHead);
+        void setHead(CacheNode* newHead);
         
 
-        int gdrive_cache_add_fileid(const std::string& path, const std::string& fileId);
+        int addFileid(const std::string& path, const std::string& fileId);
 
-        CacheNode* gdrive_cache_get_node(const std::string& fileId, 
-        bool addIfDoesntExist, bool& alreadyExists);
+        CacheNode* getNode(const std::string& fileId, bool addIfDoesntExist, 
+            bool& alreadyExists);
 
-        CacheNode* gdrive_cache_get_node(const std::string& fileId, 
-        bool addIfDoesntExist);
+        CacheNode* getNode(const std::string& fileId, bool addIfDoesntExist);
         
-        std::string gdrive_cache_get_fileid(const std::string& path);
+        std::string getFileid(const std::string& path);
 
-        void gdrive_cache_delete_id(const std::string& fileId);
+        void deleteId(const std::string& fileId);
 
-        void gdrive_cache_delete_node(CacheNode* pNode);
+        void deleteNode(CacheNode* pNode);
         
         virtual ~Cache();
         
     private:
-        Gdrive& gInfo;
-        time_t cacheTTL;
-        time_t lastUpdateTime;
-        int64_t nextChangeId;
-        CacheNode* pCacheHead;
-        FileidCacheNode* pFileIdCacheHead;
-        bool initialized;
+        Gdrive& mGInfo;
+        time_t mCacheTTL;
+        time_t mLastUpdateTime;
+        int64_t mNextChangeId;
+        CacheNode* mpCacheHead;
+        FileidCacheNode* mpFileIdCacheHead;
+        bool mInitialized;
         
-        void gdrive_cache_remove_id(Gdrive& gInfo, const std::string& fileId);
+        void removeId(Gdrive& gInfo, const std::string& fileId);
         
         Cache(const Cache& orig);
     };

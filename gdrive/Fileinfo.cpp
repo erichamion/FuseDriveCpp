@@ -9,7 +9,6 @@
 
 #include "Gdrive.hpp"
 #include "Cache.hpp"
-#include "gdrive-file.hpp"
 #include "Util.hpp"
 
 #include <sys/stat.h>
@@ -47,7 +46,7 @@ namespace fusedrive
         bool alreadyCached = false;
 
         Fileinfo* pFileinfo = gInfo.gdrive_get_cache()
-                .gdrive_cache_get_item(fileId, true, alreadyCached);
+                .getItem(fileId, true, alreadyCached);
         if (pFileinfo == NULL)
         {
             // An error occurred, probably out of memory.

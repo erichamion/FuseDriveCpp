@@ -186,7 +186,7 @@ namespace fusedrive
         }
 
         // Try to get the ID from the cache.
-        string cachedId(cache.gdrive_cache_get_fileid(path.c_str()));
+        string cachedId(cache.getFileid(path));
         if (!cachedId.empty())
         {
             return cachedId;
@@ -201,7 +201,7 @@ namespace fusedrive
             if (!result.empty())
             {
                 // Add to the fileId cache.
-                cache.gdrive_cache_add_fileid(path.c_str(), result.c_str());
+                cache.addFileid(path, result);
             }
             return result;
         }
@@ -244,7 +244,7 @@ namespace fusedrive
         // Add the ID to the fileId cache.
         if (!childId.empty())
         {
-            cache.gdrive_cache_add_fileid(path.c_str(), childId.c_str());
+            cache.addFileid(path, childId);
         }
         
         return childId;
@@ -328,12 +328,12 @@ namespace fusedrive
         gdrive_dlbuf_free(pBuf);
         if (returnVal == 0)
         {
-            cache.gdrive_cache_delete_id(fileId.c_str());
+            cache.deleteId(fileId);
             if (!parentId.empty() && parentId.compare("/") != 0)
             {
                 // Remove the parent from the cache because the child count will be
                 // wrong.
-                cache.gdrive_cache_delete_id(parentId.c_str());
+                cache.deleteId(parentId);
             }
         }
         return returnVal;
@@ -389,7 +389,7 @@ namespace fusedrive
             // before the cache expires. (For example, if there was only one parent
             // before, and the user deletes one of the links, we don't want to
             // delete the entire file because of a bad parent count).
-            Fileinfo* pFileinfo = cache.gdrive_cache_get_item(fileId, false);
+            Fileinfo* pFileinfo = cache.getItem(fileId, false);
             if (pFileinfo)
             {
                 pFileinfo->nParents++;
@@ -668,7 +668,7 @@ namespace fusedrive
         userInteractionAllowed = 
                 (interactionMode == GDRIVE_INTERACTION_ALWAYS);
         
-        cache.gdrive_cache_init();
+        cache.init();
         
         // Set chunk size
         minChunkSize = (minFileChunkSize > 0) ? 
