@@ -28,64 +28,63 @@ namespace fusedrive
         // void gdrive_json_kill(Gdrive_Json_Object* pObj);
         virtual ~Json();
         
-        bool gdrive_json_is_valid();
+        bool isValid();
         
-        Json gdrive_json_get_nested_object(const std::string& key="");
+        Json getNestedObject(const std::string& key="");
 
-        std::string gdrive_json_get_string(const std::string& key="");
+        std::string getString(const std::string& key="");
 
-        int64_t gdrive_json_get_int64(const std::string& key, 
-            bool convertTypes, bool& success);
+        int64_t getInt64(const std::string& key, bool convertTypes, 
+            bool& success);
         
-        int64_t gdrive_json_get_int64(bool convertTypes, bool& success);
+        int64_t getInt64(bool convertTypes, bool& success);
 
-        double gdrive_json_get_double(const std::string& key, bool& success);
+        double getDouble(const std::string& key, bool& success);
 
-        bool gdrive_json_get_boolean(const std::string& key, bool& success);
+        bool getBoolean(const std::string& key, bool& success);
 
-        void gdrive_json_add_string(const std::string& key, 
+        void addString(const std::string& key, 
             const std::string& str);
 
-        void gdrive_json_add_int64(const std::string& key, int64_t value);
+        void addInt64(const std::string& key, int64_t value);
 
-        void gdrive_json_add_double(const std::string& key, double value);
+        void addDouble(const std::string& key, double value);
 
-        void gdrive_json_add_boolean(const std::string& key, bool value);
+        void addBoolean(const std::string& key, bool value);
 
-        Json gdrive_json_add_new_array(const std::string& key);
+        Json addNewArray(const std::string& key);
 
-        void gdrive_json_add_existing_array(const std::string& key, 
-            Json& jArray);
+        void addExistingArray(const std::string& key, Json& jArray);
 
-        std::string gdrive_json_to_string(bool pretty);
+        std::string toString(bool pretty);
 
-        int gdrive_json_array_length(const std::string& key, bool& success);
+        int getArrayLength(const std::string& key, bool& success);
         
-        int gdrive_json_array_length(bool& success);
+        int getArrayLength(bool& success);
 
-        Json gdrive_json_array_get(const std::string& key, int index);
+        Json arrayGet(const std::string& key, int index);
         
-        Json gdrive_json_array_get(int index);
+        Json arrayGet(int index);
 
-        int gdrive_json_array_append_object(Json& newObj);
+        int arrayAppendObject(Json& newObj);
 
-        int gdrive_json_array_append_string(const std::string& val);
+        int arrayAppendString(const std::string& val);
 
-        int gdrive_json_array_append_bool(bool val);
+        int arrayAppendBool(bool val);
 
-        int gdrive_json_array_append_double(double val);
+        int arrayAppendDouble(double val);
 
-        int gdrive_json_array_append_int64(int64_t val);
+        int arrayAppendInt64(int64_t val);
 
         
     private:
-        json_object* pJsonObj;
+        json_object* mpJsonObj;
         
         Json(json_object* pObj);
         
-        json_object* gdrive_json_get_nested_internal(const std::string& key);
+        json_object* getNestedInternal(const std::string& key);
         
-        json_object* gdrive_json_get_nested_internal(json_object* pObj, 
+        json_object* getNestedInternal(json_object* pObj, 
             const std::string& key);
         
     };

@@ -138,10 +138,10 @@ namespace fusedrive
             // Transfer was successful.  Convert result to a JSON object and extract
             // the file meta-info.
             Json jsonObj(gdrive_dlbuf_get_data(pBuf));
-            if (jsonObj.gdrive_json_is_valid())
+            if (jsonObj.isValid())
             {
                 bool dummy;
-                fileCount = jsonObj.gdrive_json_array_length("items", dummy);
+                fileCount = jsonObj.getArrayLength("items", dummy);
                 if (fileCount > 0)
                 {
                     // Create an array of Gdrive_Fileinfo structs large enough to
@@ -153,9 +153,9 @@ namespace fusedrive
                         for (int index = 0; index < fileCount; index++)
                         {
                             Json jsonFile = 
-                                    jsonObj.gdrive_json_array_get("items",
+                                    jsonObj.arrayGet("items",
                                     index);
-                            if (jsonFile.gdrive_json_is_valid())
+                            if (jsonFile.isValid())
                             {
                                 gdrive_finfoarray_add_from_json(pArray, jsonFile);
                             }
@@ -331,7 +331,7 @@ namespace fusedrive
         // Convert to a JSON object.
         Json jsonObj(gdrive_dlbuf_get_data(pBuf));
         gdrive_dlbuf_free(pBuf);
-        if (!jsonObj.gdrive_json_is_valid())
+        if (!jsonObj.isValid())
         {
             // Couldn't convert to Json object
             throw new exception();
@@ -604,8 +604,8 @@ namespace fusedrive
 
         // Create the Parent resource for the request body
         Json jsonObj;
-        jsonObj.gdrive_json_add_string("id", parentId);
-        string body = string(jsonObj.gdrive_json_to_string(false));
+        jsonObj.addString("id", parentId);
+        string body = string(jsonObj.toString(false));
         
 
         Gdrive_Transfer* pTransfer = gdrive_xfer_create(*this);
@@ -658,8 +658,8 @@ namespace fusedrive
 
         // Create the request body with the new name
         Json jsonObj;
-        jsonObj.gdrive_json_add_string("title", newName);
-        string body(jsonObj.gdrive_json_to_string(false));
+        jsonObj.addString("title", newName);
+        string body(jsonObj.toString(false));
 
         // Create the url in the form of:
         // "<GDRIVE_URL_FILES>/<fileId>"
@@ -833,29 +833,29 @@ namespace fusedrive
 
         // Set up the file resource as a JSON object
         Json uploadResourceJson;
-        if (!uploadResourceJson.gdrive_json_is_valid())
+        if (!uploadResourceJson.isValid())
         {
             error = ENOMEM;
             return NULL;
         }
-        uploadResourceJson.gdrive_json_add_string("title", pMyFileinfo->filename);
+        uploadResourceJson.addString("title", pMyFileinfo->filename);
         if (pFileinfo == NULL)
         {
             // Only set parents when creating a new file
             Json parentsArray = 
-                    uploadResourceJson.gdrive_json_add_new_array("parents");
-            if (!parentsArray.gdrive_json_is_valid())
+                    uploadResourceJson.addNewArray("parents");
+            if (!parentsArray.isValid())
             {
                 error = ENOMEM;
                 return NULL;
             }
             Json parentIdObj;
-            parentIdObj.gdrive_json_add_string("id", parentId);
-            parentsArray.gdrive_json_array_append_object(parentIdObj);
+            parentIdObj.addString("id", parentId);
+            parentsArray.arrayAppendObject(parentIdObj);
         }
         if (isReallyFolder)
         {
-            uploadResourceJson.gdrive_json_add_string("mimeType", 
+            uploadResourceJson.addString("mimeType", 
                     "application/vnd.google-apps.folder");
         }
     //    char* timeString = (char*) malloc(Fileinfo::GDRIVE_TIMESTRING_LENGTH);
@@ -870,7 +870,7 @@ namespace fusedrive
         string timeString = pMyFileinfo->getAtimeString();
         if (!timeString.empty())
         {
-            uploadResourceJson.gdrive_json_add_string("lastViewedByMeDate", 
+            uploadResourceJson.addString("lastViewedByMeDate", 
                     timeString);
         }
 
@@ -878,12 +878,12 @@ namespace fusedrive
         timeString = pMyFileinfo->getMtimeString();
         if (!timeString.empty())
         {
-            uploadResourceJson.gdrive_json_add_string("modifiedDate", timeString);
+            uploadResourceJson.addString("modifiedDate", timeString);
             hasMtime = true;
         }
 
         // Convert the JSON into a string
-        string uploadResourceStr = uploadResourceJson.gdrive_json_to_string(false);
+        string uploadResourceStr = uploadResourceJson.toString(false);
         if (uploadResourceStr.empty())
         {
             error = ENOMEM;
@@ -943,14 +943,14 @@ namespace fusedrive
         // Extract the file ID from the returned resource
         Json jsonObj(gdrive_dlbuf_get_data(pBuf));
         gdrive_dlbuf_free(pBuf);
-        if (!jsonObj.gdrive_json_is_valid())
+        if (!jsonObj.isValid())
         {
             // Either memory error, or couldn't convert the response to JSON.
             // More likely memory.
             error = ENOMEM;
             return NULL;
         }
-        string fileId = jsonObj.gdrive_json_get_string("id");
+        string fileId = jsonObj.getString("id");
         if (fileId.empty())
         {
             // Either memory error, or couldn't extract the desired string, can't
@@ -1125,7 +1125,7 @@ namespace fusedrive
             int returnVal = 0;
 
             Json jsonObj = Json(string(buffer));
-            if (!jsonObj.gdrive_json_is_valid())
+            if (!jsonObj.isValid())
             {
                 // Couldn't convert the file contents to a JSON object, prepare to
                 // return failure.
@@ -1133,9 +1133,9 @@ namespace fusedrive
             }
             else
             {
-                mAccessToken.assign(jsonObj.gdrive_json_get_string( 
+                mAccessToken.assign(jsonObj.getString( 
                         GDRIVE_FIELDNAME_ACCESSTOKEN));
-                mRefreshToken.assign(jsonObj.gdrive_json_get_string( 
+                mRefreshToken.assign(jsonObj.getString( 
                         GDRIVE_FIELDNAME_REFRESHTOKEN));
                 
                 if (mAccessToken.empty() || mRefreshToken.empty())
@@ -1246,7 +1246,7 @@ namespace fusedrive
 
         Json jsonObj(gdrive_dlbuf_get_data(pBuf));
         gdrive_dlbuf_free(pBuf);
-        if (!jsonObj.gdrive_json_is_valid())
+        if (!jsonObj.isValid())
         {
             // Couldn't locate JSON-formatted information in the server's 
             // response.  Return error.
@@ -1260,7 +1260,7 @@ namespace fusedrive
 //                &(pInfo->accessTokenLength)
 //                );
         string tmpStr = 
-                jsonObj.gdrive_json_get_string(GDRIVE_FIELDNAME_ACCESSTOKEN);
+                jsonObj.getString(GDRIVE_FIELDNAME_ACCESSTOKEN);
         if (tmpStr.empty())
         {
             // Couldn't get access token
@@ -1277,7 +1277,7 @@ namespace fusedrive
         // and don't clobber the existing refresh token if we don't get a
         // new one.
 
-        tmpStr = jsonObj.gdrive_json_get_string(GDRIVE_FIELDNAME_REFRESHTOKEN);
+        tmpStr = jsonObj.getString(GDRIVE_FIELDNAME_REFRESHTOKEN);
         if (!tmpStr.empty())
         {
             // We were given a refresh token, so store it.
@@ -1398,12 +1398,12 @@ namespace fusedrive
 
         Json jsonObj(gdrive_dlbuf_get_data(pBuf));
         gdrive_dlbuf_free(pBuf);
-        if (!jsonObj.gdrive_json_is_valid())
+        if (!jsonObj.isValid())
         {
             // Couldn't interpret the response as JSON, return error.
             return -1;
         }
-        string grantedScopes = jsonObj.gdrive_json_get_string("scope");
+        string grantedScopes = jsonObj.getString("scope");
         if (grantedScopes.empty())
         {
             // Key not found, or value not a string.  Return error.
@@ -1512,17 +1512,17 @@ namespace fusedrive
         // Convert to a JSON object.
         Json jsonObj(gdrive_dlbuf_get_data(pBuf));
         gdrive_dlbuf_free(pBuf);
-        if (!jsonObj.gdrive_json_is_valid())
+        if (!jsonObj.isValid())
         {
             // Couldn't convert to JSON object.
             return string("");
         }
 
         string childId;
-        Json arrayItem = jsonObj.gdrive_json_array_get("items", 0);
-        if (arrayItem.gdrive_json_is_valid())
+        Json arrayItem = jsonObj.arrayGet("items", 0);
+        if (arrayItem.isValid())
         {
-            childId.assign(arrayItem.gdrive_json_get_string("id"));
+            childId.assign(arrayItem.getString("id"));
         }
         return childId;
     }
@@ -1545,11 +1545,11 @@ namespace fusedrive
         }
 
         Json jsonObj;
-        jsonObj.gdrive_json_add_string(GDRIVE_FIELDNAME_ACCESSTOKEN, 
+        jsonObj.addString(GDRIVE_FIELDNAME_ACCESSTOKEN, 
                 mAccessToken);
-        jsonObj.gdrive_json_add_string(GDRIVE_FIELDNAME_REFRESHTOKEN, 
+        jsonObj.addString(GDRIVE_FIELDNAME_REFRESHTOKEN, 
                 mRefreshToken);
-        int success = fputs(jsonObj.gdrive_json_to_string(true).c_str(), 
+        int success = fputs(jsonObj.toString(true).c_str(), 
                 outFile);
         fclose(outFile);
 

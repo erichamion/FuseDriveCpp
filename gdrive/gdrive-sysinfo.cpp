@@ -133,20 +133,20 @@ static int gdrive_sysinfo_fill_from_json(Gdrive_Sysinfo* pDest,
 {
     bool currentSuccess = true;
     bool totalSuccess = true;
-    pDest->nextChangeId = jsonObj.gdrive_json_get_int64("largestChangeId", 
+    pDest->nextChangeId = jsonObj.getInt64("largestChangeId", 
             true, currentSuccess) + 1;
     totalSuccess = totalSuccess && currentSuccess;
     
-    pDest->quotaBytesTotal = jsonObj.gdrive_json_get_int64("quotaBytesTotal", 
+    pDest->quotaBytesTotal = jsonObj.getInt64("quotaBytesTotal", 
             true,currentSuccess);
     totalSuccess = totalSuccess && currentSuccess;
     
-    pDest->quotaBytesUsed = jsonObj.gdrive_json_get_int64("quotaBytesUsed", 
+    pDest->quotaBytesUsed = jsonObj.getInt64("quotaBytesUsed", 
             true, currentSuccess);
     totalSuccess = totalSuccess && currentSuccess;
     
     pDest->rootId = 
-            strdup(jsonObj.gdrive_json_get_string("rootFolderId").c_str());
+            strdup(jsonObj.getString("rootFolderId").c_str());
     currentSuccess = totalSuccess && (pDest->rootId != NULL);
     
     // For now, we'll ignore the importFormats and exportFormats.
@@ -193,7 +193,7 @@ static int gdrive_sysinfo_update(Gdrive& gInfo, Gdrive_Sysinfo* pDest)
     {
         // Response was good, try extracting the data.
         Json jsonObj(gdrive_dlbuf_get_data(pBuf));
-        if (jsonObj.gdrive_json_is_valid())
+        if (jsonObj.isValid())
         {
             returnVal = gdrive_sysinfo_fill_from_json(pDest, jsonObj);
         }

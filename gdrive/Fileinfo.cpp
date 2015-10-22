@@ -73,17 +73,17 @@ namespace fusedrive
     void Fileinfo::readJson(Json& jsonObj)
     {
         
-        filename.assign(jsonObj.gdrive_json_get_string("title"));
-        id.assign(jsonObj.gdrive_json_get_string("id"));
+        filename.assign(jsonObj.getString("title"));
+        id.assign(jsonObj.getString("id"));
         
         bool success;
-        size = jsonObj.gdrive_json_get_int64("fileSize", true, success);
+        size = jsonObj.getInt64("fileSize", true, success);
         if (!success)
         {
             size = 0;
         }
         
-        string mimeType(jsonObj.gdrive_json_get_string("mimeType"));
+        string mimeType(jsonObj.getString("mimeType"));
         if (!mimeType.empty())
         {
             if (mimeType == GDRIVE_MIMETYPE_FOLDER)
@@ -104,7 +104,7 @@ namespace fusedrive
         }
 
         // Get the user's permissions for the file on the Google Drive account.
-        string role(jsonObj.gdrive_json_get_string("userPermission/role"));
+        string role(jsonObj.getString("userPermission/role"));
         if (!role.empty())
         {
             int basePerm = 0;
@@ -134,7 +134,7 @@ namespace fusedrive
             }
         }
 
-        string cTime(jsonObj.gdrive_json_get_string("createdDate"));
+        string cTime(jsonObj.getString("createdDate"));
         if (cTime.empty() || 
                 Util::rfc3339ToEpochTimeNS(cTime, &creationTime) != 0)
         {
@@ -142,7 +142,7 @@ namespace fusedrive
             memset(&creationTime, 0, sizeof(struct timespec));
         }
 
-        string mTime(jsonObj.gdrive_json_get_string("modifiedDate"));
+        string mTime(jsonObj.getString("modifiedDate"));
         if (mTime.empty() || 
                 Util::rfc3339ToEpochTimeNS(mTime, &modificationTime) != 0)
         {
@@ -150,7 +150,7 @@ namespace fusedrive
             memset(&modificationTime, 0, sizeof(struct timespec));
         }
 
-        string aTime(jsonObj.gdrive_json_get_string("lastViewedByMeDate"));
+        string aTime(jsonObj.getString("lastViewedByMeDate"));
         if (aTime.empty() || 
                 Util::rfc3339ToEpochTimeNS(aTime, &accessTime) != 0)
         {
@@ -159,7 +159,7 @@ namespace fusedrive
         }
         
         bool dummy;
-        nParents = jsonObj.gdrive_json_array_length("parents", dummy);
+        nParents = jsonObj.getArrayLength("parents", dummy);
 
         dirtyMetainfo = false;
     }

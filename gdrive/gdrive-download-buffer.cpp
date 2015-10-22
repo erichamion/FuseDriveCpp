@@ -361,12 +361,12 @@ static enum Gdrive_Retry_Method gdrive_dlbuf_retry_on_error(Gdrive& gInfo,
 //        }
 //        reason[0] = '\0';
         Json jsonRoot(gdrive_dlbuf_get_data(pBuf));
-        if (jsonRoot.gdrive_json_is_valid())
+        if (jsonRoot.isValid())
         {
             Json jsonErrors = 
-                    jsonRoot.gdrive_json_get_nested_object("error/errors");
+                    jsonRoot.getNestedObject("error/errors");
             string reasonStr = 
-                    jsonErrors.gdrive_json_get_string("reason");
+                    jsonErrors.getString("reason");
             if ((strcmp(reasonStr.c_str(), GDRIVE_403_RATELIMIT) == 0) || 
                     (strcmp(reasonStr.c_str(), GDRIVE_403_USERRATELIMIT) == 0))
             {

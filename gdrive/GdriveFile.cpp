@@ -519,29 +519,29 @@ namespace fusedrive
 
         // Set up the file resource as a JSON object
         Json uploadResourceJson;
-        if (!uploadResourceJson.gdrive_json_is_valid())
+        if (!uploadResourceJson.isValid())
         {
             error = ENOMEM;
             return NULL;
         }
-        uploadResourceJson.gdrive_json_add_string("title", pMyFileinfo->filename);
+        uploadResourceJson.addString("title", pMyFileinfo->filename);
         if (pFileinfo == NULL)
         {
             // Only set parents when creating a new file
             Json parentsArray = 
-                    uploadResourceJson.gdrive_json_add_new_array("parents");
-            if (!parentsArray.gdrive_json_is_valid())
+                    uploadResourceJson.addNewArray("parents");
+            if (!parentsArray.isValid())
             {
                 error = ENOMEM;
                 return NULL;
             }
             Json parentIdObj;
-            parentIdObj.gdrive_json_add_string("id", parentId);
-            parentsArray.gdrive_json_array_append_object(parentIdObj);
+            parentIdObj.addString("id", parentId);
+            parentsArray.arrayAppendObject(parentIdObj);
         }
         if (isFolder)
         {
-            uploadResourceJson.gdrive_json_add_string("mimeType", 
+            uploadResourceJson.addString("mimeType", 
                     "application/vnd.google-apps.folder");
         }
     //    char* timeString = (char*) malloc(Fileinfo::GDRIVE_TIMESTRING_LENGTH);
@@ -556,7 +556,7 @@ namespace fusedrive
         string timeString = pMyFileinfo->getAtimeString();
         if (!timeString.empty())
         {
-            uploadResourceJson.gdrive_json_add_string("lastViewedByMeDate", 
+            uploadResourceJson.addString("lastViewedByMeDate", 
                     timeString);
         }
 
@@ -564,12 +564,12 @@ namespace fusedrive
         timeString = pMyFileinfo->getMtimeString();
         if (!timeString.empty())
         {
-            uploadResourceJson.gdrive_json_add_string("modifiedDate", timeString);
+            uploadResourceJson.addString("modifiedDate", timeString);
             hasMtime = true;
         }
 
         // Convert the JSON into a string
-        string uploadResourceStr = uploadResourceJson.gdrive_json_to_string(false);
+        string uploadResourceStr = uploadResourceJson.toString(false);
         if (uploadResourceStr.empty())
         {
             error = ENOMEM;
@@ -629,14 +629,14 @@ namespace fusedrive
         // Extract the file ID from the returned resource
         Json jsonObj(gdrive_dlbuf_get_data(pBuf));
         gdrive_dlbuf_free(pBuf);
-        if (!jsonObj.gdrive_json_is_valid())
+        if (!jsonObj.isValid())
         {
             // Either memory error, or couldn't convert the response to JSON.
             // More likely memory.
             error = ENOMEM;
             return NULL;
         }
-        string fileId = jsonObj.gdrive_json_get_string("id");
+        string fileId = jsonObj.getString("id");
         if (fileId.empty())
         {
             // Either memory error, or couldn't extract the desired string, can't

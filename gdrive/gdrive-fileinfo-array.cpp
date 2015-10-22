@@ -124,7 +124,7 @@ int gdrive_finfoarray_get_count(Gdrive_Fileinfo_Array* pArray)
 int gdrive_finfoarray_add_from_json(Gdrive_Fileinfo_Array* pArray, 
                                         Json& jsonObj)
 {
-    if (pArray == NULL || !jsonObj.gdrive_json_is_valid())
+    if (pArray == NULL || !jsonObj.isValid())
     {
         // Invalid parameters
         return -1;

@@ -76,7 +76,7 @@ namespace fusedrive
             }
             Json jsonObj(gdrive_dlbuf_get_data(pBuf));
             gdrive_dlbuf_free(pBuf);
-            if (!jsonObj.gdrive_json_is_valid())
+            if (!jsonObj.isValid())
             {
                 // Couldn't convert network response to JSON
                 return NULL;

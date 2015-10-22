@@ -59,7 +59,7 @@ namespace fusedrive
             // Response was good, try extracting the data.
             Json jsonObj(gdrive_dlbuf_get_data(pBuf));
             int newNextChangeId = 
-                    jsonObj.gdrive_json_get_int64("largestChangeId", true, 
+                    jsonObj.getInt64("largestChangeId", true, 
                     success) + 1;
             if (success)
             {
@@ -151,22 +151,22 @@ namespace fusedrive
         {
             // Response was good, try extracting the data.
             Json jsonObj(gdrive_dlbuf_get_data(pBuf));
-            if (jsonObj.gdrive_json_is_valid())
+            if (jsonObj.isValid())
             {
                 // Update or remove cached data for each item in the "items" array.
                 Json changeArray = 
-                        jsonObj.gdrive_json_get_nested_object("items");
+                        jsonObj.getNestedObject("items");
                 bool dummy;
-                int arraySize = changeArray.gdrive_json_array_length(dummy);
+                int arraySize = changeArray.getArrayLength(dummy);
                 for (int i = 0; i < arraySize; i++)
                 {
-                    Json jsonItem(changeArray.gdrive_json_array_get(i));
-                    if (!jsonItem.gdrive_json_is_valid())
+                    Json jsonItem(changeArray.arrayGet(i));
+                    if (!jsonItem.isValid())
                     {
                         // Couldn't get this item, skip to the next one.
                         continue;
                     }
-                    string fileId = jsonItem.gdrive_json_get_string("fileId");
+                    string fileId = jsonItem.getString("fileId");
                     if (fileId.empty())
                     {
                         // Couldn't get an ID for the changed file, skip to the
@@ -186,7 +186,7 @@ namespace fusedrive
                     {
                         // If this file was in the cache, update its information
                         Json jsonFile = 
-                                jsonItem.gdrive_json_get_nested_object("file");
+                                jsonItem.getNestedObject("file");
                         pCacheNode->updateFromJson(jsonFile);
                     }
                     // else either not in the cache, or there is dirty data we don't
@@ -197,16 +197,16 @@ namespace fusedrive
                     // children.  Remove the parents from the cache.
                     bool dummy;
                     int numParents = 
-                        jsonItem.gdrive_json_array_length("file/parents", 
+                        jsonItem.getArrayLength("file/parents", 
                             dummy);
                     for (int nParent = 0; nParent < numParents; nParent++)
                     {
                         // Get the fileId of the current parent in the array.
                         Json parentObj = 
-                                jsonItem.gdrive_json_array_get("file/parents", 
+                                jsonItem.arrayGet("file/parents", 
                                 nParent);
-                        string parentId = parentObj.gdrive_json_is_valid() ?
-                            parentObj.gdrive_json_get_string("id") :
+                        string parentId = parentObj.isValid() ?
+                            parentObj.getString("id") :
                             "";
                         if (!parentId.empty())
                         {
@@ -219,7 +219,7 @@ namespace fusedrive
                 bool success = false;
                 
                 int64_t newNextChangeId = 
-                        jsonObj.gdrive_json_get_int64("largestChangeId", 
+                        jsonObj.getInt64("largestChangeId", 
                         true, success) + 1;
                 if (success)
                 {
