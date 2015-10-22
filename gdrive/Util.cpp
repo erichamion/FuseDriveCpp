@@ -22,7 +22,7 @@
 using namespace std;
 namespace fusedrive
 {
-    long Util::gdrive_divide_round_up(long dividend, long divisor)
+    long Util::divideCeil(long dividend, long divisor)
     {
         // Could use ceill() or a similar function for this, but I don't  know 
         // whether there might be some values that don't convert exactly between
@@ -34,7 +34,7 @@ namespace fusedrive
             (dividend / divisor + 1);
     }
 
-    FILE* Util::gdrive_power_fopen(const string& path, const string& mode)
+    FILE* Util::recursiveFopen(const string& path, const string& mode)
     {
         // Any files we create would be authentication files and possibly (not 
         // currently implemented) configuration files. These should be visible 
@@ -51,7 +51,7 @@ namespace fusedrive
         if (access(dirname.c_str(), F_OK))
         {
             // Directory doesn't exist, need to create it.
-            if (!gdrive_recursive_mkdir(dirname))
+            if (!recursiveMkdir(dirname))
             {
                 // Successfully created directory
                 returnVal = fopen(path.c_str(), mode.c_str());
@@ -69,7 +69,7 @@ namespace fusedrive
         return returnVal;
     }
 
-    int Util::gdrive_recursive_mkdir(const string& path)
+    int Util::recursiveMkdir(const string& path)
     {
         Gdrive_Path* pGpath = gdrive_path_create(path.c_str());
         const string parentDir(gdrive_path_get_dirname(pGpath));
@@ -79,7 +79,7 @@ namespace fusedrive
         if (access(parentDir.c_str(), F_OK))
         {
             // Directory doesn't exist, need to create it.
-            returnVal = gdrive_recursive_mkdir(parentDir);
+            returnVal = recursiveMkdir(parentDir);
             if (!returnVal)
             {
                 // Successfully created directory

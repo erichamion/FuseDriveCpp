@@ -1086,7 +1086,7 @@ namespace fusedrive
         
         // Set chunk size
         mMinChunkSize = (minFileChunkSize > 0) ? 
-            Util::gdrive_divide_round_up(minFileChunkSize, Gdrive::GDRIVE_BASE_CHUNK_SIZE) * 
+            Util::divideCeil(minFileChunkSize, Gdrive::GDRIVE_BASE_CHUNK_SIZE) * 
                 Gdrive::GDRIVE_BASE_CHUNK_SIZE :
             Gdrive::GDRIVE_BASE_CHUNK_SIZE;
 
@@ -1537,7 +1537,7 @@ namespace fusedrive
 
         // Create a JSON object, fill it with the necessary details, 
         // convert to a string, and write to the file.
-        FILE* outFile = Util::gdrive_power_fopen(mAuthFilename, "w");
+        FILE* outFile = Util::recursiveFopen(mAuthFilename, "w");
         if (outFile == NULL)
         {
             // Couldn't open file for writing.

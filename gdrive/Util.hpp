@@ -19,49 +19,11 @@ namespace fusedrive
 {
     class Util {
     public:
-        /*
-         * gdrive_divide_round_up():    Divide a dividend by a divisor. If there is a
-         *                              remainder, round UP to the next integer.
-         * Parameters:
-         *      dividend (long):    
-         *              The dividend.
-         *      divisor (long):     
-         *              The divisor.
-         * Return value (long):
-         *      The smallest integer greater than or equal to the result of 
-         *      dividend / divisor.
-         */
-        static long gdrive_divide_round_up(long dividend, long divisor);
+        static long divideCeil(long dividend, long divisor);
         
-        /*
-         * gdrive_power_fopen():    Opens a file in a way similar to the fopen() system
-         *                          call, but creates the parent directory (and the 
-         *                          grandparent directory, and so on) if it doesn't
-         *                          exist.
-         * Parameters:
-         *      path (const char*): 
-         *              The path of the file to open.
-         *      mode (const char*): 
-         *              The mode parameter of the fopen() system call.
-         * Return value:
-         *      A valid FILE* handle on success, or NULL on failure.
-         */
-        static FILE* gdrive_power_fopen(const std::string& path, const std::string& mode);
+        static FILE* recursiveFopen(const std::string& path, const std::string& mode);
 
-        /*
-         * gdrive_recursive_mkdir():    Creates a directory in a way similar to the 
-         *                              mkdir() system call, but creates the parent 
-         *                              directory (and the grandparent directory, and so
-         *                              on) if it doesn't exist.
-         * Parameters:
-         *      path (const char*): 
-         *              The path of the directory to create.
-         * Return value:
-         *      Return value (int):
-         *      0 on success. On error, returns a negative value whose absolute value
-         *      is defined in <errors.h>
-         */
-        static int gdrive_recursive_mkdir(const std::string& path);
+        static int recursiveMkdir(const std::string& path);
         
         // Like strptime from <time.h>, but uses C++ string references. Returns the
         // index of the first unprocessed character, or string::npos if the entire

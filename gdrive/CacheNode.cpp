@@ -505,8 +505,8 @@ namespace fusedrive
         int maxChunks = gInfo.getMaxChunks();
         size_t minChunkSize = gInfo.getMinChunkSize();
 
-        size_t perfectChunkSize = Util::gdrive_divide_round_up(fileSize, maxChunks);
-        size_t chunkSize = Util::gdrive_divide_round_up(perfectChunkSize, minChunkSize) * 
+        size_t perfectChunkSize = Util::divideCeil(fileSize, maxChunks);
+        size_t chunkSize = Util::divideCeil(perfectChunkSize, minChunkSize) * 
                 minChunkSize;
 
         // The actual chunk may be a multiple of chunkSize.  A read that starts at
@@ -514,7 +514,7 @@ namespace fusedrive
         off_t chunkStart = (offset / chunkSize) * chunkSize;
         off_t chunkOffset = offset % chunkSize;
         off_t endChunkOffset = chunkOffset + size - 1;
-        size_t realChunkSize = Util::gdrive_divide_round_up(endChunkOffset, chunkSize) * 
+        size_t realChunkSize = Util::divideCeil(endChunkOffset, chunkSize) * 
                 chunkSize;
 
         Gdrive_File_Contents* pContents = addContents();
