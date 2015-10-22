@@ -32,106 +32,7 @@ namespace fusedrive
     * Public Methods
     **************************/
     
-    const Fileinfo& Fileinfo::getFileinfoById(Gdrive& gInfo, const string& fileId)
-    {
-        // Get the information from the cache, or put it in the cache if it isn't
-        // already there.
-        bool alreadyCached = false;
-
-        Fileinfo* pFileinfo = gInfo.gdrive_get_cache()
-                .getItem(fileId, true, alreadyCached);
-        if (pFileinfo == NULL)
-        {
-            // An error occurred, probably out of memory.
-            throw new exception();
-        }
-
-        if (alreadyCached)
-        {
-            // Don't need to do anything else.
-            return *pFileinfo;
-        }
-        // else it wasn't cached, need to fill in the struct
-
-        // Prepare the request
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(gInfo);
-        if (pTransfer == NULL)
-        {
-            // Memory error
-            throw new exception();
-        }
-        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
-
-        // Add the URL.
-        // String to hold the url.  Add 2 to the end to account for the '/' before
-        // the file ID, as well as the terminating null.
-        string baseUrl(Gdrive::GDRIVE_URL_FILES);
-        baseUrl += "/";
-        baseUrl += fileId;
-        if (gdrive_xfer_set_url(pTransfer, baseUrl.c_str()) != 0)
-        {
-            // Error
-            gdrive_xfer_free(pTransfer);
-            throw new exception();
-        }
-
-        // Add query parameters
-        if (gdrive_xfer_add_query(gInfo, pTransfer, "fields", 
-                                  "title,id,mimeType,fileSize,createdDate,"
-                                  "modifiedDate,lastViewedByMeDate,parents(id),"
-                                  "userPermission") != 0)
-        {
-            // Error
-            gdrive_xfer_free(pTransfer);
-            throw new exception();
-        }
-
-        // Perform the request
-        Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
-        gdrive_xfer_free(pTransfer);
-
-        if (pBuf == NULL)
-        {
-            // Download error
-            throw new exception();
-        }
-
-        if (gdrive_dlbuf_get_httpresp(pBuf) >= 400)
-        {
-            // Server returned an error that couldn't be retried, or continued
-            // returning an error after retrying
-            gdrive_dlbuf_free(pBuf);
-            throw new exception();
-        }
-
-        // If we're here, we have a good response.  Extract the ID from the 
-        // response.
-
-        // Convert to a JSON object.
-        Json jsonObj(gdrive_dlbuf_get_data(pBuf));
-        gdrive_dlbuf_free(pBuf);
-        if (!jsonObj.gdrive_json_is_valid())
-        {
-            // Couldn't convert to Json object
-            throw new exception();
-        }
-        
-        pFileinfo->readJson(jsonObj);
-
-        // If it's a folder, get the number of children.
-        if (pFileinfo->type == GDRIVE_FILETYPE_FOLDER)
-        {
-            Gdrive_Fileinfo_Array* pFileArray = gInfo.gdrive_folder_list(fileId);
-            if (pFileArray != NULL)
-            {
-
-                pFileinfo->nChildren = gdrive_finfoarray_get_count(pFileArray);
-            }
-            gdrive_finfoarray_free(pFileArray);
-        }
-        return *pFileinfo;
-    }
-
+    
     void Fileinfo::Cleanup()
     {
 
@@ -142,7 +43,7 @@ namespace fusedrive
     string Fileinfo::getAtimeString() const
     {
         
-        return epochTimeNSToRfc3339(&accessTime);
+        return Util::epochTimeNSToRfc3339(&accessTime);
     }
 
     int Fileinfo::setAtime(const struct timespec* ts)
@@ -154,13 +55,13 @@ namespace fusedrive
     string Fileinfo::getCtimeString() const
     {
         
-        return epochTimeNSToRfc3339(&creationTime);
+        return Util::epochTimeNSToRfc3339(&creationTime);
     }
 
     string Fileinfo::getMtimeString() const
     {
         
-        return epochTimeNSToRfc3339(&modificationTime);
+        return Util::epochTimeNSToRfc3339(&modificationTime);
     }
 
     int Fileinfo::setMtime(const struct timespec* ts)
@@ -235,7 +136,7 @@ namespace fusedrive
 
         string cTime(jsonObj.gdrive_json_get_string("createdDate"));
         if (cTime.empty() || 
-                rfc3339ToEpochTimeNS(cTime.c_str(), &creationTime) != 0)
+                Util::rfc3339ToEpochTimeNS(cTime, &creationTime) != 0)
         {
             // Didn't get a createdDate or failed to convert it.
             memset(&creationTime, 0, sizeof(struct timespec));
@@ -243,8 +144,7 @@ namespace fusedrive
 
         string mTime(jsonObj.gdrive_json_get_string("modifiedDate"));
         if (mTime.empty() || 
-                rfc3339ToEpochTimeNS
-                (mTime.c_str(), &modificationTime) != 0)
+                Util::rfc3339ToEpochTimeNS(mTime, &modificationTime) != 0)
         {
             // Didn't get a modifiedDate or failed to convert it.
             memset(&modificationTime, 0, sizeof(struct timespec));
@@ -252,8 +152,7 @@ namespace fusedrive
 
         string aTime(jsonObj.gdrive_json_get_string("lastViewedByMeDate"));
         if (aTime.empty() || 
-                rfc3339ToEpochTimeNS
-                (aTime.c_str(), &accessTime) != 0)
+                Util::rfc3339ToEpochTimeNS(aTime, &accessTime) != 0)
         {
             // Didn't get an accessed date or failed to convert it.
             memset(&accessTime, 0, sizeof(struct timespec));
@@ -312,123 +211,6 @@ namespace fusedrive
     * Private Methods
     **************************/
     
-    int Fileinfo::rfc3339ToEpochTimeNS(const string& rfcTime, 
-            struct timespec* pResultTime)
-    {
-        // Get the time down to seconds. Don't do anything with it yet, because
-        // we still need to confirm the timezone.
-        struct tm epochTime = {0};
-        size_t remainderStart;
-        try
-        {
-            remainderStart = Util::strptime(rfcTime, "%Y-%m-%dT%H:%M:%S", &epochTime);
-        }
-        catch (const exception& e)
-        {
-            // Conversion failure.  
-            return -1;
-        }
-
-        // Get the fraction of a second.  The remainder variable points to the next 
-        // character after seconds.  If and only if there are fractional seconds 
-        // (which Google Drive does use but which are optional per the RFC 3339 
-        // specification),  this will be the '.' character.
-        if (remainderStart != string::npos && rfcTime[remainderStart] == '.')
-        {
-            // Rather than getting the integer after the decimal and needing to 
-            // count digits or count leading "0" characters, it's easier just to
-            // get a floating point (or double) fraction between 0 and 1, then
-            // multiply by 1000000000 to get nanoseconds.
-            //char* start = remainder;
-            pResultTime->tv_nsec = 
-                    lround(1000000000L * Util::strtod(rfcTime, remainderStart));
-        }
-        else
-        {
-            // No fractional part.
-            pResultTime->tv_nsec = 0;
-        }
-
-        // Get the timezone offset from UTC. Google Drive appears to use UTC (offset
-        // is "Z"), but I don't know whether that's guaranteed. If not using UTC,
-        // the offset will start with either '+' or '-'.
-        if (remainderStart >= rfcTime.length())
-        {
-            // Invalid/no timezone offset
-            return -1;
-        }
-        const char tzSep = rfcTime[remainderStart];
-        if (tzSep != '+' && tzSep != '-' && toupper(tzSep) != 'Z')
-        {
-            // Invalid offset.
-            return -1;
-        }
-        if (toupper(tzSep) != 'Z')
-        {
-            // Get the hour portion of the offset.
-            size_t start = remainderStart;
-            long offHour = Util::strtol(rfcTime, remainderStart, 10);
-            if (remainderStart != start + 2 || rfcTime[remainderStart] != ':')
-            {
-                // Invalid offset, not in the form of "+HH:MM" / "-HH:MM"
-                return -1;
-            }
-
-            // Get the minute portion of the offset
-            start = remainderStart + 1;
-            long offMinute = Util::strtol(rfcTime, remainderStart, 10);
-            if (remainderStart != start + 2)
-            {
-                // Invalid offset, minute isn't a 2-digit number.
-                return -1;
-            }
-
-            // Subtract the offset from the hour/minute parts of the tm struct.
-            // This may give out-of-range values (e.g., tm_hour could be -2 or 26),
-            // but mktime() is supposed to handle those.
-            epochTime.tm_hour -= offHour;
-            epochTime.tm_min -= offMinute;
-        }
-
-        // Convert the broken-down time into seconds.
-        pResultTime->tv_sec = mktime(&epochTime);
-
-        // Failure if mktime returned -1, success otherwise.
-        if (pResultTime->tv_sec == (time_t) (-1))
-        {
-            return -1;
-        }
-
-        // Correct for local timezone, converting back to UTC
-        // (Probably unnecessary to call tzset(), but it doesn't hurt)
-        tzset();
-        pResultTime->tv_sec -= timezone;
-        return 0;
-    }
-
-    string Fileinfo::epochTimeNSToRfc3339(const struct timespec* ts)
-    {
-        // A max of 31 (or GDRIVE_TIMESTRING_LENGTH) should be the minimum that will
-        // be successful.
-
-        // If nanoseconds were greater than this number, they would be seconds.
-        assert(ts->tv_nsec < 1000000000L);
-
-        // Get everything down to whole seconds
-        struct tm* pTime = gmtime(&(ts->tv_sec));
-        stringstream ss;
-        ss << Util::strftime("%Y-%m-%dT%H:%M:%S", pTime);
-        
-        // strftime() doesn't do fractional seconds. Add the '.', the fractional
-        // part, and the 'Z' for timezone.
-        ss << "." << setfill('0') << setw(9) << ts->tv_nsec << "Z";
-//        int bytesWritten = baseLength;
-//        bytesWritten += snprintf(dest + baseLength, max - baseLength, 
-//                                 ".%09luZ", ts->tv_nsec);
-
-        return ss.str();
-
-    }
 
      int Fileinfo::setTime(enum GDRIVE_FINFO_TIME whichTime, 
              const struct timespec* ts)

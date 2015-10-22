@@ -227,12 +227,13 @@ using namespace fusedrive;
         // The fileId should never be NULL. A NULL parentId is a runtime error, but
         // it shouldn't stop execution. Just check the fileId here.
         assert(fileId != NULL);
+        
 
         // Find the number of parents, which is the number of "hard" links.
         const Fileinfo* pFileinfo;
         try
         {
-            pFileinfo = &(Fileinfo::getFileinfoById(gInfo, fileId));
+            pFileinfo = &(gInfo.getFileinfoById(fileId));
         }
         catch (const exception& e)
         {
@@ -321,7 +322,7 @@ using namespace fusedrive;
         const Fileinfo* pFileinfo;
         try
         {
-            pFileinfo = &(Fileinfo::getFileinfoById(gInfo, fileId));
+            pFileinfo = &(gInfo.getFileinfoById(fileId));
         }
         catch (const exception& e)
         {
@@ -556,7 +557,7 @@ using namespace fusedrive;
         const Fileinfo* pFileinfo;
         try
         {
-            pFileinfo = &(Fileinfo::getFileinfoById(gInfo, fileId));
+            pFileinfo = &(gInfo.getFileinfoById(fileId));
         }
         catch (const exception& e)
         {
@@ -954,7 +955,7 @@ using namespace fusedrive;
             const Fileinfo* pFromInfo;
             try
             {
-                pFromInfo = &(Fileinfo::getFileinfoById(gInfo, fromFileId));
+                pFromInfo = &(gInfo.getFileinfoById(fromFileId));
             }
             catch (const exception& e)
             {
@@ -967,8 +968,7 @@ using namespace fusedrive;
                 const Fileinfo* pToInfo = NULL;
                 try
                 {
-                    const Fileinfo& toInfo = 
-                        Fileinfo::getFileinfoById(gInfo, toFileId);
+                    const Fileinfo& toInfo = gInfo.getFileinfoById(toFileId);
                     pToInfo = &toInfo;
                 }
                 catch (...)
@@ -1110,7 +1110,7 @@ using namespace fusedrive;
         const Fileinfo* pFileinfo;
         try
         {
-            pFileinfo = &(Fileinfo::getFileinfoById(gInfo, fileId));
+            pFileinfo = &(gInfo.getFileinfoById(fileId));
         }
         catch (const exception& e)
         {

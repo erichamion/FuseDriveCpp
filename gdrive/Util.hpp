@@ -91,6 +91,12 @@ namespace fusedrive
         static std::string strftime(const std::string& format, 
             const struct tm* tm);
         
+        static int rfc3339ToEpochTimeNS(const std::string& rfcTime, 
+            struct timespec* pResultTime);
+
+        static std::string 
+        epochTimeNSToRfc3339(const struct timespec* ts);
+        
     private:
         Util();
         Util(const Util& orig);

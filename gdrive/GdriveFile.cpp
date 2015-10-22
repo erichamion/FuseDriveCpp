@@ -46,7 +46,7 @@ namespace fusedrive
         {
             try
             {
-                Fileinfo::getFileinfoById(gInfo, fileId);
+                gInfo.getFileinfoById(fileId);
             }
             catch (const exception& e)
             {

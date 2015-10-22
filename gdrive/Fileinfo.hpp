@@ -41,9 +41,7 @@ namespace fusedrive
         bool dirtyMetainfo;
         Gdrive& gInfo;
         
-        static const Fileinfo& getFileinfoById(fusedrive::Gdrive& gInfo, 
-            const std::string& fileId);
-
+        
         void Cleanup();
 
         std::string getAtimeString() const;
@@ -73,11 +71,7 @@ namespace fusedrive
         
         static const std::string GDRIVE_MIMETYPE_FOLDER;
         
-        static int rfc3339ToEpochTimeNS(const std::string& rfcTime, 
-            struct timespec* pResultTime);
 
-        static std::string 
-        epochTimeNSToRfc3339(const struct timespec* ts);
 
         int setTime(enum GDRIVE_FINFO_TIME whichTime, 
             const struct timespec* ts);

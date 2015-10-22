@@ -14,6 +14,10 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <string>
+#include <math.h>
+#include <assert.h>
+#include <sstream>
+#include <iomanip>
 
 using namespace std;
 namespace fusedrive
@@ -177,4 +181,123 @@ namespace fusedrive
         buffer.resize(len-1); //remove that trailing '\a'
         return buffer;
     }
+    
+    int Util::rfc3339ToEpochTimeNS(const string& rfcTime, 
+            struct timespec* pResultTime)
+    {
+        // Get the time down to seconds. Don't do anything with it yet, because
+        // we still need to confirm the timezone.
+        struct tm epochTime = {0};
+        size_t remainderStart;
+        try
+        {
+            remainderStart = Util::strptime(rfcTime, "%Y-%m-%dT%H:%M:%S", &epochTime);
+        }
+        catch (const exception& e)
+        {
+            // Conversion failure.  
+            return -1;
+        }
+
+        // Get the fraction of a second.  The remainder variable points to the next 
+        // character after seconds.  If and only if there are fractional seconds 
+        // (which Google Drive does use but which are optional per the RFC 3339 
+        // specification),  this will be the '.' character.
+        if (remainderStart != string::npos && rfcTime[remainderStart] == '.')
+        {
+            // Rather than getting the integer after the decimal and needing to 
+            // count digits or count leading "0" characters, it's easier just to
+            // get a floating point (or double) fraction between 0 and 1, then
+            // multiply by 1000000000 to get nanoseconds.
+            //char* start = remainder;
+            pResultTime->tv_nsec = 
+                    lround(1000000000L * Util::strtod(rfcTime, remainderStart));
+        }
+        else
+        {
+            // No fractional part.
+            pResultTime->tv_nsec = 0;
+        }
+
+        // Get the timezone offset from UTC. Google Drive appears to use UTC (offset
+        // is "Z"), but I don't know whether that's guaranteed. If not using UTC,
+        // the offset will start with either '+' or '-'.
+        if (remainderStart >= rfcTime.length())
+        {
+            // Invalid/no timezone offset
+            return -1;
+        }
+        const char tzSep = rfcTime[remainderStart];
+        if (tzSep != '+' && tzSep != '-' && toupper(tzSep) != 'Z')
+        {
+            // Invalid offset.
+            return -1;
+        }
+        if (toupper(tzSep) != 'Z')
+        {
+            // Get the hour portion of the offset.
+            size_t start = remainderStart;
+            long offHour = Util::strtol(rfcTime, remainderStart, 10);
+            if (remainderStart != start + 2 || rfcTime[remainderStart] != ':')
+            {
+                // Invalid offset, not in the form of "+HH:MM" / "-HH:MM"
+                return -1;
+            }
+
+            // Get the minute portion of the offset
+            start = remainderStart + 1;
+            long offMinute = Util::strtol(rfcTime, remainderStart, 10);
+            if (remainderStart != start + 2)
+            {
+                // Invalid offset, minute isn't a 2-digit number.
+                return -1;
+            }
+
+            // Subtract the offset from the hour/minute parts of the tm struct.
+            // This may give out-of-range values (e.g., tm_hour could be -2 or 26),
+            // but mktime() is supposed to handle those.
+            epochTime.tm_hour -= offHour;
+            epochTime.tm_min -= offMinute;
+        }
+
+        // Convert the broken-down time into seconds.
+        pResultTime->tv_sec = mktime(&epochTime);
+
+        // Failure if mktime returned -1, success otherwise.
+        if (pResultTime->tv_sec == (time_t) (-1))
+        {
+            return -1;
+        }
+
+        // Correct for local timezone, converting back to UTC
+        // (Probably unnecessary to call tzset(), but it doesn't hurt)
+        tzset();
+        pResultTime->tv_sec -= timezone;
+        return 0;
+    }
+
+    string Util::epochTimeNSToRfc3339(const struct timespec* ts)
+    {
+        // A max of 31 (or GDRIVE_TIMESTRING_LENGTH) should be the minimum that will
+        // be successful.
+
+        // If nanoseconds were greater than this number, they would be seconds.
+        assert(ts->tv_nsec < 1000000000L);
+
+        // Get everything down to whole seconds
+        struct tm* pTime = gmtime(&(ts->tv_sec));
+        stringstream ss;
+        ss << Util::strftime("%Y-%m-%dT%H:%M:%S", pTime);
+        
+        // strftime() doesn't do fractional seconds. Add the '.', the fractional
+        // part, and the 'Z' for timezone.
+        ss << "." << setfill('0') << setw(9) << ts->tv_nsec << "Z";
+//        int bytesWritten = baseLength;
+//        bytesWritten += snprintf(dest + baseLength, max - baseLength, 
+//                                 ".%09luZ", ts->tv_nsec);
+
+        return ss.str();
+
+    }
+
 }

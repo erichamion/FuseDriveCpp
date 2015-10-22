@@ -59,10 +59,11 @@ namespace fusedrive
 
         int gdrive_get_filesystem_perms(enum Gdrive_Filetype type);
 
-
         Gdrive_Fileinfo_Array*  gdrive_folder_list(const std::string& folderId);
 
         std::string gdrive_filepath_to_id(const std::string& path);
+        
+        const Fileinfo& getFileinfoById(const std::string& fileId);
 
         int gdrive_remove_parent(const std::string& fileId, 
             const std::string& parentId);

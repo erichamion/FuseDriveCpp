@@ -250,6 +250,105 @@ namespace fusedrive
         return childId;
     }
 
+    const Fileinfo& Gdrive::getFileinfoById(const string& fileId)
+    {
+        // Get the information from the cache, or put it in the cache if it isn't
+        // already there.
+        bool alreadyCached = false;
+
+        Fileinfo* pFileinfo = 
+                gdrive_get_cache().getItem(fileId, true, alreadyCached);
+        if (pFileinfo == NULL)
+        {
+            // An error occurred, probably out of memory.
+            throw new exception();
+        }
+
+        if (alreadyCached)
+        {
+            // Don't need to do anything else.
+            return *pFileinfo;
+        }
+        // else it wasn't cached, need to fill in the struct
+
+        // Prepare the request
+        Gdrive_Transfer* pTransfer = gdrive_xfer_create(*this);
+        if (pTransfer == NULL)
+        {
+            // Memory error
+            throw new exception();
+        }
+        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
+
+        // Add the URL.
+        // String to hold the url.  Add 2 to the end to account for the '/' before
+        // the file ID, as well as the terminating null.
+        string baseUrl(Gdrive::GDRIVE_URL_FILES);
+        baseUrl += "/";
+        baseUrl += fileId;
+        if (gdrive_xfer_set_url(pTransfer, baseUrl.c_str()) != 0)
+        {
+            // Error
+            gdrive_xfer_free(pTransfer);
+            throw new exception();
+        }
+
+        // Add query parameters
+        if (gdrive_xfer_add_query(*this, pTransfer, "fields", 
+                                  "title,id,mimeType,fileSize,createdDate,"
+                                  "modifiedDate,lastViewedByMeDate,parents(id),"
+                                  "userPermission") != 0)
+        {
+            // Error
+            gdrive_xfer_free(pTransfer);
+            throw new exception();
+        }
+
+        // Perform the request
+        Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
+        gdrive_xfer_free(pTransfer);
+
+        if (pBuf == NULL)
+        {
+            // Download error
+            throw new exception();
+        }
+
+        if (gdrive_dlbuf_get_httpresp(pBuf) >= 400)
+        {
+            // Server returned an error that couldn't be retried, or continued
+            // returning an error after retrying
+            gdrive_dlbuf_free(pBuf);
+            throw new exception();
+        }
+
+        // If we're here, we have a good response.  Extract the ID from the 
+        // response.
+
+        // Convert to a JSON object.
+        Json jsonObj(gdrive_dlbuf_get_data(pBuf));
+        gdrive_dlbuf_free(pBuf);
+        if (!jsonObj.gdrive_json_is_valid())
+        {
+            // Couldn't convert to Json object
+            throw new exception();
+        }
+        
+        pFileinfo->readJson(jsonObj);
+
+        // If it's a folder, get the number of children.
+        if (pFileinfo->type == GDRIVE_FILETYPE_FOLDER)
+        {
+            Gdrive_Fileinfo_Array* pFileArray = gdrive_folder_list(fileId);
+            if (pFileArray != NULL)
+            {
+
+                pFileinfo->nChildren = gdrive_finfoarray_get_count(pFileArray);
+            }
+            gdrive_finfoarray_free(pFileArray);
+        }
+        return *pFileinfo;
+    }
 
     int Gdrive::gdrive_remove_parent(const string& fileId, const string& parentId)
     {
