@@ -5,6 +5,8 @@
  * Created on October 16, 2015, 10:10 PM
  */
 
+foo bar;
+
 #ifndef GDRIVE_CACHE_NODE_HPP
 #define	GDRIVE_CACHE_NODE_HPP
 /* 
@@ -24,6 +26,8 @@
  * Created on May 4, 2015, 8:29 PM
  */
 
+// Cause compiler error when included
+foo bar;
 #ifndef GDRIVE_CACHE_NODE_H
 #define	GDRIVE_CACHE_NODE_H
 

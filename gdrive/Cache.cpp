@@ -7,7 +7,7 @@
 
 #include "Cache.hpp"
 #include "Gdrive.hpp"
-#include "gdrive-cache-node.hpp"
+#include "CacheNode.hpp"
 
 #include <string.h>
 #include <assert.h>
@@ -75,6 +75,11 @@ namespace fusedrive
         }
         
         initialized = true;
+    }
+    
+    Gdrive& Cache::gdrive_cache_get_gdrive()
+    {
+        return gInfo;
     }
 
     FileidCacheNode* Cache::gdrive_cache_get_fileidcachehead()
@@ -175,19 +180,14 @@ namespace fusedrive
 
                     // Update the file metadata cache, but only if the file is not
                     // opened for writing with dirty data.
-                    Gdrive_Cache_Node* pCacheNode = 
-                            gdrive_cnode_get(gInfo, NULL,
-                                                   &pCacheHead, 
-                                                   fileId.c_str(), 
-                                                   false, 
-                                                   NULL
-                            );
-                    if (pCacheNode != NULL && !gdrive_cnode_is_dirty(pCacheNode))
+                    CacheNode* pCacheNode = CacheNode::gdrive_cnode_get(*this,
+                            NULL, &pCacheHead, fileId, false);
+                    if (pCacheNode != NULL && !pCacheNode->gdrive_cnode_is_dirty())
                     {
                         // If this file was in the cache, update its information
                         Json jsonFile = 
                                 jsonItem.gdrive_json_get_nested_object("file");
-                        gdrive_cnode_update_from_json(pCacheNode, jsonFile);
+                        pCacheNode->gdrive_cnode_update_from_json(jsonFile);
                     }
                     // else either not in the cache, or there is dirty data we don't
                     // want to overwrite.
@@ -237,13 +237,13 @@ namespace fusedrive
         return returnVal;
     }
 
-    fusedrive::Fileinfo* Cache::gdrive_cache_get_item(const string& fileId, 
-            bool addIfDoesntExist, bool* pAlreadyExists)
+    Fileinfo* Cache::gdrive_cache_get_item(const string& fileId, 
+            bool addIfDoesntExist, bool& alreadyExists)
     {
         assert(initialized);
         // Get the existing node (or a new one) from the cache.
-        Gdrive_Cache_Node* pNode = gdrive_cnode_get(gInfo, NULL,&pCacheHead,
-                fileId.c_str(), addIfDoesntExist, pAlreadyExists);
+        CacheNode* pNode = CacheNode::gdrive_cnode_get(*this, NULL, 
+                &pCacheHead, fileId, addIfDoesntExist, alreadyExists);
         if (pNode == NULL)
         {
             // There was an error, or the node doesn't exist and we aren't allowed
@@ -255,7 +255,7 @@ namespace fusedrive
         // for either the individual node or the entire cache, whichever is newer.
         // If the node's update time is 0, always update it.
         time_t cacheUpdated = lastUpdateTime;
-        time_t nodeUpdated = gdrive_cnode_get_update_time(pNode);
+        time_t nodeUpdated = pNode->gdrive_cnode_get_update_time();
         time_t expireTime = (nodeUpdated > cacheUpdated ? 
             nodeUpdated : cacheUpdated) + cacheTTL;
         if (expireTime < time(NULL) || nodeUpdated == (time_t) 0)
@@ -264,18 +264,35 @@ namespace fusedrive
 
             // Folder nodes may be deleted by cache updates, but regular file nodes
             // are safe.
-            bool isFolder = (gdrive_cnode_get_filetype(pNode) == 
+            bool isFolder = (pNode->gdrive_cnode_get_filetype() == 
                     GDRIVE_FILETYPE_FOLDER);
 
             gdrive_cache_update();
 
             return (isFolder ? 
-                    gdrive_cache_get_item(fileId, addIfDoesntExist, pAlreadyExists) :
-                    gdrive_cnode_get_fileinfo(pNode));
+                    gdrive_cache_get_item(fileId, addIfDoesntExist, alreadyExists) :
+                    &pNode->gdrive_cnode_get_fileinfo());
         }
 
         // We have a good node that's not too old.
-        return gdrive_cnode_get_fileinfo(pNode);
+        return &pNode->gdrive_cnode_get_fileinfo();
+    }
+    
+    Fileinfo* Cache::gdrive_cache_get_item(const string& fileId, 
+            bool addIfDoesntExist)
+    {
+        bool dummy = false;
+        return gdrive_cache_get_item(fileId, addIfDoesntExist, dummy);
+    }
+    
+    CacheNode* Cache::gdrive_cache_get_head()
+    {
+        return pCacheHead;
+    }
+        
+    void Cache::gdrive_cache_set_head(CacheNode* pNewHead)
+    {
+        pCacheHead = pNewHead;
     }
 
     int Cache::gdrive_cache_add_fileid(const string& path, const string& fileId)
@@ -284,12 +301,19 @@ namespace fusedrive
         return FileidCacheNode::gdrive_fidnode_add(&pFileIdCacheHead, path, fileId);
     }
 
-    Gdrive_Cache_Node* Cache::gdrive_cache_get_node(const string& fileId, 
-            bool addIfDoesntExist, bool* pAlreadyExists)
+    CacheNode* Cache::gdrive_cache_get_node(const string& fileId, 
+            bool addIfDoesntExist, bool& alreadyExists)
     {
         assert(initialized);
-        return gdrive_cnode_get(gInfo, NULL, &pCacheHead, fileId.c_str(),
-                addIfDoesntExist, pAlreadyExists);
+        return CacheNode::gdrive_cnode_get(*this, NULL, &pCacheHead, fileId,
+                addIfDoesntExist, alreadyExists);
+    }
+    
+    CacheNode* Cache::gdrive_cache_get_node(const string& fileId, 
+            bool addIfDoesntExist)
+    {
+        bool dummy = false;
+        return gdrive_cache_get_node(fileId, addIfDoesntExist, dummy);
     }
 
     string Cache::gdrive_cache_get_fileid(const string& path)
@@ -338,26 +362,25 @@ namespace fusedrive
         // immediately. Otherwise, mark it for delete on close.
 
         // Find the node we want to remove.
-        Gdrive_Cache_Node* pNode = 
-                gdrive_cnode_get(gInfo, NULL, &pCacheHead, fileId.c_str(), 
-                                       false, NULL);
+        CacheNode* pNode = CacheNode::gdrive_cnode_get(*this, NULL, 
+                &pCacheHead, fileId, false);
         if (pNode == NULL)
         {
             // Didn't find it.  Do nothing.
             return;
         }
-        gdrive_cnode_mark_deleted(pNode, &pCacheHead);
+        pNode->gdrive_cnode_mark_deleted();
     }
 
-    void Cache::gdrive_cache_delete_node(Gdrive_Cache_Node* pNode)
+    void Cache::gdrive_cache_delete_node(CacheNode* pNode)
     {
         assert(initialized);
-        gdrive_cnode_delete(pNode, &pCacheHead);
+        pNode->gdrive_cnode_delete();
     }
     
     Cache::~Cache() {
         pFileIdCacheHead->gdrive_fidnode_clear_all();
-        gdrive_cnode_free_all(pCacheHead);
+        pCacheHead->gdrive_cnode_free_all();
     }
     
     
@@ -368,9 +391,8 @@ namespace fusedrive
     void Cache::gdrive_cache_remove_id(Gdrive& gInfo, const string& fileId)
     {
         // Find the node we want to remove.
-        Gdrive_Cache_Node* pNode = 
-                gdrive_cnode_get(gInfo, NULL, &pCacheHead, fileId.c_str(), 
-                                       false, NULL);
+        CacheNode* pNode = CacheNode::gdrive_cnode_get(*this, NULL, 
+                &pCacheHead, fileId, false);
         if (pNode == NULL)
         {
             // Didn't find it.  Do nothing.
@@ -378,7 +400,7 @@ namespace fusedrive
         }
 
 
-        gdrive_cnode_delete(pNode, &pCacheHead);
+        pNode->gdrive_cnode_delete();
     }
     
     

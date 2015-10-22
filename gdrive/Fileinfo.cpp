@@ -47,7 +47,7 @@ namespace fusedrive
         bool alreadyCached = false;
 
         Fileinfo* pFileinfo = gInfo.gdrive_get_cache()
-                .gdrive_cache_get_item(fileId.c_str(), true, &alreadyCached);
+                .gdrive_cache_get_item(fileId, true, alreadyCached);
         if (pFileinfo == NULL)
         {
             // An error occurred, probably out of memory.

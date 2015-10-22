@@ -9,7 +9,7 @@
 #define	FILEINFO_HPP
 
 #include <time.h>
-#include "Gdrive.hpp"
+#include "GdriveEnums.hpp"
 #include "Json.hpp"
 
 #include <string>

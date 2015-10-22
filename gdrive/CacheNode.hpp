@@ -5,97 +5,110 @@
  * Created on October 19, 2015, 11:11 AM
  */
 
-#define IGNOREME
-#ifndef IGNOREME
-
 #ifndef CACHENODE_HPP
 #define	CACHENODE_HPP
 
 #include "gdrive-file-contents.hpp"
 #include "Fileinfo.hpp"
 
-typedef struct Gdrive_Cache_Node Gdrive_File;
+#include <string>
+
 
 namespace fusedrive
 {
+    class Cache;
+    
     class CacheNode {
     public:
-        CacheNode* gdrive_cnode_get(fusedrive::Gdrive& gInfo, CacheNode* pParent, 
-                                    CacheNode** ppNode, 
-                                    const char* fileId, bool addIfDoesntExist, 
-                                    bool* pAlreadyExists);
+        static CacheNode* gdrive_cnode_get(Cache& cache, CacheNode* pParent, 
+                CacheNode** ppNode, const std::string& fileId, 
+                bool addIfDoesntExist, bool& alreadyExists);
+        
+        static CacheNode* gdrive_cnode_get(Cache& cache, CacheNode* pParent, 
+            CacheNode** ppNode, const std::string& fileId, 
+            bool addIfDoesntExist);
+        
+        Gdrive& gdrive_cnode_get_gdrive();
 
-        void gdrive_cnode_delete(Gdrive_Cache_Node* pNode, 
-                                 Gdrive_Cache_Node** ppToRoot);
+        void gdrive_cnode_delete();
 
-        void gdrive_cnode_mark_deleted(Gdrive_Cache_Node* pNode, 
-                                       Gdrive_Cache_Node** ppToRoot);
+        void gdrive_cnode_mark_deleted();
+        
+        bool gdrive_cnode_isdeleted();
 
-        void gdrive_cnode_free_all(Gdrive_Cache_Node* pRoot);
+        void gdrive_cnode_free_all();
+
+        time_t gdrive_cnode_get_update_time();
+
+        enum Gdrive_Filetype gdrive_cnode_get_filetype();
+
+        Fileinfo& gdrive_cnode_get_fileinfo();
 
 
-        time_t gdrive_cnode_get_update_time(Gdrive_Cache_Node* pNode);
+        void gdrive_cnode_update_from_json(Json& jsonObj);
 
-        enum fusedrive::Gdrive_Filetype gdrive_cnode_get_filetype(Gdrive_Cache_Node* pNode);
+        void gdrive_cnode_delete_file_contents(Gdrive_File_Contents* pContentsToDelete);
 
-        fusedrive::Fileinfo* gdrive_cnode_get_fileinfo(Gdrive_Cache_Node* pNode);
-
-
-        void gdrive_cnode_update_from_json(Gdrive_Cache_Node* pNode, 
-                                           fusedrive::Json& jsonObj);
-
-        void gdrive_cnode_delete_file_contents(Gdrive_Cache_Node* pNode, 
-                                        Gdrive_File_Contents* pContents);
+        bool gdrive_cnode_is_dirty();
+        
+        void gdrive_cnode_set_dirty(bool val=true);
+        
+        int gdrive_cnode_get_open_count();
+        
+        int gdrive_cnode_get_open_write_count();
+        
+        void gdrive_cnode_increment_open_count(bool isWrite);
+        
+        void gdrive_cnode_decrement_open_count(bool isWrite);
+        
+        bool gdrive_cnode_check_perm(int accessFlags);
+        
+        void gdrive_cnode_clear_contents();
+        
+        bool gdrive_cnode_has_contents();
+        
+        Gdrive_File_Contents* gdrive_cnode_create_chunk(off_t offset, 
+            size_t size, bool fillChunk);
+        
+        Gdrive_File_Contents* gdrive_cnode_find_chunk(off_t offset);
+        
+        void gdrive_cnode_delete_contents_after_offset(off_t offset);
+        
 
         
-        bool gdrive_cnode_is_dirty(const Gdrive_Cache_Node* pNode);
         
     private:
+        Gdrive& gInfo;
         time_t lastUpdateTime;
         int openCount;
         int openWrites;
         bool dirty;
         bool deleted;
-        Fileinfo* pFileinfo;
+        Fileinfo fileinfo;
         Gdrive_File_Contents* pContents;
+        Cache& mCache;
         struct CacheNode* pParent;
         struct CacheNode* pLeft;
         struct CacheNode* pRight;
-        Cache& mCache;
         
-        CacheNode(Gdrive& gInfo, CacheNode* pParent);
-
-        void gdrive_cnode_swap(Gdrive_Cache_Node** ppFromParentOne, 
-                                      Gdrive_Cache_Node* pNodeOne, 
-                                      Gdrive_Cache_Node** ppFromParentTwo, 
-                                      Gdrive_Cache_Node* pNodeTwo);
-
-        void gdrive_cnode_free(Gdrive_Cache_Node* pNode);
-
-        Gdrive_File_Contents* 
-        gdrive_cnode_add_contents(Gdrive_Cache_Node* pNode);
-
-        Gdrive_File_Contents* 
-        gdrive_cnode_create_chunk(Gdrive& gInfo, Gdrive_Cache_Node* pNode, off_t offset, size_t size, 
-                                  bool fillChunk);
-
-        size_t gdrive_file_read_next_chunk(Gdrive& gInfo, Gdrive_File* pNode, char* destBuf, 
-                                                  off_t offset, size_t size);
-
-        off_t gdrive_file_write_next_chunk(Gdrive& gInfo, Gdrive_File* pFile, const char* buf, 
-                                                  off_t offset, size_t size);
-
-        bool gdrive_file_check_perm(Gdrive& gInfo, const Gdrive_Cache_Node* pNode, 
-                                           int accessFlags);
-
-        size_t gdrive_file_uploadcallback(Gdrive& gInfo, char* buffer, off_t offset, 
-                                                 size_t size, void* userdata);
-
-        char* gdrive_file_sync_metadata_or_create(fusedrive::Gdrive& gInfo, Fileinfo* pFileinfo, 
-                                                         const char* parentId, 
-                                                         const char* filename, 
-                                                         bool isFolder, int* pError);
+        CacheNode(CacheNode* pParent);
         
+        CacheNode(Gdrive& gInfo);
+        
+        void gdrive_cnode_init();
+        
+        static void gdrive_cnode_swap(CacheNode** ppFromParentOne, 
+                                      CacheNode* pNodeOne, 
+                                      CacheNode** ppFromParentTwo, 
+                                      CacheNode* pNodeTwo);
+
+        Gdrive_File_Contents* gdrive_cnode_add_contents();
+        
+        
+        CacheNode* gdrive_cnode_get_head();
+        
+        void gdrive_cnode_set_head(CacheNode* newHead);
+
         virtual ~CacheNode();
         
         CacheNode(const CacheNode& orig);
@@ -104,6 +117,3 @@ namespace fusedrive
 }
 
 #endif	/* CACHENODE_HPP */
-
-#endif  /* IGNOREME */
-#undef IGNOREME

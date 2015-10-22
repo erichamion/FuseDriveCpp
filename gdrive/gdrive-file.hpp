@@ -4,7 +4,8 @@
  *
  * Created on October 16, 2015, 11:03 PM
  */
-
+// Cause compiler error when included
+foo bar;
 #ifndef GDRIVE_FILE_HPP
 #define	GDRIVE_FILE_HPP
 

@@ -8,22 +8,7 @@
 #ifndef GDRIVE_HPP
 #define	GDRIVE_HPP
 
-namespace fusedrive
-{
-    enum Gdrive_Interaction
-    {
-        GDRIVE_INTERACTION_NEVER,
-        GDRIVE_INTERACTION_STARTUP,
-        GDRIVE_INTERACTION_ALWAYS
-    };
-
-    enum Gdrive_Filetype
-    {
-        // May add a Google Docs file type or others
-        GDRIVE_FILETYPE_FILE,
-        GDRIVE_FILETYPE_FOLDER
-    };
-}
+#include "GdriveEnums.hpp"
 
 #include "gdrive-fileinfo-array.hpp"
 #include "gdrive-sysinfo.hpp"
@@ -40,6 +25,8 @@ namespace fusedrive
 
 namespace fusedrive
 {
+    class Cache;
+    
     class Gdrive
     {
     public:

@@ -6,9 +6,11 @@
                    projectFiles="true">
       <logicalFolder name="f1" displayName="gdrive" projectFiles="true">
         <itemPath>gdrive/Cache.hpp</itemPath>
+        <itemPath>gdrive/CacheNode.hpp</itemPath>
         <itemPath>gdrive/FileidCacheNode.hpp</itemPath>
         <itemPath>gdrive/Fileinfo.hpp</itemPath>
         <itemPath>gdrive/Gdrive.hpp</itemPath>
+        <itemPath>gdrive/GdriveFile.hpp</itemPath>
         <itemPath>gdrive/GdriveInfo.hpp</itemPath>
         <itemPath>gdrive/Json.hpp</itemPath>
         <itemPath>gdrive/Util.hpp</itemPath>
@@ -24,8 +26,8 @@
         <itemPath>gdrive/gdrive-transfer.hpp</itemPath>
         <itemPath>gdrive/gdrive-util.h</itemPath>
       </logicalFolder>
-      <itemPath>gdrive/CacheNode.hpp</itemPath>
       <itemPath>FuseDrivePrivateData.hpp</itemPath>
+      <itemPath>gdrive/NullStream.hpp</itemPath>
       <itemPath>Options.hpp</itemPath>
       <itemPath>fuse-drive.hpp</itemPath>
     </logicalFolder>
@@ -38,9 +40,11 @@
                    projectFiles="true">
       <logicalFolder name="f1" displayName="gdrive" projectFiles="true">
         <itemPath>gdrive/Cache.cpp</itemPath>
+        <itemPath>gdrive/CacheNode.cpp</itemPath>
         <itemPath>gdrive/FileidCacheNode.cpp</itemPath>
         <itemPath>gdrive/Fileinfo.cpp</itemPath>
         <itemPath>gdrive/Gdrive.cpp</itemPath>
+        <itemPath>gdrive/GdriveFile.cpp</itemPath>
         <itemPath>gdrive/GdriveInfo.cpp</itemPath>
         <itemPath>gdrive/Json.cpp</itemPath>
         <itemPath>gdrive/Util.cpp</itemPath>
@@ -53,8 +57,8 @@
         <itemPath>gdrive/gdrive-transfer.cpp</itemPath>
         <itemPath>gdrive/gdrive-util.c</itemPath>
       </logicalFolder>
-      <itemPath>gdrive/CacheNode.cpp</itemPath>
       <itemPath>FuseDrivePrivateData.cpp</itemPath>
+      <itemPath>gdrive/NullStream.cpp</itemPath>
       <itemPath>Options.cpp</itemPath>
       <itemPath>fuse-drive.cpp</itemPath>
     </logicalFolder>
@@ -123,8 +127,6 @@
       </item>
       <item path="fuse-drive.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="fusedrive-test.bash" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="gdrive/Cache.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/Cache.hpp" ex="false" tool="3" flavor2="0">
@@ -145,6 +147,10 @@
       </item>
       <item path="gdrive/Gdrive.hpp" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="gdrive/GdriveFile.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/GdriveFile.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="gdrive/GdriveInfo.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/GdriveInfo.hpp" ex="false" tool="3" flavor2="0">
@@ -152,6 +158,10 @@
       <item path="gdrive/Json.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/Json.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="gdrive/NullStream.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/NullStream.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/Util.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -231,8 +241,6 @@
       </item>
       <item path="fuse-drive.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="fusedrive-test.bash" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="gdrive/Cache.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/Cache.hpp" ex="false" tool="3" flavor2="0">
@@ -253,6 +261,10 @@
       </item>
       <item path="gdrive/Gdrive.hpp" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="gdrive/GdriveFile.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/GdriveFile.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="gdrive/GdriveInfo.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/GdriveInfo.hpp" ex="false" tool="3" flavor2="0">
@@ -260,6 +272,10 @@
       <item path="gdrive/Json.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/Json.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="gdrive/NullStream.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/NullStream.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/Util.cpp" ex="false" tool="1" flavor2="0">
       </item>

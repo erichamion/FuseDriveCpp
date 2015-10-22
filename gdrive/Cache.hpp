@@ -9,6 +9,7 @@
 #define	CACHE_HPP
 
 #include "FileidCacheNode.hpp"
+#include "CacheNode.hpp"
 
 #include <sys/types.h>
 
@@ -18,12 +19,16 @@ namespace fusedrive
 {
     class Gdrive;
     class Fileinfo;
+    class CacheNode;
 
     class Cache {
+        friend CacheNode** gdrive_cache_get_head_ptr(Cache& cache);
     public:
         Cache(Gdrive& gInfo, time_t cacheTTL);
         
         void gdrive_cache_init();
+        
+        Gdrive& gdrive_cache_get_gdrive();
         
         FileidCacheNode* gdrive_cache_get_fileidcachehead();
 
@@ -38,26 +43,38 @@ namespace fusedrive
         int gdrive_cache_update();
 
         Fileinfo* gdrive_cache_get_item(const std::string& fileId, 
-        bool addIfDoesntExist, bool* pAlreadyExists);
+            bool addIfDoesntExist, bool& pAlreadyExists);
+        
+        Fileinfo* gdrive_cache_get_item(const std::string& fileId, 
+            bool addIfDoesntExist);
+        
+        CacheNode* gdrive_cache_get_head();
+        
+        void gdrive_cache_set_head(CacheNode* newHead);
+        
 
         int gdrive_cache_add_fileid(const std::string& path, const std::string& fileId);
 
-        Gdrive_Cache_Node* gdrive_cache_get_node(const std::string& fileId, 
-        bool addIfDoesntExist, bool* pAlreadyExists);
+        CacheNode* gdrive_cache_get_node(const std::string& fileId, 
+        bool addIfDoesntExist, bool& alreadyExists);
 
+        CacheNode* gdrive_cache_get_node(const std::string& fileId, 
+        bool addIfDoesntExist);
+        
         std::string gdrive_cache_get_fileid(const std::string& path);
 
         void gdrive_cache_delete_id(const std::string& fileId);
 
-        void gdrive_cache_delete_node(Gdrive_Cache_Node* pNode);
+        void gdrive_cache_delete_node(CacheNode* pNode);
         
         virtual ~Cache();
+        
     private:
         Gdrive& gInfo;
         time_t cacheTTL;
         time_t lastUpdateTime;
         int64_t nextChangeId;
-        Gdrive_Cache_Node* pCacheHead;
+        CacheNode* pCacheHead;
         FileidCacheNode* pFileIdCacheHead;
         bool initialized;
         

@@ -43,8 +43,10 @@ OBJECTFILES= \
 	${OBJECTDIR}/gdrive/FileidCacheNode.o \
 	${OBJECTDIR}/gdrive/Fileinfo.o \
 	${OBJECTDIR}/gdrive/Gdrive.o \
+	${OBJECTDIR}/gdrive/GdriveFile.o \
 	${OBJECTDIR}/gdrive/GdriveInfo.o \
 	${OBJECTDIR}/gdrive/Json.o \
+	${OBJECTDIR}/gdrive/NullStream.o \
 	${OBJECTDIR}/gdrive/Util.o \
 	${OBJECTDIR}/gdrive/gdrive-cache-node.o \
 	${OBJECTDIR}/gdrive/gdrive-download-buffer.o \
@@ -120,6 +122,11 @@ ${OBJECTDIR}/gdrive/Gdrive.o: gdrive/Gdrive.cpp
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/Gdrive.o gdrive/Gdrive.cpp
 
+${OBJECTDIR}/gdrive/GdriveFile.o: gdrive/GdriveFile.cpp 
+	${MKDIR} -p ${OBJECTDIR}/gdrive
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/GdriveFile.o gdrive/GdriveFile.cpp
+
 ${OBJECTDIR}/gdrive/GdriveInfo.o: gdrive/GdriveInfo.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
@@ -129,6 +136,11 @@ ${OBJECTDIR}/gdrive/Json.o: gdrive/Json.cpp
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/Json.o gdrive/Json.cpp
+
+${OBJECTDIR}/gdrive/NullStream.o: gdrive/NullStream.cpp 
+	${MKDIR} -p ${OBJECTDIR}/gdrive
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/NullStream.o gdrive/NullStream.cpp
 
 ${OBJECTDIR}/gdrive/Util.o: gdrive/Util.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive

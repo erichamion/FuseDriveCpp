@@ -26,13 +26,17 @@
 //extern "C" {
 //#endif
 
-#include "Gdrive.hpp"
     
 #include <sys/types.h>
 #include <stdbool.h>
 
     
 typedef struct Gdrive_File_Contents Gdrive_File_Contents;
+
+namespace fusedrive
+{
+    class Gdrive;
+}
 
 /*************************************************************************
  * Constructors, factory methods, destructors and similar

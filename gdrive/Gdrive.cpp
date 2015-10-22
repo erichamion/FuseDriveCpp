@@ -389,8 +389,7 @@ namespace fusedrive
             // before the cache expires. (For example, if there was only one parent
             // before, and the user deletes one of the links, we don't want to
             // delete the entire file because of a bad parent count).
-            Fileinfo* pFileinfo = 
-                    cache.gdrive_cache_get_item(fileId.c_str(), false, NULL);
+            Fileinfo* pFileinfo = cache.gdrive_cache_get_item(fileId, false);
             if (pFileinfo)
             {
                 pFileinfo->nParents++;

@@ -30,7 +30,7 @@
 #include "gdrive/Gdrive.hpp"
 #include "Options.hpp"
 #include "FuseDrivePrivateData.hpp"
-#include "gdrive/gdrive-file.hpp"
+#include "gdrive/GdriveFile.hpp"
 
 using namespace std;
 using namespace fusedrive;
@@ -394,6 +394,8 @@ using namespace fusedrive;
         // implemented, this line should be removed.
         (void) mode;
         
+        const string pathStr(path);
+        
         struct fuse_context* context = fuse_get_context();
         FuseDrivePrivateData* pPrivateData = 
                 (FuseDrivePrivateData*) context->private_data;
@@ -422,8 +424,8 @@ using namespace fusedrive;
 
         // Create the file
         int error = 0;
-        char* fileId = gdrive_file_new(gInfo, path, false, &error);
-        if (fileId == NULL)
+        const string fileId = GdriveFile::gdrive_file_new(gInfo, pathStr, false, error);
+        if (fileId.empty())
         {
             // Some error occurred
             return -error;
@@ -433,8 +435,7 @@ using namespace fusedrive;
         // using the (currently unused) mode parameter we were given.
 
         // File was successfully created. Open it.
-        fi->fh = (uint64_t) gdrive_file_open(gInfo, fileId, O_RDWR, &error);
-        free(fileId);
+        fi->fh = (uint64_t) GdriveFile::gdrive_file_open(gInfo, fileId, O_RDWR, error);
 
         return -error;
     }
@@ -457,9 +458,9 @@ using namespace fusedrive;
     static int fudr_fgetattr(const char* path, struct stat* stbuf, 
                              struct fuse_file_info* fi)
     {
-        Gdrive_File* fh = (Gdrive_File*) fi->fh;
+        GdriveFile* fh = (GdriveFile*) fi->fh;
         const Fileinfo* pFileinfo = (fi->fh == (uint64_t) NULL) ? 
-            NULL : gdrive_file_get_info(fh);
+            NULL : &fh->gdrive_file_get_info();
 
         if (pFileinfo == NULL)
         {
@@ -501,13 +502,8 @@ using namespace fusedrive;
             // Bad file handle
             return -EBADF;
         }
-
-        struct fuse_context* context = fuse_get_context();
-        FuseDrivePrivateData* pPrivateData = 
-                (FuseDrivePrivateData*) context->private_data;
-        Gdrive& gInfo = pPrivateData->getGdrive();
-        
-        return gdrive_file_sync(gInfo, (Gdrive_File*) fi->fh);
+        GdriveFile* fh = (GdriveFile*) fi->fh;
+        return fh->gdrive_file_sync();
     }
 
     /* static int fudr_fsyncdir(const char* path, int isdatasync, 
@@ -523,7 +519,7 @@ using namespace fusedrive;
         // Suppress unused parameter compiler warnings
         (void) path;
 
-        Gdrive_File* fh = (Gdrive_File*) fi->fh;
+        GdriveFile* fh = (GdriveFile*) fi->fh;
         if (fh == NULL)
         {
             // Invalid file handle
@@ -537,12 +533,7 @@ using namespace fusedrive;
             return accessResult;
         }
 
-        struct fuse_context* context = fuse_get_context();
-        FuseDrivePrivateData* pPrivateData = 
-                (FuseDrivePrivateData*) context->private_data;
-        Gdrive& gInfo = pPrivateData->getGdrive();
-        
-        return gdrive_file_truncate(gInfo, fh, size);
+        return fh->gdrive_file_truncate(size);
     }
 
     static int fudr_getattr(const char *path, struct stat *stbuf)
@@ -708,8 +699,7 @@ using namespace fusedrive;
 
         // Create the folder
         int error = 0;
-        char* dummyNewId = gdrive_file_new(gInfo, path, true, &error);
-        free(dummyNewId);
+        GdriveFile::gdrive_file_new(gInfo, path, true, error);
 
         // TODO: If fudr_chmod is ever implemented, change the folder permissions 
         // using the (currently unused) mode parameter we were given.
@@ -761,7 +751,7 @@ using namespace fusedrive;
 
         // Open the file
         int error = 0;
-        Gdrive_File* pFile = gdrive_file_open(gInfo, fileId, fi->flags, &error);
+        GdriveFile* pFile = GdriveFile::gdrive_file_open(gInfo, fileId, fi->flags, error);
 
         if (pFile == NULL)
         {
@@ -800,14 +790,13 @@ using namespace fusedrive;
             return accessResult;
         }
 
-        Gdrive_File* pFile = (Gdrive_File*) fi->fh;
+        GdriveFile* pFile = (GdriveFile*) fi->fh;
+        if (!pFile)
+        {
+            return -EBADF;
+        }
 
-        struct fuse_context* context = fuse_get_context();
-        FuseDrivePrivateData* pPrivateData = 
-                (FuseDrivePrivateData*) context->private_data;
-        Gdrive& gInfo = pPrivateData->getGdrive();
-        
-        return gdrive_file_read(gInfo, pFile, buf, size, offset);
+        return pFile->gdrive_file_read(buf, size, offset);
     }
 
     /* static int 
@@ -890,18 +879,14 @@ using namespace fusedrive;
         // Suppress unused parameter warning
         (void) path;
 
-        if (fi->fh == (uint64_t) NULL)
+        GdriveFile* fh = (GdriveFile*) fi->fh;
+        if (!fh)
         {
             // Bad file handle
             return -EBADF;
         }
 
-        struct fuse_context* context = fuse_get_context();
-        FuseDrivePrivateData* pPrivateData = 
-                (FuseDrivePrivateData*) context->private_data;
-        Gdrive& gInfo = pPrivateData->getGdrive();
-        
-        gdrive_file_close(gInfo, (Gdrive_File*) fi->fh, fi->flags);
+        fh->gdrive_file_close(fi->flags);
         return 0;
     }
 
@@ -1209,8 +1194,8 @@ using namespace fusedrive;
                 (FuseDrivePrivateData*) context->private_data;
         Gdrive& gInfo = pPrivateData->getGdrive();
         
-        const char* fileId = gInfo.gdrive_filepath_to_id(path).c_str();
-        if (!fileId || !fileId[0])
+        const string fileId = gInfo.gdrive_filepath_to_id(path);
+        if (fileId.empty())
         {
             // File not found
             return -ENOENT;
@@ -1225,7 +1210,7 @@ using namespace fusedrive;
 
         // Open the file
         int error = 0;
-        Gdrive_File* fh = gdrive_file_open(gInfo, fileId, O_RDWR, &error);
+        GdriveFile* fh = GdriveFile::gdrive_file_open(gInfo, fileId, O_RDWR, error);
         if (fh == NULL)
         {
             // Error
@@ -1233,10 +1218,10 @@ using namespace fusedrive;
         }
 
         // Truncate
-        int result = gdrive_file_truncate(gInfo, fh, size);
+        int result = fh->gdrive_file_truncate(size);
 
         // Close
-        gdrive_file_close(gInfo, fh, O_RDWR);
+        fh->gdrive_file_close(O_RDWR);
 
         return result;
     }
@@ -1297,37 +1282,37 @@ using namespace fusedrive;
         }
 
         int error = 0;
-        Gdrive_File* fh = gdrive_file_open(gInfo, fileId, O_RDWR, &error);
+        GdriveFile* fh = GdriveFile::gdrive_file_open(gInfo, fileId, O_RDWR, error);
         if (fh == NULL)
         {
             return -error;
         }
-
+        
         if (ts[0].tv_nsec == UTIME_NOW)
         {
-            error = gdrive_file_set_atime(gInfo, fh, NULL);
+            error = fh->gdrive_file_set_atime(NULL);
         }
         else if (ts[0].tv_nsec != UTIME_OMIT)
         {
-            error = gdrive_file_set_atime(gInfo, fh, &(ts[0]));
+            error = fh->gdrive_file_set_atime(&(ts[0]));
         }
 
         if (error != 0)
         {
-            gdrive_file_close(gInfo, fh, O_RDWR);
+            fh->gdrive_file_close(O_RDWR);
             return error;
         }
 
         if (ts[1].tv_nsec == UTIME_NOW)
         {
-            gdrive_file_set_mtime(gInfo, fh, NULL);
+            fh->gdrive_file_set_mtime(NULL);
         }
         else if (ts[1].tv_nsec != UTIME_OMIT)
         {
-            gdrive_file_set_mtime(gInfo, fh, &(ts[1]));
+            fh->gdrive_file_set_mtime(&(ts[1]));
         }
 
-        gdrive_file_close(gInfo, fh, O_RDWR);
+        fh->gdrive_file_close(O_RDWR);
         return error;
     }
 
@@ -1344,19 +1329,14 @@ using namespace fusedrive;
             return accessResult;
         }
 
-        Gdrive_File* fh = (Gdrive_File*) fi->fh;
+        GdriveFile* fh = (GdriveFile*) fi->fh;
         if (fh == NULL)
         {
             // Bad file handle
             return -EBADFD;
         }
         
-        struct fuse_context* context = fuse_get_context();
-        FuseDrivePrivateData* pPrivateData = 
-                (FuseDrivePrivateData*) context->private_data;
-        Gdrive& gInfo = pPrivateData->getGdrive();
-
-        return gdrive_file_write(gInfo, fh, buf, size, offset);
+        return fh->gdrive_file_write(buf, size, offset);
     }
 
     /* static int fudr_write_buf(const char* path, struct fuse_bufvec* buf, 
