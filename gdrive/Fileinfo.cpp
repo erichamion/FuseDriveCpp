@@ -29,17 +29,10 @@ namespace fusedrive
     
     
     /**************************
-    * Public Constants
-    **************************/
-    
-    const unsigned int Fileinfo::GDRIVE_TIMESTRING_LENGTH = 31;
-    
-    
-    /**************************
     * Public Methods
     **************************/
     
-    const Fileinfo& Fileinfo::gdrive_finfo_get_by_id(Gdrive& gInfo, const string& fileId)
+    const Fileinfo& Fileinfo::getFileinfoById(Gdrive& gInfo, const string& fileId)
     {
         // Get the information from the cache, or put it in the cache if it isn't
         // already there.
@@ -123,7 +116,7 @@ namespace fusedrive
             throw new exception();
         }
         
-        pFileinfo->gdrive_finfo_read_json(jsonObj);
+        pFileinfo->readJson(jsonObj);
 
         // If it's a folder, get the number of children.
         if (pFileinfo->type == GDRIVE_FILETYPE_FOLDER)
@@ -139,46 +132,46 @@ namespace fusedrive
         return *pFileinfo;
     }
 
-    void Fileinfo::gdrive_finfo_cleanup()
+    void Fileinfo::Cleanup()
     {
-        TestStop();
+
         filename.clear();
         id.clear();
     }
 
-    string Fileinfo::gdrive_finfo_get_atime_string()
+    string Fileinfo::getAtimeString() const
     {
-        TestStop();
-        return gdrive_epoch_timens_to_rfc3339(&accessTime);
+        
+        return epochTimeNSToRfc3339(&accessTime);
     }
 
-    int Fileinfo::gdrive_finfo_set_atime(const struct timespec* ts)
+    int Fileinfo::setAtime(const struct timespec* ts)
     {
-        TestStop();
-        return gdrive_finfo_set_time(GDRIVE_FINFO_ATIME, ts);
+        
+        return setTime(GDRIVE_FINFO_ATIME, ts);
     }
 
-    string Fileinfo::gdrive_finfo_get_ctime_string()
+    string Fileinfo::getCtimeString() const
     {
-        TestStop();
-        return gdrive_epoch_timens_to_rfc3339(&creationTime);
+        
+        return epochTimeNSToRfc3339(&creationTime);
     }
 
-    string Fileinfo::gdrive_finfo_get_mtime_string()
+    string Fileinfo::getMtimeString() const
     {
-        TestStop();
-        return gdrive_epoch_timens_to_rfc3339(&modificationTime);
+        
+        return epochTimeNSToRfc3339(&modificationTime);
     }
 
-    int Fileinfo::gdrive_finfo_set_mtime(const struct timespec* ts)
+    int Fileinfo::setMtime(const struct timespec* ts)
     {
-        TestStop();
-        return gdrive_finfo_set_time(GDRIVE_FINFO_MTIME, ts);
+        
+        return setTime(GDRIVE_FINFO_MTIME, ts);
     }
 
-    void Fileinfo::gdrive_finfo_read_json(Json& jsonObj)
+    void Fileinfo::readJson(Json& jsonObj)
     {
-        TestStop();
+        
         filename.assign(jsonObj.gdrive_json_get_string("title"));
         id.assign(jsonObj.gdrive_json_get_string("id"));
         
@@ -242,7 +235,7 @@ namespace fusedrive
 
         string cTime(jsonObj.gdrive_json_get_string("createdDate"));
         if (cTime.empty() || 
-                gdrive_rfc3339_to_epoch_timens(cTime.c_str(), &creationTime) != 0)
+                rfc3339ToEpochTimeNS(cTime.c_str(), &creationTime) != 0)
         {
             // Didn't get a createdDate or failed to convert it.
             memset(&creationTime, 0, sizeof(struct timespec));
@@ -250,7 +243,7 @@ namespace fusedrive
 
         string mTime(jsonObj.gdrive_json_get_string("modifiedDate"));
         if (mTime.empty() || 
-                gdrive_rfc3339_to_epoch_timens
+                rfc3339ToEpochTimeNS
                 (mTime.c_str(), &modificationTime) != 0)
         {
             // Didn't get a modifiedDate or failed to convert it.
@@ -259,7 +252,7 @@ namespace fusedrive
 
         string aTime(jsonObj.gdrive_json_get_string("lastViewedByMeDate"));
         if (aTime.empty() || 
-                gdrive_rfc3339_to_epoch_timens
+                rfc3339ToEpochTimeNS
                 (aTime.c_str(), &accessTime) != 0)
         {
             // Didn't get an accessed date or failed to convert it.
@@ -272,9 +265,9 @@ namespace fusedrive
         dirtyMetainfo = false;
     }
 
-    unsigned int Fileinfo::gdrive_finfo_real_perms() const
+    unsigned int Fileinfo::getRealPermissions() const
     {
-        TestStop();
+        
         
         // Get the overall system permissions, which are different for a folder
         // or for a regular file.
@@ -287,7 +280,7 @@ namespace fusedrive
     Fileinfo::Fileinfo(Gdrive& gInfo)
     : gInfo(gInfo)
     {
-        TestStop();
+        
         type = (Gdrive_Filetype) 0;
         size = 0;
         basePermission = 0;
@@ -302,8 +295,8 @@ namespace fusedrive
     
 
     Fileinfo::~Fileinfo() {
-        TestStop();
-        gdrive_finfo_cleanup();
+        
+        Cleanup();
     }
     
     
@@ -319,7 +312,7 @@ namespace fusedrive
     * Private Methods
     **************************/
     
-    int Fileinfo::gdrive_rfc3339_to_epoch_timens(const string& rfcTime, 
+    int Fileinfo::rfc3339ToEpochTimeNS(const string& rfcTime, 
             struct timespec* pResultTime)
     {
         // Get the time down to seconds. Don't do anything with it yet, because
@@ -413,7 +406,7 @@ namespace fusedrive
         return 0;
     }
 
-    string Fileinfo::gdrive_epoch_timens_to_rfc3339(const struct timespec* ts)
+    string Fileinfo::epochTimeNSToRfc3339(const struct timespec* ts)
     {
         // A max of 31 (or GDRIVE_TIMESTRING_LENGTH) should be the minimum that will
         // be successful.
@@ -437,10 +430,10 @@ namespace fusedrive
 
     }
 
-     int Fileinfo::gdrive_finfo_set_time(enum GDRIVE_FINFO_TIME whichTime, 
+     int Fileinfo::setTime(enum GDRIVE_FINFO_TIME whichTime, 
              const struct timespec* ts)
     {
-        TestStop();
+        
         assert(whichTime == GDRIVE_FINFO_ATIME || 
                 whichTime == GDRIVE_FINFO_MTIME);
 
@@ -484,11 +477,5 @@ namespace fusedrive
         return 0;
     }
      
-     void Fileinfo::TestStop() const
-     {
-         if (&gInfo == NULL)
-         {
-             throw new exception();
-         }
-     }
+     
 }

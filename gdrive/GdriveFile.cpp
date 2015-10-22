@@ -46,7 +46,7 @@ namespace fusedrive
         {
             try
             {
-                Fileinfo::gdrive_finfo_get_by_id(gInfo, fileId);
+                Fileinfo::getFileinfoById(gInfo, fileId);
             }
             catch (const exception& e)
             {
@@ -505,7 +505,7 @@ namespace fusedrive
             return -EACCES;
         }
 
-        return gdrive_file_get_info().gdrive_finfo_set_atime(ts);
+        return gdrive_file_get_info().setAtime(ts);
     }
 
     int GdriveFile::gdrive_file_set_mtime(const struct timespec* ts)
@@ -516,7 +516,7 @@ namespace fusedrive
             return -EACCES;
         }
 
-        return gdrive_file_get_info().gdrive_finfo_set_mtime(ts);
+        return gdrive_file_get_info().setMtime(ts);
     }
 
     Fileinfo& GdriveFile::gdrive_file_get_info()
@@ -529,7 +529,7 @@ namespace fusedrive
 
     unsigned int GdriveFile::gdrive_file_get_perms()
     {
-        return gdrive_file_get_info().gdrive_finfo_real_perms();
+        return gdrive_file_get_info().getRealPermissions();
     }
     
     int GdriveFile::gdrive_file_null_read(size_t size, off_t offset)
@@ -701,7 +701,7 @@ namespace fusedrive
     //        return NULL;
     //    }
     //    // Reuse the same timeString for atime and mtime. Can't change ctime.
-        string timeString = pMyFileinfo->gdrive_finfo_get_atime_string();
+        string timeString = pMyFileinfo->getAtimeString();
         if (!timeString.empty())
         {
             uploadResourceJson.gdrive_json_add_string("lastViewedByMeDate", 
@@ -709,7 +709,7 @@ namespace fusedrive
         }
 
         bool hasMtime = false;
-        timeString = pMyFileinfo->gdrive_finfo_get_mtime_string();
+        timeString = pMyFileinfo->getMtimeString();
         if (!timeString.empty())
         {
             uploadResourceJson.gdrive_json_add_string("modifiedDate", timeString);

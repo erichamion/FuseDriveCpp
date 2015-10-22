@@ -72,7 +72,7 @@ void gdrive_finfoarray_free(Gdrive_Fileinfo_Array* pArray)
     
     for (int i = 0; i < pArray->nItems; i++)
     {
-        (pArray->pArray + i)->gdrive_finfo_cleanup();
+        (pArray->pArray + i)->Cleanup();
     }
     
     if (pArray->nItems > 0)
@@ -136,7 +136,7 @@ int gdrive_finfoarray_add_from_json(Gdrive_Fileinfo_Array* pArray,
     }
     
     // Read the info in, and increment nItems to show the new count.
-    (pArray->pArray + pArray->nItems++)->gdrive_finfo_read_json(jsonObj);
+    (pArray->pArray + pArray->nItems++)->readJson(jsonObj);
     
     return 0;
     

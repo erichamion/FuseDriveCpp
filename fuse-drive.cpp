@@ -199,7 +199,7 @@ using namespace fusedrive;
                 }
         }
 
-        unsigned int perms = pFileinfo->gdrive_finfo_real_perms();
+        unsigned int perms = pFileinfo->getRealPermissions();
         unsigned int maxPerms = 
             fudr_get_max_perms(pFileinfo->type == GDRIVE_FILETYPE_FOLDER);
         // Owner permissions.
@@ -232,7 +232,7 @@ using namespace fusedrive;
         const Fileinfo* pFileinfo;
         try
         {
-            pFileinfo = &(Fileinfo::gdrive_finfo_get_by_id(gInfo, fileId));
+            pFileinfo = &(Fileinfo::getFileinfoById(gInfo, fileId));
         }
         catch (const exception& e)
         {
@@ -321,7 +321,7 @@ using namespace fusedrive;
         const Fileinfo* pFileinfo;
         try
         {
-            pFileinfo = &(Fileinfo::gdrive_finfo_get_by_id(gInfo, fileId));
+            pFileinfo = &(Fileinfo::getFileinfoById(gInfo, fileId));
         }
         catch (const exception& e)
         {
@@ -335,7 +335,7 @@ using namespace fusedrive;
             return 0;
         }
 
-        unsigned int filePerms = pFileinfo->gdrive_finfo_real_perms();
+        unsigned int filePerms = pFileinfo->getRealPermissions();
         unsigned int maxPerms = 
             fudr_get_max_perms(pFileinfo->type == GDRIVE_FILETYPE_FOLDER);
 
@@ -556,7 +556,7 @@ using namespace fusedrive;
         const Fileinfo* pFileinfo;
         try
         {
-            pFileinfo = &(Fileinfo::gdrive_finfo_get_by_id(gInfo, fileId));
+            pFileinfo = &(Fileinfo::getFileinfoById(gInfo, fileId));
         }
         catch (const exception& e)
         {
@@ -954,7 +954,7 @@ using namespace fusedrive;
             const Fileinfo* pFromInfo;
             try
             {
-                pFromInfo = &(Fileinfo::gdrive_finfo_get_by_id(gInfo, fromFileId));
+                pFromInfo = &(Fileinfo::getFileinfoById(gInfo, fromFileId));
             }
             catch (const exception& e)
             {
@@ -968,7 +968,7 @@ using namespace fusedrive;
                 try
                 {
                     const Fileinfo& toInfo = 
-                        Fileinfo::gdrive_finfo_get_by_id(gInfo, toFileId);
+                        Fileinfo::getFileinfoById(gInfo, toFileId);
                     pToInfo = &toInfo;
                 }
                 catch (...)
@@ -1110,7 +1110,7 @@ using namespace fusedrive;
         const Fileinfo* pFileinfo;
         try
         {
-            pFileinfo = &(Fileinfo::gdrive_finfo_get_by_id(gInfo, fileId));
+            pFileinfo = &(Fileinfo::getFileinfoById(gInfo, fileId));
         }
         catch (const exception& e)
         {

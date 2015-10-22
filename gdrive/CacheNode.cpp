@@ -259,8 +259,8 @@ namespace fusedrive
 
     void CacheNode::updateFromJson(Json& jsonObj)
     {
-        fileinfo.gdrive_finfo_cleanup();
-        fileinfo.gdrive_finfo_read_json(jsonObj);
+        fileinfo.Cleanup();
+        fileinfo.readJson(jsonObj);
 
         // Mark the node as having been updated.
         lastUpdateTime = time(NULL);
@@ -313,7 +313,7 @@ namespace fusedrive
     bool CacheNode::checkPermissions(int accessFlags) const
     {
         // What permissions do we have?
-        unsigned int perms = fileinfo.gdrive_finfo_real_perms();
+        unsigned int perms = fileinfo.getRealPermissions();
 
         // What permissions do we need?
         unsigned int neededPerms = 0;
