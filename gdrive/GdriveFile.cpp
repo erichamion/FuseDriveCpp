@@ -58,14 +58,14 @@ namespace fusedrive
 
         // If the file is deleted, existing filehandles will still work, but nobody
         // new can open it.
-        if (pNode->gdrive_cnode_isdeleted())
+        if (pNode->isDeleted())
         {
             error = ENOENT;
             throw new exception();
         }
 
         // Don't open directories, only regular files.
-        if (pNode->gdrive_cnode_get_fileinfo().type == GDRIVE_FILETYPE_FOLDER)
+        if (pNode->getFileinfo().type == GDRIVE_FILETYPE_FOLDER)
         {
             // Return failure
             error = EISDIR;
@@ -73,7 +73,7 @@ namespace fusedrive
         }
 
 
-        if (!pNode->gdrive_cnode_check_perm(flags))
+        if (!pNode->checkPermissions(flags))
         {
             // Access error
             error = EACCES;
@@ -82,7 +82,7 @@ namespace fusedrive
 
 
         // Increment the open counter
-        pNode->gdrive_cnode_increment_open_count((flags & O_WRONLY) || (flags & O_RDWR));
+        pNode->incrementOpenCount((flags & O_WRONLY) || (flags & O_RDWR));
 
         // Return file handle containing the cache node
         return new GdriveFile(*pNode);
@@ -139,7 +139,7 @@ namespace fusedrive
             gdrive_path_free(pGpath);
             return "";
         }
-        const Fileinfo& folderinfo = pFolderNode->gdrive_cnode_get_fileinfo();
+        const Fileinfo& folderinfo = pFolderNode->getFileinfo();
         if (folderinfo.type != GDRIVE_FILETYPE_FOLDER)
         {
             // Not an actual folder
@@ -149,7 +149,7 @@ namespace fusedrive
         }
 
         // Make sure we have write access to the folder
-        if (!pFolderNode->gdrive_cnode_check_perm(O_WRONLY))
+        if (!pFolderNode->checkPermissions(O_WRONLY))
         {
             // Don't have the needed permission
             error = EACCES;
@@ -189,20 +189,20 @@ namespace fusedrive
             gdrive_file_sync_metadata();
 
             // Close the file
-            cacheNode.gdrive_cnode_decrement_open_count(true);
+            cacheNode.decrementOpenCount(true);
         }
         else
         {
             // Decrement open file counts.
-            cacheNode.gdrive_cnode_decrement_open_count(false);
+            cacheNode.decrementOpenCount(false);
         }
 
 
         // Get rid of any downloaded temp files if they aren't needed.
-        if (cacheNode.gdrive_cnode_get_open_count() == 0)
+        if (cacheNode.getOpenCount() == 0)
         {
-            cacheNode.gdrive_cnode_clear_contents();
-            if (cacheNode.gdrive_cnode_isdeleted())
+            cacheNode.clearContents();
+            if (cacheNode.isDeleted())
             {
                 gInfo.gdrive_get_cache().deleteNode(&cacheNode);
             }
@@ -215,7 +215,7 @@ namespace fusedrive
     {
         assert(offset >= (off_t) 0);
         // Make sure we have at least read access for the file.
-        if (!cacheNode.gdrive_cnode_check_perm(O_RDONLY))
+        if (!cacheNode.checkPermissions(O_RDONLY))
         {
             // Access error
             return -EACCES;
@@ -268,7 +268,7 @@ namespace fusedrive
     int GdriveFile::gdrive_file_write(const char* buf, size_t size, off_t offset)
     {
         // Make sure we have read and write access for the file.
-        if (!cacheNode.gdrive_cnode_check_perm(O_RDWR))
+        if (!cacheNode.checkPermissions(O_RDWR))
         {
             // Access error
             return -EACCES;
@@ -322,7 +322,7 @@ namespace fusedrive
          */
 
         // Check for write permissions
-        if (!cacheNode.gdrive_cnode_check_perm(O_RDWR))
+        if (!cacheNode.checkPermissions(O_RDWR))
         {
             return -EACCES;
         }
@@ -336,9 +336,9 @@ namespace fusedrive
         // Case B: Delete all cached file contents, set the length to 0.
         if (size == 0)
         {
-            cacheNode.gdrive_cnode_clear_contents();
+            cacheNode.clearContents();
             fileinfo.size = 0;
-            cacheNode.gdrive_cnode_set_dirty();
+            cacheNode.setDirty();
             return 0;
         }
 
@@ -363,15 +363,15 @@ namespace fusedrive
 
                 // Grab the final chunk
                 pFinalChunk = 
-                        cacheNode.gdrive_cnode_find_chunk(fileinfo.size - 1);
+                        cacheNode.findChunk(fileinfo.size - 1);
             }
             else
             {
                 // The file is zero-length to begin with. If a chunk exists, use it,
                 // but we'll probably need to create one.
-                pFinalChunk = cacheNode.gdrive_cnode_has_contents() ?
-                    cacheNode.gdrive_cnode_find_chunk(0) :
-                    cacheNode.gdrive_cnode_create_chunk(0, size, false);
+                pFinalChunk = cacheNode.hasContents() ?
+                    cacheNode.findChunk(0) :
+                    cacheNode.createChunk(0, size, false);
 //                if ((pFinalChunk = gdrive_fcontents_find_chunk(fh->pContents, 0))
 //                        == NULL)
 //                {
@@ -393,10 +393,10 @@ namespace fusedrive
             }
 
             // Grab the final chunk
-            pFinalChunk = cacheNode.gdrive_cnode_find_chunk(size - 1);
+            pFinalChunk = cacheNode.findChunk(size - 1);
 
             // Delete any chunks past the new EOF
-            cacheNode.gdrive_cnode_delete_contents_after_offset(size - 1);
+            cacheNode.deleteContentsAfterOffset(size - 1);
         }
 
         // Make sure we received the final chunk
@@ -412,7 +412,7 @@ namespace fusedrive
         {
             // Successfully truncated the chunk. Update the file's size.
             fileinfo.size = size;
-            cacheNode.gdrive_cnode_set_dirty();
+            cacheNode.setDirty();
         }
 
         return returnVal;
@@ -420,14 +420,14 @@ namespace fusedrive
 
     int GdriveFile::gdrive_file_sync()
     {
-        if (!cacheNode.gdrive_cnode_is_dirty())
+        if (!cacheNode.isDirty())
         {
             // Nothing to do
             return 0;
         }
 
         // Check for write permissions
-        if (!cacheNode.gdrive_cnode_check_perm(O_RDWR))
+        if (!cacheNode.checkPermissions(O_RDWR))
         {
             return -EACCES;
         }
@@ -470,7 +470,7 @@ namespace fusedrive
         if (returnVal == 0)
         {
             // Success. Clear the dirty flag
-            cacheNode.gdrive_cnode_set_dirty(false);
+            cacheNode.setDirty(false);
         }
         gdrive_dlbuf_free(pBuf);
         return returnVal;
@@ -486,7 +486,7 @@ namespace fusedrive
         }
 
         // Check for write permissions
-        if (!cacheNode.gdrive_cnode_check_perm(O_RDWR))
+        if (!cacheNode.checkPermissions(O_RDWR))
         {
             return -EACCES;
         }
@@ -500,7 +500,7 @@ namespace fusedrive
     int GdriveFile::gdrive_file_set_atime(const struct timespec* ts)
     {
         // Make sure we have write permission
-        if (!cacheNode.gdrive_cnode_check_perm(O_RDWR))
+        if (!cacheNode.checkPermissions(O_RDWR))
         {
             return -EACCES;
         }
@@ -511,7 +511,7 @@ namespace fusedrive
     int GdriveFile::gdrive_file_set_mtime(const struct timespec* ts)
     {
         // Make sure we have write permission
-        if (!cacheNode.gdrive_cnode_check_perm(O_RDWR))
+        if (!cacheNode.checkPermissions(O_RDWR))
         {
             return -EACCES;
         }
@@ -524,7 +524,7 @@ namespace fusedrive
         // No need to check permissions. This is just metadata, and metadata 
         // permissions were already needed just to access the filesystem and get a
         // filehandle in the first place.
-        return cacheNode.gdrive_cnode_get_fileinfo();
+        return cacheNode.getFileinfo();
     }
 
     unsigned int GdriveFile::gdrive_file_get_perms()
@@ -542,12 +542,12 @@ namespace fusedrive
     {
         // Do we already have a chunk that includes the starting point?
         Gdrive_File_Contents* pChunkContents = 
-                cacheNode.gdrive_cnode_find_chunk(offset);
+                cacheNode.findChunk(offset);
 
         if (pChunkContents == NULL)
         {
             // Chunk doesn't exist, need to create and download it.
-            pChunkContents = cacheNode.gdrive_cnode_create_chunk(offset, size, true);
+            pChunkContents = cacheNode.createChunk(offset, size, true);
 
             if (pChunkContents == NULL)
             {
@@ -577,7 +577,7 @@ namespace fusedrive
         // the starting point is 1 byte past the end.
         off_t searchOffset = (extendChunk && offset > 0) ? offset - 1 : offset;
         Gdrive_File_Contents* pChunkContents = 
-                cacheNode.gdrive_cnode_find_chunk(searchOffset);
+                cacheNode.findChunk(searchOffset);
 
         if (pChunkContents == NULL)
         {
@@ -586,9 +586,9 @@ namespace fusedrive
             {
                 // File size is 0, and there is no existing chunk. Create one and 
                 // try again.
-                cacheNode.gdrive_cnode_create_chunk(0, 1, false);
+                cacheNode.createChunk(0, 1, false);
                 pChunkContents = 
-                        cacheNode.gdrive_cnode_find_chunk(searchOffset);
+                        cacheNode.findChunk(searchOffset);
             }
         }
         if (pChunkContents == NULL)
@@ -609,7 +609,7 @@ namespace fusedrive
         if (bytesWritten > 0)
         {
             // Mark the file as having been written
-            cacheNode.gdrive_cnode_set_dirty();
+            cacheNode.setDirty();
 
             if ((size_t)(offset + bytesWritten) > fileinfo.size)
             {
@@ -801,7 +801,7 @@ namespace fusedrive
     
 
     GdriveFile::GdriveFile(CacheNode& cacheNode)
-    : gInfo(cacheNode.gdrive_cnode_get_gdrive()), cacheNode(cacheNode)
+    : gInfo(cacheNode.getGdrive()), cacheNode(cacheNode)
     {
         // No body needed
     }

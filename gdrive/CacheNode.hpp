@@ -20,59 +20,58 @@ namespace fusedrive
     
     class CacheNode {
     public:
-        static CacheNode* gdrive_cnode_get(Cache& cache, CacheNode* pParent, 
+        static CacheNode* retrieveNode(Cache& cache, CacheNode* pParent, 
                 CacheNode** ppNode, const std::string& fileId, 
                 bool addIfDoesntExist, bool& alreadyExists);
         
-        static CacheNode* gdrive_cnode_get(Cache& cache, CacheNode* pParent, 
+        static CacheNode* retrieveNode(Cache& cache, CacheNode* pParent, 
             CacheNode** ppNode, const std::string& fileId, 
             bool addIfDoesntExist);
         
-        Gdrive& gdrive_cnode_get_gdrive();
+        Gdrive& getGdrive() const;
 
-        void gdrive_cnode_delete();
+        void deleteNode();
 
-        void gdrive_cnode_mark_deleted();
+        void markDeleted();
         
-        bool gdrive_cnode_isdeleted();
+        bool isDeleted() const;
 
-        void gdrive_cnode_free_all();
+        void freeAll();
 
-        time_t gdrive_cnode_get_update_time();
+        time_t getUpdateTime() const;
 
-        enum Gdrive_Filetype gdrive_cnode_get_filetype();
+        enum Gdrive_Filetype getFiletype() const;
 
-        Fileinfo& gdrive_cnode_get_fileinfo();
+        Fileinfo& getFileinfo();
 
+        void updateFromJson(Json& jsonObj);
 
-        void gdrive_cnode_update_from_json(Json& jsonObj);
+        void deleteFileContents(Gdrive_File_Contents* pContentsToDelete);
 
-        void gdrive_cnode_delete_file_contents(Gdrive_File_Contents* pContentsToDelete);
-
-        bool gdrive_cnode_is_dirty();
+        bool isDirty() const;
         
-        void gdrive_cnode_set_dirty(bool val=true);
+        void setDirty(bool val=true);
         
-        int gdrive_cnode_get_open_count();
+        int getOpenCount() const;
         
-        int gdrive_cnode_get_open_write_count();
+        int getOpenWriteCount() const;
         
-        void gdrive_cnode_increment_open_count(bool isWrite);
+        void incrementOpenCount(bool isWrite);
         
-        void gdrive_cnode_decrement_open_count(bool isWrite);
+        void decrementOpenCount(bool isWrite);
         
-        bool gdrive_cnode_check_perm(int accessFlags);
+        bool checkPermissions(int accessFlags) const;
         
-        void gdrive_cnode_clear_contents();
+        void clearContents();
         
-        bool gdrive_cnode_has_contents();
+        bool hasContents() const;
         
-        Gdrive_File_Contents* gdrive_cnode_create_chunk(off_t offset, 
-            size_t size, bool fillChunk);
+        Gdrive_File_Contents* createChunk(off_t offset, size_t size, 
+            bool fillChunk);
         
-        Gdrive_File_Contents* gdrive_cnode_find_chunk(off_t offset);
+        Gdrive_File_Contents* findChunk(off_t offset) const;
         
-        void gdrive_cnode_delete_contents_after_offset(off_t offset);
+        void deleteContentsAfterOffset(off_t offset);
         
 
         
@@ -95,19 +94,17 @@ namespace fusedrive
         
         CacheNode(Gdrive& gInfo);
         
-        void gdrive_cnode_init();
+        void init();
         
-        static void gdrive_cnode_swap(CacheNode** ppFromParentOne, 
-                                      CacheNode* pNodeOne, 
-                                      CacheNode** ppFromParentTwo, 
-                                      CacheNode* pNodeTwo);
+        static void SwapNodes(CacheNode** ppFromParentOne, CacheNode* pNodeOne,
+            CacheNode** ppFromParentTwo, CacheNode* pNodeTwo);
 
-        Gdrive_File_Contents* gdrive_cnode_add_contents();
+        Gdrive_File_Contents* addContents();
         
         
-        CacheNode* gdrive_cnode_get_head();
+        //CacheNode* gdrive_cnode_get_head();
         
-        void gdrive_cnode_set_head(CacheNode* newHead);
+        //void gdrive_cnode_set_head(CacheNode* newHead);
 
         virtual ~CacheNode();
         

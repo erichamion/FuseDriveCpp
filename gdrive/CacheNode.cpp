@@ -29,7 +29,7 @@ namespace fusedrive
         return &cache.mpCacheHead;
     }
 
-    CacheNode* CacheNode::gdrive_cnode_get(Cache& cache, CacheNode* pParent, 
+    CacheNode* CacheNode::retrieveNode(Cache& cache, CacheNode* pParent, 
             CacheNode** ppNode, const string& fileId, bool addIfDoesntExist, 
             bool& alreadyExists)
     {
@@ -81,7 +81,7 @@ namespace fusedrive
                 // Couldn't convert network response to JSON
                 return NULL;
             }
-            pNode->gdrive_cnode_update_from_json(jsonObj);
+            pNode->updateFromJson(jsonObj);
 
             return pNode;
         }
@@ -100,31 +100,31 @@ namespace fusedrive
         else if (cmp < 0)
         {
             // fileId is less than the current node. Look for it on the left.
-            return gdrive_cnode_get(cache, pNode, &(pNode->pLeft), fileId, 
+            return retrieveNode(cache, pNode, &(pNode->pLeft), fileId, 
                     addIfDoesntExist, alreadyExists);
         }
         else
         {
             // fileId is greater than the current node. Look for it on the right.
-            return gdrive_cnode_get(cache, pNode, &(pNode->pRight), fileId, 
+            return retrieveNode(cache, pNode, &(pNode->pRight), fileId, 
                     addIfDoesntExist, alreadyExists);
         }
     }
 
-    CacheNode* CacheNode::gdrive_cnode_get(Cache& cache, CacheNode* pParent, 
+    CacheNode* CacheNode::retrieveNode(Cache& cache, CacheNode* pParent, 
             CacheNode** ppNode, const string& fileId, bool addIfDoesntExist)
     {
         bool dummy = false;
-        return gdrive_cnode_get(cache, pParent, ppNode, fileId, 
+        return retrieveNode(cache, pParent, ppNode, fileId, 
                 addIfDoesntExist, dummy);
     }
     
-    Gdrive& CacheNode::gdrive_cnode_get_gdrive()
+    Gdrive& CacheNode::getGdrive() const
     {
         return gInfo;
     }
     
-    void CacheNode::gdrive_cnode_delete()
+    void CacheNode::deleteNode()
     {
         // The address of the pointer aimed at this node. If this is the root node,
         // then it will be a pointer passed in from outside. Otherwise, it is the
@@ -206,58 +206,58 @@ namespace fusedrive
         }
 
         // Swap the nodes
-        gdrive_cnode_swap(ppFromParent, this, ppToSwap, pSwap);
+        SwapNodes(ppFromParent, this, ppToSwap, pSwap);
 
         // Now delete the node from its new position.
-        gdrive_cnode_delete();
+        deleteNode();
     }
 
-    void CacheNode::gdrive_cnode_mark_deleted()
+    void CacheNode::markDeleted()
     {
         deleted = true;
         if (openCount == 0)
         {
-            gdrive_cnode_delete();
+            deleteNode();
         }
     }
 
-    bool CacheNode::gdrive_cnode_isdeleted()
+    bool CacheNode::isDeleted() const
 {
     return deleted;
 }
     
-    void CacheNode::gdrive_cnode_free_all()
+    void CacheNode::freeAll()
     {
         // Free all the descendents first.
         if (pLeft)
         {
-            pLeft->gdrive_cnode_free_all();
+            pLeft->freeAll();
         }
         if (pRight)
         {
-            pRight->gdrive_cnode_free_all();
+            pRight->freeAll();
         }
 
         delete this;
     }
 
-    time_t CacheNode::gdrive_cnode_get_update_time()
+    time_t CacheNode::getUpdateTime() const
     {
         return lastUpdateTime;
     }
 
-    enum Gdrive_Filetype CacheNode::gdrive_cnode_get_filetype()
+    enum Gdrive_Filetype CacheNode::getFiletype() const
     {
         return fileinfo.type;
     }
 
-    Fileinfo& CacheNode::gdrive_cnode_get_fileinfo()
+    Fileinfo& CacheNode::getFileinfo()
     {
         return fileinfo;
     }
 
 
-    void CacheNode::gdrive_cnode_update_from_json(Json& jsonObj)
+    void CacheNode::updateFromJson(Json& jsonObj)
     {
         fileinfo.gdrive_finfo_cleanup();
         fileinfo.gdrive_finfo_read_json(jsonObj);
@@ -266,33 +266,33 @@ namespace fusedrive
         lastUpdateTime = time(NULL);
     }
 
-    void CacheNode::gdrive_cnode_delete_file_contents(Gdrive_File_Contents* pContentsToDelete)
+    void CacheNode::deleteFileContents(Gdrive_File_Contents* pContentsToDelete)
     {
         gdrive_fcontents_delete(pContentsToDelete, &pContents);
     }
 
 
-    bool CacheNode::gdrive_cnode_is_dirty()
+    bool CacheNode::isDirty() const
     {
         return dirty;
     }
     
-    void CacheNode::gdrive_cnode_set_dirty(bool val)
+    void CacheNode::setDirty(bool val)
     {
         dirty = val;
     }
     
-    int CacheNode::gdrive_cnode_get_open_count()
+    int CacheNode::getOpenCount() const
     {
         return openCount;
     }
         
-    int CacheNode::gdrive_cnode_get_open_write_count()
+    int CacheNode::getOpenWriteCount() const
     {
         return openWrites;
     }
 
-    void CacheNode::gdrive_cnode_increment_open_count(bool isWrite)
+    void CacheNode::incrementOpenCount(bool isWrite)
     {
         openCount++;
         if (isWrite)
@@ -301,7 +301,7 @@ namespace fusedrive
         }
     }
 
-    void CacheNode::gdrive_cnode_decrement_open_count(bool isWrite)
+    void CacheNode::decrementOpenCount(bool isWrite)
     {
         openCount--;
         if (isWrite)
@@ -310,7 +310,7 @@ namespace fusedrive
         }
     }
     
-    bool CacheNode::gdrive_cnode_check_perm(int accessFlags)
+    bool CacheNode::checkPermissions(int accessFlags) const
     {
         // What permissions do we have?
         unsigned int perms = fileinfo.gdrive_finfo_real_perms();
@@ -334,18 +334,18 @@ namespace fusedrive
         return !(neededPerms & ~perms);
     }
 
-    void CacheNode::gdrive_cnode_clear_contents()
+    void CacheNode::clearContents()
     {
         gdrive_fcontents_free_all(&pContents);
         pContents = NULL;
     }
     
-    bool CacheNode::gdrive_cnode_has_contents()
+    bool CacheNode::hasContents() const
     {
         return (pContents != NULL);
     }
         
-    Gdrive_File_Contents* CacheNode::gdrive_cnode_find_chunk(off_t offset)
+    Gdrive_File_Contents* CacheNode::findChunk(off_t offset) const
     {
         if (!pContents)
         {
@@ -356,7 +356,7 @@ namespace fusedrive
         return gdrive_fcontents_find_chunk(pContents, offset);
     }
     
-    void CacheNode::gdrive_cnode_delete_contents_after_offset(off_t offset)
+    void CacheNode::deleteContentsAfterOffset(off_t offset)
     {
         if (pContents)
         {
@@ -368,17 +368,17 @@ namespace fusedrive
     : gInfo(pParent->gInfo), fileinfo(pParent->gInfo), 
             mCache(pParent->gInfo.gdrive_get_cache()), pParent(pParent)
     {
-        gdrive_cnode_init();
+        init();
     }
         
     CacheNode::CacheNode(Gdrive& gInfo)
     : gInfo(gInfo), fileinfo(gInfo), mCache(gInfo.gdrive_get_cache()), 
             pParent(NULL)
     {
-        gdrive_cnode_init();
+        init();
     }
         
-    void CacheNode::gdrive_cnode_init()
+    void CacheNode::init()
     {
         lastUpdateTime = 0;
         openCount = 0;
@@ -390,7 +390,7 @@ namespace fusedrive
         pRight = NULL;
     }
 
-    void CacheNode::gdrive_cnode_swap(CacheNode** ppFromParentOne, 
+    void CacheNode::SwapNodes(CacheNode** ppFromParentOne, 
                                   CacheNode* pNodeOne, 
                                   CacheNode** ppFromParentTwo, 
                                   CacheNode* pNodeTwo)
@@ -402,7 +402,7 @@ namespace fusedrive
             if (pParent == pNodeTwo)
             {
                 // Reverse the order of the parameters
-                gdrive_cnode_swap(ppFromParentTwo, pNodeTwo, ppFromParentOne, 
+                SwapNodes(ppFromParentTwo, pNodeTwo, ppFromParentOne, 
                         pNodeOne);
                 return;
             }
@@ -473,7 +473,7 @@ namespace fusedrive
     }
 
 
-    Gdrive_File_Contents* CacheNode::gdrive_cnode_add_contents()
+    Gdrive_File_Contents* CacheNode::addContents()
     {
         // Create the actual Gdrive_File_Contents struct, and add it to the existing
         // chain if there is one.
@@ -495,7 +495,7 @@ namespace fusedrive
         return pNewContents;
     }
 
-    Gdrive_File_Contents* CacheNode::gdrive_cnode_create_chunk(off_t offset, 
+    Gdrive_File_Contents* CacheNode::createChunk(off_t offset, 
         size_t size, bool fillChunk)
     {
         // Get the normal chunk size for this file, the smallest multiple of
@@ -517,7 +517,7 @@ namespace fusedrive
         size_t realChunkSize = Util::gdrive_divide_round_up(endChunkOffset, chunkSize) * 
                 chunkSize;
 
-        Gdrive_File_Contents* pContents = gdrive_cnode_add_contents();
+        Gdrive_File_Contents* pContents = addContents();
         if (pContents == NULL)
         {
             // Memory or file creation error
@@ -532,7 +532,7 @@ namespace fusedrive
             {
                 // Didn't write the file.  Clean up the new Gdrive_File_Contents 
                 // struct
-                gdrive_cnode_delete_file_contents(pContents);
+                deleteFileContents(pContents);
                 return NULL;
             }
         }
@@ -544,7 +544,7 @@ namespace fusedrive
 
     CacheNode::~CacheNode()
     {
-        
+        clearContents();
     }
 
 }

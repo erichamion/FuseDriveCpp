@@ -180,14 +180,14 @@ namespace fusedrive
 
                     // Update the file metadata cache, but only if the file is not
                     // opened for writing with dirty data.
-                    CacheNode* pCacheNode = CacheNode::gdrive_cnode_get(*this,
+                    CacheNode* pCacheNode = CacheNode::retrieveNode(*this,
                             NULL, &mpCacheHead, fileId, false);
-                    if (pCacheNode != NULL && !pCacheNode->gdrive_cnode_is_dirty())
+                    if (pCacheNode != NULL && !pCacheNode->isDirty())
                     {
                         // If this file was in the cache, update its information
                         Json jsonFile = 
                                 jsonItem.gdrive_json_get_nested_object("file");
-                        pCacheNode->gdrive_cnode_update_from_json(jsonFile);
+                        pCacheNode->updateFromJson(jsonFile);
                     }
                     // else either not in the cache, or there is dirty data we don't
                     // want to overwrite.
@@ -242,7 +242,7 @@ namespace fusedrive
     {
         assert(mInitialized);
         // Get the existing node (or a new one) from the cache.
-        CacheNode* pNode = CacheNode::gdrive_cnode_get(*this, NULL, 
+        CacheNode* pNode = CacheNode::retrieveNode(*this, NULL, 
                 &mpCacheHead, fileId, addIfDoesntExist, alreadyExists);
         if (pNode == NULL)
         {
@@ -255,7 +255,7 @@ namespace fusedrive
         // for either the individual node or the entire cache, whichever is newer.
         // If the node's update time is 0, always update it.
         time_t cacheUpdated = mLastUpdateTime;
-        time_t nodeUpdated = pNode->gdrive_cnode_get_update_time();
+        time_t nodeUpdated = pNode->getUpdateTime();
         time_t expireTime = (nodeUpdated > cacheUpdated ? 
             nodeUpdated : cacheUpdated) + mCacheTTL;
         if (expireTime < time(NULL) || nodeUpdated == (time_t) 0)
@@ -264,18 +264,18 @@ namespace fusedrive
 
             // Folder nodes may be deleted by cache updates, but regular file nodes
             // are safe.
-            bool isFolder = (pNode->gdrive_cnode_get_filetype() == 
+            bool isFolder = (pNode->getFiletype() == 
                     GDRIVE_FILETYPE_FOLDER);
 
             update();
 
             return (isFolder ? 
                     getItem(fileId, addIfDoesntExist, alreadyExists) :
-                    &pNode->gdrive_cnode_get_fileinfo());
+                    &pNode->getFileinfo());
         }
 
         // We have a good node that's not too old.
-        return &pNode->gdrive_cnode_get_fileinfo();
+        return &pNode->getFileinfo();
     }
     
     Fileinfo* Cache::getItem(const string& fileId, 
@@ -305,7 +305,7 @@ namespace fusedrive
             bool addIfDoesntExist, bool& alreadyExists)
     {
         assert(mInitialized);
-        return CacheNode::gdrive_cnode_get(*this, NULL, &mpCacheHead, fileId,
+        return CacheNode::retrieveNode(*this, NULL, &mpCacheHead, fileId,
                 addIfDoesntExist, alreadyExists);
     }
     
@@ -362,25 +362,25 @@ namespace fusedrive
         // immediately. Otherwise, mark it for delete on close.
 
         // Find the node we want to remove.
-        CacheNode* pNode = CacheNode::gdrive_cnode_get(*this, NULL, 
+        CacheNode* pNode = CacheNode::retrieveNode(*this, NULL, 
                 &mpCacheHead, fileId, false);
         if (pNode == NULL)
         {
             // Didn't find it.  Do nothing.
             return;
         }
-        pNode->gdrive_cnode_mark_deleted();
+        pNode->markDeleted();
     }
 
     void Cache::deleteNode(CacheNode* pNode)
     {
         assert(mInitialized);
-        pNode->gdrive_cnode_delete();
+        pNode->deleteNode();
     }
     
     Cache::~Cache() {
         mpFileIdCacheHead->gdrive_fidnode_clear_all();
-        mpCacheHead->gdrive_cnode_free_all();
+        mpCacheHead->freeAll();
     }
     
     
@@ -391,7 +391,7 @@ namespace fusedrive
     void Cache::removeId(Gdrive& gInfo, const string& fileId)
     {
         // Find the node we want to remove.
-        CacheNode* pNode = CacheNode::gdrive_cnode_get(*this, NULL, 
+        CacheNode* pNode = CacheNode::retrieveNode(*this, NULL, 
                 &mpCacheHead, fileId, false);
         if (pNode == NULL)
         {
@@ -400,7 +400,7 @@ namespace fusedrive
         }
 
 
-        pNode->gdrive_cnode_delete();
+        pNode->deleteNode();
     }
     
     
