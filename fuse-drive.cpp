@@ -425,7 +425,7 @@ using namespace fusedrive;
 
         // Create the file
         int error = 0;
-        const string fileId = GdriveFile::gdrive_file_new(gInfo, pathStr, false, error);
+        const string fileId = GdriveFile::createFile(gInfo, pathStr, false, error);
         if (fileId.empty())
         {
             // Some error occurred
@@ -436,7 +436,7 @@ using namespace fusedrive;
         // using the (currently unused) mode parameter we were given.
 
         // File was successfully created. Open it.
-        fi->fh = (uint64_t) GdriveFile::gdrive_file_open(gInfo, fileId, O_RDWR, error);
+        fi->fh = (uint64_t) GdriveFile::openFile(gInfo, fileId, O_RDWR, error);
 
         return -error;
     }
@@ -461,7 +461,7 @@ using namespace fusedrive;
     {
         GdriveFile* fh = (GdriveFile*) fi->fh;
         const Fileinfo* pFileinfo = (fi->fh == (uint64_t) NULL) ? 
-            NULL : &fh->gdrive_file_get_info();
+            NULL : &fh->getFileinfo();
 
         if (pFileinfo == NULL)
         {
@@ -504,7 +504,7 @@ using namespace fusedrive;
             return -EBADF;
         }
         GdriveFile* fh = (GdriveFile*) fi->fh;
-        return fh->gdrive_file_sync();
+        return fh->sync();
     }
 
     /* static int fudr_fsyncdir(const char* path, int isdatasync, 
@@ -534,7 +534,7 @@ using namespace fusedrive;
             return accessResult;
         }
 
-        return fh->gdrive_file_truncate(size);
+        return fh->truncate(size);
     }
 
     static int fudr_getattr(const char *path, struct stat *stbuf)
@@ -700,7 +700,7 @@ using namespace fusedrive;
 
         // Create the folder
         int error = 0;
-        GdriveFile::gdrive_file_new(gInfo, path, true, error);
+        GdriveFile::createFile(gInfo, path, true, error);
 
         // TODO: If fudr_chmod is ever implemented, change the folder permissions 
         // using the (currently unused) mode parameter we were given.
@@ -752,7 +752,7 @@ using namespace fusedrive;
 
         // Open the file
         int error = 0;
-        GdriveFile* pFile = GdriveFile::gdrive_file_open(gInfo, fileId, fi->flags, error);
+        GdriveFile* pFile = GdriveFile::openFile(gInfo, fileId, fi->flags, error);
 
         if (pFile == NULL)
         {
@@ -797,7 +797,7 @@ using namespace fusedrive;
             return -EBADF;
         }
 
-        return pFile->gdrive_file_read(buf, size, offset);
+        return pFile->read(buf, size, offset);
     }
 
     /* static int 
@@ -887,7 +887,7 @@ using namespace fusedrive;
             return -EBADF;
         }
 
-        fh->gdrive_file_close(fi->flags);
+        fh->close(fi->flags);
         return 0;
     }
 
@@ -1210,7 +1210,7 @@ using namespace fusedrive;
 
         // Open the file
         int error = 0;
-        GdriveFile* fh = GdriveFile::gdrive_file_open(gInfo, fileId, O_RDWR, error);
+        GdriveFile* fh = GdriveFile::openFile(gInfo, fileId, O_RDWR, error);
         if (fh == NULL)
         {
             // Error
@@ -1218,10 +1218,10 @@ using namespace fusedrive;
         }
 
         // Truncate
-        int result = fh->gdrive_file_truncate(size);
+        int result = fh->truncate(size);
 
         // Close
-        fh->gdrive_file_close(O_RDWR);
+        fh->close(O_RDWR);
 
         return result;
     }
@@ -1282,7 +1282,7 @@ using namespace fusedrive;
         }
 
         int error = 0;
-        GdriveFile* fh = GdriveFile::gdrive_file_open(gInfo, fileId, O_RDWR, error);
+        GdriveFile* fh = GdriveFile::openFile(gInfo, fileId, O_RDWR, error);
         if (fh == NULL)
         {
             return -error;
@@ -1290,29 +1290,29 @@ using namespace fusedrive;
         
         if (ts[0].tv_nsec == UTIME_NOW)
         {
-            error = fh->gdrive_file_set_atime(NULL);
+            error = fh->setAtime(NULL);
         }
         else if (ts[0].tv_nsec != UTIME_OMIT)
         {
-            error = fh->gdrive_file_set_atime(&(ts[0]));
+            error = fh->setAtime(&(ts[0]));
         }
 
         if (error != 0)
         {
-            fh->gdrive_file_close(O_RDWR);
+            fh->close(O_RDWR);
             return error;
         }
 
         if (ts[1].tv_nsec == UTIME_NOW)
         {
-            fh->gdrive_file_set_mtime(NULL);
+            fh->setMtime(NULL);
         }
         else if (ts[1].tv_nsec != UTIME_OMIT)
         {
-            fh->gdrive_file_set_mtime(&(ts[1]));
+            fh->setMtime(&(ts[1]));
         }
 
-        fh->gdrive_file_close(O_RDWR);
+        fh->close(O_RDWR);
         return error;
     }
 
@@ -1336,7 +1336,7 @@ using namespace fusedrive;
             return -EBADFD;
         }
         
-        return fh->gdrive_file_write(buf, size, offset);
+        return fh->write(buf, size, offset);
     }
 
     /* static int fudr_write_buf(const char* path, struct fuse_bufvec* buf, 

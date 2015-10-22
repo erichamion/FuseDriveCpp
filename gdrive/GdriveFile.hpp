@@ -23,48 +23,48 @@ namespace fusedrive
         //GdriveFile(const GdriveFile& orig);
         virtual ~GdriveFile();
         
-        static GdriveFile* gdrive_file_open(Gdrive& gInfo, 
-                const std::string& fileId, int flags, int& error);
+        static GdriveFile* openFile(Gdrive& gInfo, const std::string& fileId, 
+            int flags, int& error);
 
-        static std::string gdrive_file_new(Gdrive& gInfo, const std::string& path, 
+        static std::string createFile(Gdrive& gInfo, const std::string& path, 
             bool createFolder, int& error);
 
-        void gdrive_file_close(int flags);
+        void close(int flags);
 
-        int gdrive_file_read(char* buf, size_t size, off_t offset);
+        int read(char* buf, size_t size, off_t offset);
 
-        int gdrive_file_write(const char* buf, size_t size, off_t offset);
+        int write(const char* buf, size_t size, off_t offset);
 
-        int gdrive_file_truncate(off_t size);
+        int truncate(off_t size);
 
-        int gdrive_file_sync();
+        int sync();
 
-        int gdrive_file_sync_metadata();
+        int syncMetadata();
 
-        int gdrive_file_set_atime(const struct timespec* ts);
+        int setAtime(const struct timespec* ts);
 
-        int gdrive_file_set_mtime(const struct timespec* ts);
+        int setMtime(const struct timespec* ts);
 
-        Fileinfo& gdrive_file_get_info();
+        Fileinfo& getFileinfo();
 
-        unsigned int gdrive_file_get_perms();
+        unsigned int getPermissions();
     private:
-        Gdrive& gInfo;
-        CacheNode& cacheNode;
+        Gdrive& mGInfo;
+        CacheNode& mCacheNode;
         
-        int gdrive_file_null_read(size_t size, off_t offset);
+        int nullRead(size_t size, off_t offset);
         
-        size_t gdrive_file_read_next_chunk(char* buf, off_t offset, 
+        size_t readNextChunk(char* buf, off_t offset, 
             size_t size);
 
-        off_t gdrive_file_write_next_chunk(const char* buf, 
+        off_t writeNextChunk(const char* buf, 
             off_t offset, size_t size);
 
-        static size_t gdrive_file_uploadcallback(Gdrive& gInfo, char* buffer, 
+        static size_t uploadCallback(Gdrive& gInfo, char* buffer, 
             off_t offset, size_t size, void* userdata);
 
         static std::string 
-        gdrive_file_sync_metadata_or_create(Gdrive& gInfo, Fileinfo* pFileinfo,
+        syncMetadataOrCreate(Gdrive& gInfo, Fileinfo* pFileinfo,
             const std::string& parentId, const std::string& filename, 
             bool isFolder, int& error);
         
