@@ -40,7 +40,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/fuse-drive.o \
 	${OBJECTDIR}/gdrive/Cache.o \
 	${OBJECTDIR}/gdrive/CacheNode.o \
-	${OBJECTDIR}/gdrive/FileidCacheNode.o \
+	${OBJECTDIR}/gdrive/FileIdCacheNode.o \
 	${OBJECTDIR}/gdrive/Fileinfo.o \
 	${OBJECTDIR}/gdrive/Gdrive.o \
 	${OBJECTDIR}/gdrive/GdriveFile.o \
@@ -106,10 +106,10 @@ ${OBJECTDIR}/gdrive/CacheNode.o: gdrive/CacheNode.cpp
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/CacheNode.o gdrive/CacheNode.cpp
 
-${OBJECTDIR}/gdrive/FileidCacheNode.o: gdrive/FileidCacheNode.cpp 
+${OBJECTDIR}/gdrive/FileIdCacheNode.o: gdrive/FileIdCacheNode.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
-	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/FileidCacheNode.o gdrive/FileidCacheNode.cpp
+	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/FileIdCacheNode.o gdrive/FileIdCacheNode.cpp
 
 ${OBJECTDIR}/gdrive/Fileinfo.o: gdrive/Fileinfo.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive

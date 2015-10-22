@@ -7,7 +7,7 @@
       <logicalFolder name="f1" displayName="gdrive" projectFiles="true">
         <itemPath>gdrive/Cache.hpp</itemPath>
         <itemPath>gdrive/CacheNode.hpp</itemPath>
-        <itemPath>gdrive/FileidCacheNode.hpp</itemPath>
+        <itemPath>gdrive/FileIdCacheNode.hpp</itemPath>
         <itemPath>gdrive/Fileinfo.hpp</itemPath>
         <itemPath>gdrive/Gdrive.hpp</itemPath>
         <itemPath>gdrive/GdriveFile.hpp</itemPath>
@@ -39,7 +39,7 @@
       <logicalFolder name="f1" displayName="gdrive" projectFiles="true">
         <itemPath>gdrive/Cache.cpp</itemPath>
         <itemPath>gdrive/CacheNode.cpp</itemPath>
-        <itemPath>gdrive/FileidCacheNode.cpp</itemPath>
+        <itemPath>gdrive/FileIdCacheNode.cpp</itemPath>
         <itemPath>gdrive/Fileinfo.cpp</itemPath>
         <itemPath>gdrive/Gdrive.cpp</itemPath>
         <itemPath>gdrive/GdriveFile.cpp</itemPath>
@@ -132,9 +132,9 @@
       </item>
       <item path="gdrive/CacheNode.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/FileidCacheNode.cpp" ex="false" tool="1" flavor2="0">
+      <item path="gdrive/FileIdCacheNode.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/FileidCacheNode.hpp" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/FileIdCacheNode.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/Fileinfo.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -240,9 +240,9 @@
       </item>
       <item path="gdrive/CacheNode.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/FileidCacheNode.cpp" ex="false" tool="1" flavor2="0">
+      <item path="gdrive/FileIdCacheNode.cpp" ex="false" tool="1" flavor2="0">
       </item>
-      <item path="gdrive/FileidCacheNode.hpp" ex="false" tool="3" flavor2="0">
+      <item path="gdrive/FileIdCacheNode.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/Fileinfo.cpp" ex="false" tool="1" flavor2="0">
       </item>

@@ -5,7 +5,7 @@
  * Created on October 19, 2015, 8:49 AM
  */
 
-#include "FileidCacheNode.hpp"
+#include "FileIdCacheNode.hpp"
 
 #include <stdlib.h>
 #include <string.h>
@@ -15,68 +15,68 @@ using namespace std;
 
 namespace fusedrive
 {
-    FileidCacheNode::~FileidCacheNode()
+    FileIdCacheNode::~FileIdCacheNode()
     {
         
     }
 
-    int FileidCacheNode::gdrive_fidnode_add(FileidCacheNode** ppHead, 
+    int FileIdCacheNode::addFileIdNode(FileIdCacheNode** ppHead, 
             const string& path, const string& fileId)
     {
         if (*ppHead == NULL)
         {
             // Add the current element as the first one in the list.
-            *ppHead = new FileidCacheNode(path, fileId);
+            *ppHead = new FileIdCacheNode(path, fileId);
             return 0;
         }
 
 
-        FileidCacheNode** ppFromPrev = ppHead;
-        FileidCacheNode* pNext = *ppFromPrev;
+        FileIdCacheNode** ppFromPrev = ppHead;
+        FileIdCacheNode* pNext = *ppFromPrev;
 
 
         while (true)
         {
             // Find the string comparison.  If pNext is NULL, pretend pNext->path
             // is greater than path (we insert after pPrev in both cases).
-            int cmp = (pNext != NULL) ? path.compare(pNext->path) : -1;
+            int cmp = (pNext != NULL) ? path.compare(pNext->mPath) : -1;
 
             if (cmp == 0)
             {
                 // Item already exists, update it.
-                return pNext->gdrive_fidnode_update_item(fileId);
+                return pNext->updateItem(fileId);
             }
             else if (cmp < 0)
             {
                 // Item doesn't exist yet, insert it between pPrev and pNext.
-                FileidCacheNode* pNew = new FileidCacheNode(path, fileId);
+                FileIdCacheNode* pNew = new FileIdCacheNode(path, fileId);
                 *ppFromPrev = pNew;
-                pNew->pNext = pNext;
+                pNew->mpNext = pNext;
                 return 0;
             }
             // else keep searching
-            ppFromPrev = &((*ppFromPrev)->pNext);
+            ppFromPrev = &((*ppFromPrev)->mpNext);
             pNext = *ppFromPrev;
         }
     }
 
-    void FileidCacheNode::gdrive_fidnode_remove_by_id(FileidCacheNode** ppHead, 
+    void FileIdCacheNode::removeFileIdNode(FileIdCacheNode** ppHead, 
                                      const string& fileId)
     {
         // Need to walk through the whole list, since it's not keyed by fileId.
-        FileidCacheNode** ppFromPrev = ppHead;
-        FileidCacheNode* pNext = *ppHead;
+        FileIdCacheNode** ppFromPrev = ppHead;
+        FileIdCacheNode* pNext = *ppHead;
 
         while (pNext != NULL)
         {
 
             // Compare the given fileId to the current one.
-            int cmp = fileId.compare(pNext->fileId);
+            int cmp = fileId.compare(pNext->mFileId);
 
             if (cmp == 0)
             {
                 // Found it!
-                *ppFromPrev = pNext->pNext;
+                *ppFromPrev = pNext->mpNext;
                 delete pNext;
 
                 // Don't exit here. Still need to keep searching, since one file ID 
@@ -85,18 +85,18 @@ namespace fusedrive
             else
             {
                 // Move on to the next one
-                ppFromPrev = &(*ppFromPrev)->pNext;
+                ppFromPrev = &(*ppFromPrev)->mpNext;
             }
             pNext = *ppFromPrev;
         }
     }
 
-    void FileidCacheNode::gdrive_fidnode_clear_all()
+    void FileIdCacheNode::clearAll()
     {
         // Free the rest of the chain.
-        if (pNext != NULL)
+        if (mpNext != NULL)
         {
-            pNext->gdrive_fidnode_clear_all();
+            mpNext->clearAll();
         }
 
         // Free the head node.
@@ -104,24 +104,24 @@ namespace fusedrive
     }
 
 
-    time_t FileidCacheNode::gdrive_fidnode_get_lastupdatetime() const
+    time_t FileIdCacheNode::getLastUpdateTime() const
     {
-        return lastUpdateTime;
+        return mLastUpdateTime;
     }
 
-    string FileidCacheNode::gdrive_fidnode_get_fileid() const
+    string FileIdCacheNode::getFileId() const
     {
-        return fileId;
+        return mFileId;
     }
 
 
-    FileidCacheNode* FileidCacheNode::gdrive_fidnode_get_node(const string& path)
+    FileIdCacheNode* FileIdCacheNode::getNode(const string& path)
     {
-        FileidCacheNode* pNode = this;
+        FileIdCacheNode* pNode = this;
 
         while (pNode != NULL)
         {
-            int cmp = path.compare(pNode->path);
+            int cmp = path.compare(pNode->mPath);
             if (cmp == 0)
             {
                 // Found it!
@@ -133,7 +133,7 @@ namespace fusedrive
                 return NULL;
             }
             // else keep searching
-            pNode = pNode->pNext;
+            pNode = pNode->mpNext;
         }
 
         // We've hit the end of the list without finding path.
@@ -142,24 +142,24 @@ namespace fusedrive
 
 //        FileidCacheNode* gdrive_fidnode_create(const char* filename, 
 //                                                            const char* fileId)
-    FileidCacheNode::FileidCacheNode(const string& filename, const string& fileId)
-    : path(filename), fileId(fileId)
+    FileIdCacheNode::FileIdCacheNode(const string& filename, const string& fileId)
+    : mPath(filename), mFileId(fileId)
     {
-        pNext = NULL;
+        mpNext = NULL;
         // Set the updated time.
-        lastUpdateTime = time(NULL);
+        mLastUpdateTime = time(NULL);
     }
 
-    int FileidCacheNode::gdrive_fidnode_update_item(const string& updatedFileId)
+    int FileIdCacheNode::updateItem(const string& updatedFileId)
     {
         // Update the time.
-        lastUpdateTime = time(NULL);
+        mLastUpdateTime = time(NULL);
 
-        if (fileId.empty() || (updatedFileId.compare(fileId) != 0))
+        if (mFileId.empty() || (updatedFileId.compare(mFileId) != 0))
         {
             // Node doesn't have a fileId or the IDs don't match. Copy the new
             // fileId in.
-            fileId.assign(updatedFileId);
+            mFileId.assign(updatedFileId);
             return 0;
         }
         // else the IDs already match.

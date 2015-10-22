@@ -82,7 +82,7 @@ namespace fusedrive
         return mGInfo;
     }
 
-    const FileidCacheNode* Cache::getFileidCacheHead() const
+    const FileIdCacheNode* Cache::getFileidCacheHead() const
     {
         assert(mInitialized);
         return mpFileIdCacheHead;
@@ -176,7 +176,7 @@ namespace fusedrive
                     
                     // We don't know whether the file has been renamed or moved,
                     // so remove it from the fileId cache.
-                    FileidCacheNode::gdrive_fidnode_remove_by_id(&mpFileIdCacheHead, fileId);
+                    FileIdCacheNode::removeFileIdNode(&mpFileIdCacheHead, fileId);
 
                     // Update the file metadata cache, but only if the file is not
                     // opened for writing with dirty data.
@@ -298,7 +298,7 @@ namespace fusedrive
     int Cache::addFileid(const string& path, const string& fileId)
     {
         assert(mInitialized);
-        return FileidCacheNode::gdrive_fidnode_add(&mpFileIdCacheHead, path, fileId);
+        return FileIdCacheNode::addFileIdNode(&mpFileIdCacheHead, path, fileId);
     }
 
     CacheNode* Cache::getNode(const string& fileId, 
@@ -325,8 +325,8 @@ namespace fusedrive
             // No cache to search
             return "";
         }
-        FileidCacheNode* pNode = 
-                mpFileIdCacheHead->gdrive_fidnode_get_node(path);
+        FileIdCacheNode* pNode = 
+                mpFileIdCacheHead->getNode(path);
         if (pNode == NULL)
         {
             // The path isn't cached.  Return null.
@@ -337,7 +337,7 @@ namespace fusedrive
         // either of the entire cache, or of the individual item, whichever is
         // newer.
         time_t cacheUpdateTime = getLastUpdateTime();
-        time_t nodeUpdateTime = pNode->gdrive_fidnode_get_lastupdatetime();
+        time_t nodeUpdateTime = pNode->getLastUpdateTime();
         time_t expireTime = ((nodeUpdateTime > cacheUpdateTime) ? 
             nodeUpdateTime : cacheUpdateTime) + mCacheTTL;
         if (time(NULL) > expireTime)
@@ -347,7 +347,7 @@ namespace fusedrive
             return getFileid(path);
         }
 
-        return pNode->gdrive_fidnode_get_fileid();
+        return pNode->getFileId();
     }
 
     void Cache::deleteId(const string& fileId)
@@ -356,7 +356,7 @@ namespace fusedrive
         assert(!fileId.empty());
 
         // Remove the ID from the file Id cache
-        FileidCacheNode::gdrive_fidnode_remove_by_id(&mpFileIdCacheHead, fileId);
+        FileIdCacheNode::removeFileIdNode(&mpFileIdCacheHead, fileId);
 
         // If the file isn't opened by anybody, delete it from the cache 
         // immediately. Otherwise, mark it for delete on close.
@@ -379,7 +379,7 @@ namespace fusedrive
     }
     
     Cache::~Cache() {
-        mpFileIdCacheHead->gdrive_fidnode_clear_all();
+        mpFileIdCacheHead->clearAll();
         mpCacheHead->freeAll();
     }
     

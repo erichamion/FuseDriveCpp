@@ -8,7 +8,7 @@
 #ifndef CACHE_HPP
 #define	CACHE_HPP
 
-#include "FileidCacheNode.hpp"
+#include "FileIdCacheNode.hpp"
 #include "CacheNode.hpp"
 
 #include <sys/types.h>
@@ -29,7 +29,7 @@ namespace fusedrive
         
         Gdrive& getGdrive() const;
         
-        const FileidCacheNode* getFileidCacheHead() const;
+        const FileIdCacheNode* getFileidCacheHead() const;
 
         time_t getTTL() const;
 
@@ -72,7 +72,7 @@ namespace fusedrive
         time_t mLastUpdateTime;
         int64_t mNextChangeId;
         CacheNode* mpCacheHead;
-        FileidCacheNode* mpFileIdCacheHead;
+        FileIdCacheNode* mpFileIdCacheHead;
         bool mInitialized;
         
         void removeId(Gdrive& gInfo, const std::string& fileId);
