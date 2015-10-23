@@ -16,11 +16,11 @@ namespace fusedrive
 {
     class Gdrive;
     
-    enum Gdrive_Retry_Method
+    enum RetryMethod
     {
-        GDRIVE_RETRY_NORETRY,
-        GDRIVE_RETRY_RETRY,
-        GDRIVE_RETRY_RENEWAUTH
+        NORETRY,
+        RETRY,
+        RENEWAUTH
     };
 
     class DownloadBuffer {
@@ -29,45 +29,40 @@ namespace fusedrive
         
         virtual ~DownloadBuffer();
         
-        long gdrive_dlbuf_get_httpresp();
+        long getHttpResponse();
 
-        std::string gdrive_dlbuf_get_data();
+        std::string getData();
 
-        bool gdrive_dlbuf_get_success();
+        bool wasSuccessful();
 
-        CURLcode gdrive_dlbuf_download(CURL* curlHandle);
-
-        int gdrive_dlbuf_download_with_retry(CURL* curlHandle, bool retryOnAuthError,
+        int downloadWithRetry(CURL* curlHandle, bool retryOnAuthError,
             int maxTries);
         
     private:
-        const std::string GDRIVE_403_RATELIMIT;
-        const std::string GDRIVE_403_USERRATELIMIT;
+        const std::string ERROR_403_RATELIMIT;
+        const std::string ERROR_403_USERRATELIMIT;
         
-        //size_t allocatedSize;
-        //size_t usedSize;
-        long httpResp;
-        CURLcode resultCode;
-        std::stringstream data;
-        std::stringstream pReturnedHeaders;
-        //size_t returnedHeaderSize;
+        long mHttpResp;
+        CURLcode mResultCode;
+        std::stringstream mData;
+        std::stringstream mReturnedHeaders;
         FILE* mFh;
-        Gdrive& gInfo;
+        Gdrive& mGInfo;
         
-        int gdrive_dlbuf_download_with_retry(CURL* curlHandle, bool retryOnAuthError, 
-                                             int tryNum, int maxTries);
+        CURLcode download(CURL* curlHandle);
 
-        static size_t 
-        gdrive_dlbuf_callback(char *newData, size_t size, size_t nmemb, void *userdata);
+        int downloadWithRetry(CURL* curlHandle, bool retryOnAuthError, 
+            int tryNum, int maxTries);
 
-        static size_t
-        gdrive_dlbuf_header_callback(char* buffer, size_t size, size_t nitems, 
-                                     void* userdata);
+        static size_t dataCallback(char *newData, size_t size, 
+            size_t nmemb, void *userdata);
 
-        enum Gdrive_Retry_Method 
-        gdrive_dlbuf_retry_on_error(long httpResp);
+        static size_t headerCallback(char* buffer, size_t size, size_t nitems,
+            void* userdata);
 
-        static void gdrive_exponential_wait(int tryNum);
+        enum RetryMethod shouldRetry(long httpResp);
+
+        static void doExponentialWait(int tryNum);
         
         DownloadBuffer(const DownloadBuffer& orig);
         

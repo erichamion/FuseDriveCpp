@@ -298,11 +298,11 @@ DownloadBuffer* gdrive_xfer_execute(Gdrive& gInfo, Gdrive_Transfer* pTransfer)
         return NULL;
     }
     
-    pBuf->gdrive_dlbuf_download_with_retry(curlHandle, 
+    pBuf->downloadWithRetry(curlHandle, 
             pTransfer->retryOnAuthError, GDRIVE_RETRY_LIMIT);
     curl_easy_cleanup(curlHandle);
     
-    if (!pBuf->gdrive_dlbuf_get_success())
+    if (!pBuf->wasSuccessful())
     {
         // Download failure
         delete pBuf;

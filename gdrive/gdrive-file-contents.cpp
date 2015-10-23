@@ -271,7 +271,7 @@ int gdrive_fcontents_fill_chunk(Gdrive& gInfo, Gdrive_File_Contents* pContents,
     DownloadBuffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
     gdrive_xfer_free(pTransfer);
     
-    bool success = (pBuf != NULL && pBuf->gdrive_dlbuf_get_httpresp() < 400);
+    bool success = (pBuf != NULL && pBuf->getHttpResponse() < 400);
     delete pBuf;
     if (success)
     {

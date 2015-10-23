@@ -68,13 +68,13 @@ namespace fusedrive
             gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
             DownloadBuffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
             gdrive_xfer_free(pTransfer);
-            if (!pBuf || pBuf->gdrive_dlbuf_get_httpresp() >= 400)
+            if (!pBuf || pBuf->getHttpResponse() >= 400)
             {
                 // Download or request error
                 delete pBuf;
                 return NULL;
             }
-            Json jsonObj(pBuf->gdrive_dlbuf_get_data());
+            Json jsonObj(pBuf->getData());
             delete pBuf;
             if (!jsonObj.isValid())
             {

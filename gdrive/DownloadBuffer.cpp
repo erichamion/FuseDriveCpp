@@ -18,12 +18,12 @@ namespace fusedrive
     std::string GDRIVE_403_USERRATELIMIT = "userRateLimitExceeded";
 
     DownloadBuffer::DownloadBuffer(Gdrive& gInfo, FILE* fh)
-    : mFh(fh), gInfo(gInfo)
+    : mFh(fh), mGInfo(gInfo)
     {
         //usedSize = 0;
         //allocatedSize = initialSize;
-        httpResp = 0;
-        resultCode = CURLE_OK;
+        mHttpResp = 0;
+        mResultCode = CURLE_OK;
     }
 
     DownloadBuffer::~DownloadBuffer()
@@ -31,22 +31,22 @@ namespace fusedrive
         // Empty
     }
 
-    long DownloadBuffer::gdrive_dlbuf_get_httpresp()
+    long DownloadBuffer::getHttpResponse()
     {
-        return httpResp;
+        return mHttpResp;
     }
 
-    string DownloadBuffer::gdrive_dlbuf_get_data()
+    string DownloadBuffer::getData()
     {
-        return data.str();
+        return mData.str();
     }
 
-    bool DownloadBuffer::gdrive_dlbuf_get_success()
+    bool DownloadBuffer::wasSuccessful()
     {
-        return (resultCode == CURLE_OK);
+        return (mResultCode == CURLE_OK);
     }
 
-    CURLcode DownloadBuffer::gdrive_dlbuf_download(CURL* curlHandle)
+    CURLcode DownloadBuffer::download(CURL* curlHandle)
     {
         // Set the destination - either our own callback function to fill the
         // in-memory buffer, or the default libcurl function to write to a FILE*.
@@ -54,7 +54,7 @@ namespace fusedrive
         {
             curl_easy_setopt(curlHandle, 
                              CURLOPT_WRITEFUNCTION, 
-                             gdrive_dlbuf_callback
+                             dataCallback
                     );
             curl_easy_setopt(curlHandle, CURLOPT_WRITEDATA, this);
         }
@@ -67,30 +67,30 @@ namespace fusedrive
         // Capture the returned headers with a callback
         curl_easy_setopt(curlHandle, 
                          CURLOPT_HEADERFUNCTION, 
-                         gdrive_dlbuf_header_callback
+                         headerCallback
                 );
         curl_easy_setopt(curlHandle, CURLOPT_HEADERDATA, this);
 
         // Do the transfer.
-        resultCode = curl_easy_perform(curlHandle);
+        mResultCode = curl_easy_perform(curlHandle);
 
         // Get the HTTP response
-        curl_easy_getinfo(curlHandle, CURLINFO_RESPONSE_CODE, &httpResp);
+        curl_easy_getinfo(curlHandle, CURLINFO_RESPONSE_CODE, &mHttpResp);
 
-        return resultCode;
+        return mResultCode;
     }
 
-    int DownloadBuffer::gdrive_dlbuf_download_with_retry(CURL* curlHandle, 
+    int DownloadBuffer::downloadWithRetry(CURL* curlHandle, 
             bool retryOnAuthError, int maxTries)
     {
-        return gdrive_dlbuf_download_with_retry(curlHandle, retryOnAuthError, 
+        return downloadWithRetry(curlHandle, retryOnAuthError, 
                 0, maxTries);
     }
     
-    int DownloadBuffer::gdrive_dlbuf_download_with_retry(CURL* curlHandle, bool retryOnAuthError, 
+    int DownloadBuffer::downloadWithRetry(CURL* curlHandle, bool retryOnAuthError, 
                                              int tryNum, int maxTries)
     {
-        CURLcode curlResult = gdrive_dlbuf_download(curlHandle);
+        CURLcode curlResult = download(curlHandle);
 
 
         if (curlResult != CURLE_OK)
@@ -98,7 +98,7 @@ namespace fusedrive
             // Download error
             return -1;
         }
-        if (httpResp >= 400)
+        if (mHttpResp >= 400)
         {
             // Handle HTTP error responses.  Normal error handling - 5xx gets 
             // retried, 403 gets retried if it's due to rate limits, 401 gets
@@ -112,26 +112,26 @@ namespace fusedrive
             }
 
             bool retry = false;
-            switch (gdrive_dlbuf_retry_on_error(httpResp))
+            switch (shouldRetry(mHttpResp))
             {
-                case GDRIVE_RETRY_RETRY:
+                case RetryMethod::RETRY:
                     // Normal retry, use exponential backoff.
-                    gdrive_exponential_wait(tryNum);
+                    doExponentialWait(tryNum);
                     retry = true;
                     break;
 
-                case GDRIVE_RETRY_RENEWAUTH:
+                case RetryMethod::RENEWAUTH:
                     // Authentication error, probably expired access token.
                     // If retryOnAuthError is true, refresh auth and retry (unless 
                     // auth fails).
                     if (retryOnAuthError)
                     {
-                        retry = (gInfo.authenticate() == 0);
+                        retry = (mGInfo.authenticate() == 0);
                         break;
                     }
                     // else fall through to NORETRY (and again to default)
 
-                case GDRIVE_RETRY_NORETRY:
+                case RetryMethod::NORETRY:
                     // Fall through to default
                     default:
                         retry = false;
@@ -140,7 +140,7 @@ namespace fusedrive
 
             if (retry)
             {
-                return gdrive_dlbuf_download_with_retry(curlHandle, 
+                return downloadWithRetry(curlHandle, 
                         retryOnAuthError, tryNum + 1, maxTries);
             }
             else
@@ -155,7 +155,7 @@ namespace fusedrive
 
 
     size_t 
-    DownloadBuffer::gdrive_dlbuf_callback(char *newData, size_t size, size_t nmemb, void *userdata)
+    DownloadBuffer::dataCallback(char *newData, size_t size, size_t nmemb, void *userdata)
     {
         if (size == 0 || nmemb == 0)
         {
@@ -166,26 +166,26 @@ namespace fusedrive
         DownloadBuffer* pBuffer = (DownloadBuffer*) userdata;
 
         size_t dataSize = size * nmemb;
-        pBuffer->data.write(newData, dataSize);
+        pBuffer->mData.write(newData, dataSize);
         
-        return pBuffer->data.good() ? dataSize : 0;
+        return pBuffer->mData.good() ? dataSize : 0;
     }
 
     size_t
-    DownloadBuffer::gdrive_dlbuf_header_callback(char* buffer, size_t size, size_t nitems, 
+    DownloadBuffer::headerCallback(char* buffer, size_t size, size_t nitems, 
                                  void* userdata)
     {
         DownloadBuffer* pDlBuf = (DownloadBuffer*) userdata;
 
         size_t newHeaderLength = size * nitems;
-        pDlBuf->pReturnedHeaders.write(buffer, newHeaderLength);
+        pDlBuf->mReturnedHeaders.write(buffer, newHeaderLength);
         
-        return pDlBuf->pReturnedHeaders.good() ? newHeaderLength : 0;
+        return pDlBuf->mReturnedHeaders.good() ? newHeaderLength : 0;
     }
 
 
-    enum Gdrive_Retry_Method 
-    DownloadBuffer::gdrive_dlbuf_retry_on_error(long httpResp)
+    enum RetryMethod 
+    DownloadBuffer::shouldRetry(long httpResp)
     {
         /* TODO:    Currently only handles 403 errors correctly when pBuf->fh is 
          *          NULL (when the downloaded data is stored in-memory, not in a 
@@ -204,27 +204,27 @@ namespace fusedrive
         if (httpResp >= 500)
         {
             // Always retry these
-            return GDRIVE_RETRY_RETRY;
+            return RetryMethod::RETRY;
         }
         else if (httpResp == 401)
         {
             // Always refresh credentials for 401.
-            return GDRIVE_RETRY_RENEWAUTH;
+            return RetryMethod::RENEWAUTH;
         }
         else if (httpResp == 403)
         {
             // Retry ONLY if the reason for the 403 was an exceeded rate limit
             bool retry = false;
     
-            Json jsonRoot(data.str());
+            Json jsonRoot(mData.str());
             if (jsonRoot.isValid())
             {
                 Json jsonErrors = 
                         jsonRoot.getNestedObject("error/errors");
                 string reasonStr = 
                         jsonErrors.getString("reason");
-                if ((reasonStr == GDRIVE_403_RATELIMIT) || 
-                        (reasonStr == GDRIVE_403_USERRATELIMIT))
+                if ((reasonStr == ERROR_403_RATELIMIT) || 
+                        (reasonStr == ERROR_403_USERRATELIMIT))
                 {
                     // Rate limit exceeded, retry.
                     retry = true;
@@ -236,15 +236,15 @@ namespace fusedrive
     //        free(reason);
             if (retry)
             {
-                return GDRIVE_RETRY_RENEWAUTH;
+                return RetryMethod::RENEWAUTH;
             }
         }
 
         // For all other errors, don't retry.
-        return GDRIVE_RETRY_NORETRY;
+        return RetryMethod::NORETRY;
     }
 
-    void DownloadBuffer::gdrive_exponential_wait(int tryNum)
+    void DownloadBuffer::doExponentialWait(int tryNum)
     {
         // Number of milliseconds to wait before retrying
         long waitTime;

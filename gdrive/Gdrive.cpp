@@ -133,11 +133,11 @@ namespace fusedrive
         // reducing code duplication and taking advantage of the cache.
         int fileCount = -1;
         Gdrive_Fileinfo_Array* pArray = NULL;
-        if (pBuf != NULL && pBuf->gdrive_dlbuf_get_httpresp() < 400)
+        if (pBuf != NULL && pBuf->getHttpResponse() < 400)
         {
             // Transfer was successful.  Convert result to a JSON object and extract
             // the file meta-info.
-            Json jsonObj(pBuf->gdrive_dlbuf_get_data());
+            Json jsonObj(pBuf->getData());
             if (jsonObj.isValid())
             {
                 bool dummy;
@@ -317,7 +317,7 @@ namespace fusedrive
             throw new exception();
         }
 
-        if (pBuf->gdrive_dlbuf_get_httpresp() >= 400)
+        if (pBuf->getHttpResponse() >= 400)
         {
             // Server returned an error that couldn't be retried, or continued
             // returning an error after retrying
@@ -329,7 +329,7 @@ namespace fusedrive
         // response.
 
         // Convert to a JSON object.
-        Json jsonObj(pBuf->gdrive_dlbuf_get_data());
+        Json jsonObj(pBuf->getData());
         delete pBuf;
         if (!jsonObj.isValid())
         {
@@ -529,7 +529,7 @@ namespace fusedrive
         DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
         gdrive_xfer_free(pTransfer);
 
-        int returnVal = (pBuf == NULL || pBuf->gdrive_dlbuf_get_httpresp() >= 400) ? 
+        int returnVal = (pBuf == NULL || pBuf->getHttpResponse() >= 400) ? 
             -EIO : 0;
         delete pBuf;
         return returnVal;
@@ -571,7 +571,7 @@ namespace fusedrive
         DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
         gdrive_xfer_free(pTransfer);
 
-        int returnVal = (pBuf == NULL || pBuf->gdrive_dlbuf_get_httpresp() >= 400) ? 
+        int returnVal = (pBuf == NULL || pBuf->getHttpResponse() >= 400) ? 
             -EIO : 0;
         delete pBuf;
         if (returnVal == 0)
@@ -627,7 +627,7 @@ namespace fusedrive
         DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
         gdrive_xfer_free(pTransfer);
 
-        int returnVal = (pBuf == NULL || pBuf->gdrive_dlbuf_get_httpresp() >= 400) ? 
+        int returnVal = (pBuf == NULL || pBuf->getHttpResponse() >= 400) ? 
             -EIO : 0;
         delete pBuf;
 
@@ -688,7 +688,7 @@ namespace fusedrive
         DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
         gdrive_xfer_free(pTransfer);
 
-        int returnVal = (pBuf == NULL || pBuf->gdrive_dlbuf_get_httpresp() >= 400) ? 
+        int returnVal = (pBuf == NULL || pBuf->getHttpResponse() >= 400) ? 
             -EIO : 0;
         delete pBuf;
         return returnVal;
@@ -932,7 +932,7 @@ namespace fusedrive
         DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
         gdrive_xfer_free(pTransfer);
 
-        if (pBuf == NULL || pBuf->gdrive_dlbuf_get_httpresp() >= 400)
+        if (pBuf == NULL || pBuf->getHttpResponse() >= 400)
         {
             // Transfer was unsuccessful
             error = EIO;
@@ -941,7 +941,7 @@ namespace fusedrive
         }
 
         // Extract the file ID from the returned resource
-        Json jsonObj(pBuf->gdrive_dlbuf_get_data());
+        Json jsonObj(pBuf->getData());
         delete pBuf;
         if (!jsonObj.isValid())
         {
@@ -1231,7 +1231,7 @@ namespace fusedrive
             // There was an error sending the request and getting the response.
             return -1;
         }
-        if (pBuf->gdrive_dlbuf_get_httpresp() >= 400)
+        if (pBuf->getHttpResponse() >= 400)
         {
             // Failure, but probably not an error.  Most likely, the user has
             // revoked permission or the refresh token has otherwise been
@@ -1244,7 +1244,7 @@ namespace fusedrive
         // need to pull the access_token string (and refresh token string if
         // present) out of it.
 
-        Json jsonObj(pBuf->gdrive_dlbuf_get_data());
+        Json jsonObj(pBuf->getData());
         delete pBuf;
         if (!jsonObj.isValid())
         {
@@ -1384,7 +1384,7 @@ namespace fusedrive
         DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
         gdrive_xfer_free(pTransfer);
 
-        if (pBuf == NULL || pBuf->gdrive_dlbuf_get_httpresp() >= 400)
+        if (pBuf == NULL || pBuf->getHttpResponse() >= 400)
         {
             // Download failed or gave a bad response.
             delete pBuf;
@@ -1395,7 +1395,7 @@ namespace fusedrive
         // from the JSON array that should have been returned, and compare them
         // with the expected scopes.
 
-        Json jsonObj(pBuf->gdrive_dlbuf_get_data());
+        Json jsonObj(pBuf->getData());
         delete pBuf;
         if (!jsonObj.isValid())
         {
@@ -1497,7 +1497,7 @@ namespace fusedrive
         DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
         gdrive_xfer_free(pTransfer);
 
-        if (pBuf == NULL || pBuf->gdrive_dlbuf_get_httpresp() >= 400)
+        if (pBuf == NULL || pBuf->getHttpResponse() >= 400)
         {
             // Download error
             delete pBuf;
@@ -1509,7 +1509,7 @@ namespace fusedrive
         // response.
 
         // Convert to a JSON object.
-        Json jsonObj(pBuf->gdrive_dlbuf_get_data());
+        Json jsonObj(pBuf->getData());
         delete pBuf;
         if (!jsonObj.isValid())
         {

@@ -318,7 +318,7 @@ namespace fusedrive
         // Do the transfer
         DownloadBuffer* pBuf = gdrive_xfer_execute(mGInfo, pTransfer);
         gdrive_xfer_free(pTransfer);
-        int returnVal = (pBuf == NULL || pBuf->gdrive_dlbuf_get_httpresp() >= 400);
+        int returnVal = (pBuf == NULL || pBuf->getHttpResponse() >= 400);
         if (returnVal == 0)
         {
             // Success. Clear the dirty flag
@@ -618,7 +618,7 @@ namespace fusedrive
         DownloadBuffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
         gdrive_xfer_free(pTransfer);
 
-        if (pBuf == NULL || pBuf->gdrive_dlbuf_get_httpresp() >= 400)
+        if (pBuf == NULL || pBuf->getHttpResponse() >= 400)
         {
             // Transfer was unsuccessful
             error = EIO;
@@ -627,7 +627,7 @@ namespace fusedrive
         }
 
         // Extract the file ID from the returned resource
-        Json jsonObj(pBuf->gdrive_dlbuf_get_data());
+        Json jsonObj(pBuf->getData());
         delete pBuf;
         if (!jsonObj.isValid())
         {

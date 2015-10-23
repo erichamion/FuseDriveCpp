@@ -54,10 +54,10 @@ namespace fusedrive
         gdrive_xfer_free(pTransfer);
 
         bool success = false;
-        if (pBuf != NULL && pBuf->gdrive_dlbuf_get_httpresp() < 400)
+        if (pBuf != NULL && pBuf->getHttpResponse() < 400)
         {
             // Response was good, try extracting the data.
-            Json jsonObj(pBuf->gdrive_dlbuf_get_data());
+            Json jsonObj(pBuf->getData());
             int newNextChangeId = 
                     jsonObj.getInt64("largestChangeId", true, success) + 1;
             if (success)
@@ -146,10 +146,10 @@ namespace fusedrive
 
 
         int returnVal = -1;
-        if (pBuf != NULL && pBuf->gdrive_dlbuf_get_httpresp() < 400)
+        if (pBuf != NULL && pBuf->getHttpResponse() < 400)
         {
             // Response was good, try extracting the data.
-            Json jsonObj(pBuf->gdrive_dlbuf_get_data());
+            Json jsonObj(pBuf->getData());
             if (jsonObj.isValid())
             {
                 // Update or remove cached data for each item in the "items" array.

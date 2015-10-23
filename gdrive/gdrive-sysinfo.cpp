@@ -189,10 +189,10 @@ static int gdrive_sysinfo_update(Gdrive& gInfo, Gdrive_Sysinfo* pDest)
     gdrive_xfer_free(pTransfer);
     
     int returnVal = -1;
-    if (pBuf != NULL && pBuf->gdrive_dlbuf_get_httpresp() < 400)
+    if (pBuf != NULL && pBuf->getHttpResponse() < 400)
     {
         // Response was good, try extracting the data.
-        Json jsonObj(pBuf->gdrive_dlbuf_get_data());
+        Json jsonObj(pBuf->getData());
         if (jsonObj.isValid())
         {
             returnVal = gdrive_sysinfo_fill_from_json(pDest, jsonObj);
