@@ -24,7 +24,7 @@
 //extern "C" {
 //#endif
     
-#include "gdrive-download-buffer.hpp"
+#include "DownloadBuffer.hpp"
 #include "Gdrive.hpp"
     
 #include <sys/types.h>
@@ -312,7 +312,7 @@ int gdrive_xfer_add_header(Gdrive_Transfer* pTransfer, const char* header);
  *      the transfer. The caller is responsible for passing the returned pointer
  *      to gdrive_dlbuf_free().
  */
-struct Gdrive_Download_Buffer* gdrive_xfer_execute(fusedrive::Gdrive& gInfo, Gdrive_Transfer* pTransfer);
+fusedrive::DownloadBuffer* gdrive_xfer_execute(fusedrive::Gdrive& gInfo, Gdrive_Transfer* pTransfer);
 
 
 //#ifdef	__cplusplus

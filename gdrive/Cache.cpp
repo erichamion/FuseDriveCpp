@@ -50,24 +50,23 @@ namespace fusedrive
             gdrive_xfer_free(pTransfer);
             throw new exception();
         }
-        Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(mGInfo, pTransfer);
+        DownloadBuffer* pBuf = gdrive_xfer_execute(mGInfo, pTransfer);
         gdrive_xfer_free(pTransfer);
 
         bool success = false;
-        if (pBuf != NULL && gdrive_dlbuf_get_httpresp(pBuf) < 400)
+        if (pBuf != NULL && pBuf->gdrive_dlbuf_get_httpresp() < 400)
         {
             // Response was good, try extracting the data.
-            Json jsonObj(gdrive_dlbuf_get_data(pBuf));
+            Json jsonObj(pBuf->gdrive_dlbuf_get_data());
             int newNextChangeId = 
-                    jsonObj.getInt64("largestChangeId", true, 
-                    success) + 1;
+                    jsonObj.getInt64("largestChangeId", true, success) + 1;
             if (success)
             {
                 mNextChangeId = newNextChangeId;
             }
         }
-
-        gdrive_dlbuf_free(pBuf);
+        delete pBuf;
+        
         if (!success)
         {
             // Some error occurred.
@@ -142,15 +141,15 @@ namespace fusedrive
             // Error
             gdrive_xfer_free(pTransfer);
         }
-        Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(mGInfo,pTransfer);
+        DownloadBuffer* pBuf = gdrive_xfer_execute(mGInfo,pTransfer);
         gdrive_xfer_free(pTransfer);
 
 
         int returnVal = -1;
-        if (pBuf != NULL && gdrive_dlbuf_get_httpresp(pBuf) < 400)
+        if (pBuf != NULL && pBuf->gdrive_dlbuf_get_httpresp() < 400)
         {
             // Response was good, try extracting the data.
-            Json jsonObj(gdrive_dlbuf_get_data(pBuf));
+            Json jsonObj(pBuf->gdrive_dlbuf_get_data());
             if (jsonObj.isValid())
             {
                 // Update or remove cached data for each item in the "items" array.
@@ -229,11 +228,11 @@ namespace fusedrive
                 returnVal = success ? 0 : -1;
             }
         }
+        delete pBuf;
 
         // Reset the last updated time
         mLastUpdateTime = time(NULL);
 
-        gdrive_dlbuf_free(pBuf);
         return returnVal;
     }
 

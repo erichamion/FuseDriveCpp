@@ -185,21 +185,21 @@ static int gdrive_sysinfo_update(Gdrive& gInfo, Gdrive_Sysinfo* pDest)
     }
     
     // Do the transfer.
-    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
+    DownloadBuffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
     gdrive_xfer_free(pTransfer);
     
     int returnVal = -1;
-    if (pBuf != NULL && gdrive_dlbuf_get_httpresp(pBuf) < 400)
+    if (pBuf != NULL && pBuf->gdrive_dlbuf_get_httpresp() < 400)
     {
         // Response was good, try extracting the data.
-        Json jsonObj(gdrive_dlbuf_get_data(pBuf));
+        Json jsonObj(pBuf->gdrive_dlbuf_get_data());
         if (jsonObj.isValid())
         {
             returnVal = gdrive_sysinfo_fill_from_json(pDest, jsonObj);
         }
     }
     
-    gdrive_dlbuf_free(pBuf);
+    delete pBuf;
     
     return returnVal;
 }

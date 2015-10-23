@@ -20,7 +20,7 @@
 
 #include "gdrive-transfer.hpp"
 #include "gdrive-util.h"
-#include "gdrive-download-buffer.hpp"
+#include "DownloadBuffer.hpp"
     
 #include <curl/curl.h>
 

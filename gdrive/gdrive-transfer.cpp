@@ -179,7 +179,7 @@ int gdrive_xfer_add_header(Gdrive_Transfer* pTransfer, const char* header)
     return (pTransfer->pHeaders == NULL);
 }
 
-Gdrive_Download_Buffer* gdrive_xfer_execute(Gdrive& gInfo, Gdrive_Transfer* pTransfer)
+DownloadBuffer* gdrive_xfer_execute(Gdrive& gInfo, Gdrive_Transfer* pTransfer)
 {
     if (pTransfer->url == NULL)
     {
@@ -286,27 +286,26 @@ Gdrive_Download_Buffer* gdrive_xfer_execute(Gdrive& gInfo, Gdrive_Transfer* pTra
     curl_easy_setopt(curlHandle, CURLOPT_HTTPHEADER, pTransfer->pHeaders);
     
     
-    Gdrive_Download_Buffer* pBuf;
-    pBuf = gdrive_dlbuf_create((pTransfer->destFile == NULL) ? 512 : 0, 
-                               pTransfer->destFile
-            );
-    if (pBuf == NULL)
+    DownloadBuffer* pBuf;
+    try
+    {
+        pBuf = new DownloadBuffer(gInfo, pTransfer->destFile);
+    }
+    catch (const std::exception& e)
     {
         // Memory error.
         curl_easy_cleanup(curlHandle);
         return NULL;
     }
     
-    gdrive_dlbuf_download_with_retry(gInfo, pBuf, curlHandle, 
-                                     pTransfer->retryOnAuthError, 
-                                     0, GDRIVE_RETRY_LIMIT
-            );
+    pBuf->gdrive_dlbuf_download_with_retry(curlHandle, 
+            pTransfer->retryOnAuthError, GDRIVE_RETRY_LIMIT);
     curl_easy_cleanup(curlHandle);
     
-    if (!gdrive_dlbuf_get_success(pBuf))
+    if (!pBuf->gdrive_dlbuf_get_success())
     {
         // Download failure
-        gdrive_dlbuf_free(pBuf);
+        delete pBuf;
         return NULL;
     }
     

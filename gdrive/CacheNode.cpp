@@ -66,16 +66,16 @@ namespace fusedrive
                 return NULL;
             }
             gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
-            Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
+            DownloadBuffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
             gdrive_xfer_free(pTransfer);
-            if (!pBuf || gdrive_dlbuf_get_httpresp(pBuf) >= 400)
+            if (!pBuf || pBuf->gdrive_dlbuf_get_httpresp() >= 400)
             {
                 // Download or request error
-                free(pBuf);
+                delete pBuf;
                 return NULL;
             }
-            Json jsonObj(gdrive_dlbuf_get_data(pBuf));
-            gdrive_dlbuf_free(pBuf);
+            Json jsonObj(pBuf->gdrive_dlbuf_get_data());
+            delete pBuf;
             if (!jsonObj.isValid())
             {
                 // Couldn't convert network response to JSON

@@ -316,15 +316,15 @@ namespace fusedrive
         gdrive_xfer_set_uploadcallback(pTransfer, uploadCallback, this);
 
         // Do the transfer
-        Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(mGInfo, pTransfer);
+        DownloadBuffer* pBuf = gdrive_xfer_execute(mGInfo, pTransfer);
         gdrive_xfer_free(pTransfer);
-        int returnVal = (pBuf == NULL || gdrive_dlbuf_get_httpresp(pBuf) >= 400);
+        int returnVal = (pBuf == NULL || pBuf->gdrive_dlbuf_get_httpresp() >= 400);
         if (returnVal == 0)
         {
             // Success. Clear the dirty flag
             mCacheNode.setDirty(false);
         }
-        gdrive_dlbuf_free(pBuf);
+        delete pBuf;
         return returnVal;
     }
 
@@ -615,20 +615,20 @@ namespace fusedrive
         gdrive_xfer_set_body(pTransfer, uploadResourceStr.c_str());
 
         // Do the transfer
-        Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
+        DownloadBuffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
         gdrive_xfer_free(pTransfer);
 
-        if (pBuf == NULL || gdrive_dlbuf_get_httpresp(pBuf) >= 400)
+        if (pBuf == NULL || pBuf->gdrive_dlbuf_get_httpresp() >= 400)
         {
             // Transfer was unsuccessful
             error = EIO;
-            gdrive_dlbuf_free(pBuf);
+            delete pBuf;
             return NULL;
         }
 
         // Extract the file ID from the returned resource
-        Json jsonObj(gdrive_dlbuf_get_data(pBuf));
-        gdrive_dlbuf_free(pBuf);
+        Json jsonObj(pBuf->gdrive_dlbuf_get_data());
+        delete pBuf;
         if (!jsonObj.isValid())
         {
             // Either memory error, or couldn't convert the response to JSON.

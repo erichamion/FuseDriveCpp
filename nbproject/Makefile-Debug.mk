@@ -40,6 +40,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/fuse-drive.o \
 	${OBJECTDIR}/gdrive/Cache.o \
 	${OBJECTDIR}/gdrive/CacheNode.o \
+	${OBJECTDIR}/gdrive/DownloadBuffer.o \
 	${OBJECTDIR}/gdrive/FileIdCacheNode.o \
 	${OBJECTDIR}/gdrive/Fileinfo.o \
 	${OBJECTDIR}/gdrive/Gdrive.o \
@@ -105,6 +106,11 @@ ${OBJECTDIR}/gdrive/CacheNode.o: gdrive/CacheNode.cpp
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/CacheNode.o gdrive/CacheNode.cpp
+
+${OBJECTDIR}/gdrive/DownloadBuffer.o: gdrive/DownloadBuffer.cpp 
+	${MKDIR} -p ${OBJECTDIR}/gdrive
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/DownloadBuffer.o gdrive/DownloadBuffer.cpp
 
 ${OBJECTDIR}/gdrive/FileIdCacheNode.o: gdrive/FileIdCacheNode.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive

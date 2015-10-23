@@ -268,11 +268,11 @@ int gdrive_fcontents_fill_chunk(Gdrive& gInfo, Gdrive_File_Contents* pContents,
     rewind(pContents->fh);
     
     // Perform the transfer
-    Gdrive_Download_Buffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
+    DownloadBuffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
     gdrive_xfer_free(pTransfer);
     
-    bool success = (pBuf != NULL && gdrive_dlbuf_get_httpresp(pBuf) < 400);
-    gdrive_dlbuf_free(pBuf);
+    bool success = (pBuf != NULL && pBuf->gdrive_dlbuf_get_httpresp() < 400);
+    delete pBuf;
     if (success)
     {
         pContents->start = start;
