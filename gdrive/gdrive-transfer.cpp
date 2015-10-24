@@ -229,7 +229,7 @@ DownloadBuffer* gdrive_xfer_execute(Gdrive& gInfo, Gdrive_Transfer* pTransfer)
     // curl handle.
     const char* fullUrl = NULL;
     std::string tmpStr = pTransfer->pQuery ?
-        pTransfer->pQuery->gdrive_query_assemble(pTransfer->url) :
+        pTransfer->pQuery->assemble(pTransfer->url) :
         pTransfer->url;
     fullUrl = tmpStr.c_str();
     if (fullUrl == NULL)
@@ -260,7 +260,7 @@ DownloadBuffer* gdrive_xfer_execute(Gdrive& gInfo, Gdrive_Transfer* pTransfer)
     else if (pTransfer->pPostData != NULL)
     {
         std::string tmpStr = 
-                pTransfer->pPostData->gdrive_query_assemble_as_post_data();
+                pTransfer->pPostData->assembleAsPostData();
         const char* postData = tmpStr.c_str();
         if (postData == NULL)
         {
@@ -328,7 +328,7 @@ static int gdrive_xfer_add_query_or_post(Gdrive& gInfo, HttpQuery** ppQuery,
                                          const char* field, const char* value)
 {
     *ppQuery = *ppQuery ? 
-        &(*ppQuery)->gdrive_query_add(field, value) :
+        &(*ppQuery)->add(field, value) :
         new HttpQuery(gInfo, field, value);
     return (*ppQuery == NULL);
 }

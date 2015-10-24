@@ -11,7 +11,7 @@
 #include "GdriveEnums.hpp"
 
 #include "FileinfoArray.hpp"
-#include "gdrive-sysinfo.hpp"
+#include "Sysinfo.hpp"
 #include "Cache.hpp"
 //#include "GdriveFile.hpp"
 
@@ -21,6 +21,7 @@
 #include "gdrive-transfer.hpp"
 #include "gdrive-util.h"
 #include "DownloadBuffer.hpp"
+
     
 #include <curl/curl.h>
 
@@ -81,6 +82,8 @@ namespace fusedrive
         int addParent(const std::string& fileId, const std::string& parentId);
 
         int changeBasename(const std::string& fileId, const std::string& newName);
+        
+        Sysinfo& sysinfo();
         
         ~Gdrive();
         
@@ -157,6 +160,7 @@ namespace fusedrive
         bool mNeedsCurlCleanup;
         CURL* mCurlHandle;
         Cache mCache;
+        Sysinfo mSysinfo;
         
         void initWithCurl(int access, time_t cacheTTL, 
             enum Gdrive_Interaction interactionMode, size_t minFileChunkSize);
@@ -172,8 +176,6 @@ namespace fusedrive
         int promptForAuth();
 
         int checkScopes();
-
-        std::string getRootFolderId();
 
         std::string getChildFileId(const std::string& parentId, 
             const std::string& childName);

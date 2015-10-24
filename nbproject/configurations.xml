@@ -18,8 +18,6 @@
         <itemPath>gdrive/Util.hpp</itemPath>
         <itemPath>gdrive/gdrive-client-secret-template.h</itemPath>
         <itemPath>gdrive/gdrive-client-secret.h</itemPath>
-        <itemPath>gdrive/gdrive-query.hpp</itemPath>
-        <itemPath>gdrive/gdrive-sysinfo.hpp</itemPath>
         <itemPath>gdrive/gdrive-transfer.hpp</itemPath>
         <itemPath>gdrive/gdrive-util.h</itemPath>
       </logicalFolder>
@@ -27,6 +25,7 @@
       <itemPath>gdrive/HttpQuery.hpp</itemPath>
       <itemPath>gdrive/NullStream.hpp</itemPath>
       <itemPath>Options.hpp</itemPath>
+      <itemPath>gdrive/Sysinfo.hpp</itemPath>
       <itemPath>fuse-drive.hpp</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
@@ -49,8 +48,6 @@
         <itemPath>gdrive/GdriveInfo.cpp</itemPath>
         <itemPath>gdrive/Json.cpp</itemPath>
         <itemPath>gdrive/Util.cpp</itemPath>
-        <itemPath>gdrive/gdrive-query.cpp</itemPath>
-        <itemPath>gdrive/gdrive-sysinfo.cpp</itemPath>
         <itemPath>gdrive/gdrive-transfer.cpp</itemPath>
         <itemPath>gdrive/gdrive-util.c</itemPath>
       </logicalFolder>
@@ -58,6 +55,7 @@
       <itemPath>gdrive/HttpQuery.cpp</itemPath>
       <itemPath>gdrive/NullStream.cpp</itemPath>
       <itemPath>Options.cpp</itemPath>
+      <itemPath>gdrive/Sysinfo.cpp</itemPath>
       <itemPath>fuse-drive.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
@@ -175,6 +173,10 @@
       </item>
       <item path="gdrive/NullStream.hpp" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="gdrive/Sysinfo.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/Sysinfo.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="gdrive/Util.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/Util.hpp" ex="false" tool="3" flavor2="0">
@@ -185,14 +187,6 @@
             flavor2="0">
       </item>
       <item path="gdrive/gdrive-client-secret.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-query.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-query.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-sysinfo.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-sysinfo.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/gdrive-transfer.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -285,6 +279,10 @@
       </item>
       <item path="gdrive/NullStream.hpp" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="gdrive/Sysinfo.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/Sysinfo.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="gdrive/Util.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/Util.hpp" ex="false" tool="3" flavor2="0">
@@ -295,14 +293,6 @@
             flavor2="0">
       </item>
       <item path="gdrive/gdrive-client-secret.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-query.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-query.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-sysinfo.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-sysinfo.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/gdrive-transfer.cpp" ex="false" tool="1" flavor2="0">
       </item>

@@ -15,9 +15,9 @@ using namespace std;
 namespace fusedrive
 {
     HttpQuery::HttpQuery(Gdrive& gInfo, const string& field, const string& value)
-    : gInfo(gInfo)
+    : mGInfo(gInfo)
     {
-        pNext = NULL;
+        mpNext = NULL;
         
         // Need to URL-escape the field and value
         CURL* curlHandle = gInfo.getCurlHandle();
@@ -28,52 +28,52 @@ namespace fusedrive
         }
         // If curl_easy_escape fails, it returns NULL. Assigning NULL
         // pointer to a string will throw an exception.
-        this->field = curl_easy_escape(curlHandle, field.c_str(), 0);
-        this->value = curl_easy_escape(curlHandle, value.c_str(), 0);
+        this->mField = curl_easy_escape(curlHandle, field.c_str(), 0);
+        this->mValue = curl_easy_escape(curlHandle, value.c_str(), 0);
         curl_easy_cleanup(curlHandle);
     }
     
     HttpQuery::~HttpQuery()
     {
         // Free the rest of the list
-        if (pNext)
+        if (mpNext)
         {
-            delete pNext;
+            delete mpNext;
         }
         
         // Nothing else to do here
     }
 
-    HttpQuery& HttpQuery::gdrive_query_add(const string& field, const string& value)
+    HttpQuery& HttpQuery::add(const string& field, const string& value)
     {
         // Add a new empty Gdrive_Query to the end of the list (unless the first
         // one is already empty, as it will be if we just created it).
         HttpQuery* pLast = this;
         
-        while (pLast->pNext != NULL)
+        while (pLast->mpNext != NULL)
         {
-            pLast = pLast->pNext;
+            pLast = pLast->mpNext;
         }
-        pLast->pNext = new HttpQuery(gInfo, field, value);
+        pLast->mpNext = new HttpQuery(mGInfo, field, value);
         
         return *this;
     }
 
-    string HttpQuery::gdrive_query_assemble(const string& url)
+    string HttpQuery::assemble(const string& url)
     {
         stringstream returnStream;
-        gdrive_query_assemble_internal(&url, returnStream);
+        assembleInternal(&url, returnStream);
         return returnStream.str();
     }
     
-    std::string HttpQuery::gdrive_query_assemble_as_post_data()
+    std::string HttpQuery::assembleAsPostData()
     {
         stringstream returnStream;
-        gdrive_query_assemble_internal(NULL, returnStream);
+        assembleInternal(NULL, returnStream);
         return returnStream.str();
     }
     
-    void HttpQuery::gdrive_query_assemble_internal(const std::string* pUrl, 
+    void HttpQuery::assembleInternal(const std::string* pUrl, 
             std::stringstream& outStream)
     {
 //        // If there is a url, allow for its length plus the '?' character (or the
@@ -154,13 +154,13 @@ namespace fusedrive
 //                strcat(result, "=");
 //                strcat(result, pCurrentQuery->value);
 //            }
-            outStream << pCurrentQuery->field << '=' << pCurrentQuery->value;
-            if (pCurrentQuery->pNext)
+            outStream << pCurrentQuery->mField << '=' << pCurrentQuery->mValue;
+            if (pCurrentQuery->mpNext)
             {
 //                strcat(result, "&");
                 outStream << '&';
             }
-            pCurrentQuery = pCurrentQuery->pNext;
+            pCurrentQuery = pCurrentQuery->mpNext;
         } while (pCurrentQuery);
 
     }

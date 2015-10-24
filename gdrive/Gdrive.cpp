@@ -47,7 +47,7 @@ namespace fusedrive
             size_t minFileChunkSize, int maxChunksPerFile, bool initCurl) 
     : mMaxChunks(maxChunksPerFile), mAuthFilename(authFilename), 
             mNeedsCurlCleanup(initCurl), mCurlHandle(NULL), 
-            mCache(*this, cacheTTL)
+            mCache(*this, cacheTTL), mSysinfo(*this)
     {
         if (initCurl)
         {
@@ -192,7 +192,7 @@ namespace fusedrive
         string result = string();
         if (path.compare("/") == 0)
         {
-            result = getRootFolderId();
+            result = mSysinfo.gdrive_sysinfo_get_rootid();
             if (!result.empty())
             {
                 // Add to the fileId cache.
@@ -683,6 +683,11 @@ namespace fusedrive
             -EIO : 0;
         delete pBuf;
         return returnVal;
+    }
+    
+    Sysinfo& Gdrive::sysinfo()
+    {
+        return mSysinfo;
     }
 
     Gdrive::~Gdrive() 
@@ -1300,12 +1305,12 @@ namespace fusedrive
         }
 
         HttpQuery query(*this, "response_type", "code");
-        query.gdrive_query_add("client_id", GDRIVE_CLIENT_ID)
-            .gdrive_query_add("redirect_uri", GDRIVE_REDIRECT_URI)
-            .gdrive_query_add("scope", scopeStr)
-            .gdrive_query_add("include_granted_scopes", "true");
+        query.add("client_id", GDRIVE_CLIENT_ID)
+            .add("redirect_uri", GDRIVE_REDIRECT_URI)
+            .add("scope", scopeStr)
+            .add("include_granted_scopes", "true");
 
-        string authUrl = query.gdrive_query_assemble(GDRIVE_URL_AUTH_NEWAUTH);
+        string authUrl = query.assemble(GDRIVE_URL_AUTH_NEWAUTH);
 
         // Prompt the user.
         puts("This program needs access to a Google Drive account.\n"
@@ -1438,11 +1443,6 @@ namespace fusedrive
 
         // If we made it through to here, return success.
         return 0;
-    }
-
-    string Gdrive::getRootFolderId()
-    {
-        return string(gdrive_sysinfo_get_rootid(*this));
     }
 
     string Gdrive::getChildFileId(const std::string& parentId, 

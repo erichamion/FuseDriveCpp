@@ -21,22 +21,22 @@ namespace fusedrive
         
         virtual ~HttpQuery();
         
-        HttpQuery& gdrive_query_add(const std::string& field, 
+        HttpQuery& add(const std::string& field, 
             const std::string& value);
 
-        std::string gdrive_query_assemble(const std::string& url);
+        std::string assemble(const std::string& url);
         
-        std::string gdrive_query_assemble_as_post_data();
+        std::string assembleAsPostData();
 
     private:
-        std::string field;
-        std::string value;
-        HttpQuery* pNext;
-        Gdrive& gInfo;
+        std::string mField;
+        std::string mValue;
+        HttpQuery* mpNext;
+        Gdrive& mGInfo;
         
         HttpQuery(const HttpQuery& orig);
         
-        void gdrive_query_assemble_internal(const std::string* pUrl, 
+        void assembleInternal(const std::string* pUrl, 
             std::stringstream& outStr);
         
     };
