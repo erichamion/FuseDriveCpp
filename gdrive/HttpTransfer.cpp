@@ -15,85 +15,82 @@ using namespace std;
 namespace fusedrive
 {
     
-    const int HttpTransfer::GDRIVE_RETRY_LIMIT = 5;
+    const int HttpTransfer::RETRY_LIMIT = 5;
 
     HttpTransfer::HttpTransfer(Gdrive& gInfo)
     : mGInfo(gInfo)
     {
-        requestType = (Gdrive_Request_Type) 0;
-        retryOnAuthError = true;
-        pQuery = NULL;
-        pPostData = NULL;
-        body = NULL;
-        pHeaders = gdrive_get_authbearer_header(NULL);
-        destFile = NULL;
-        uploadCallback = NULL;
-        userdata = NULL;
-        uploadOffset = 0;
+        mRequestType = (Request_Type) 0;
+        mRetryOnAuthError = true;
+        mpQuery = NULL;
+        mpPostData = NULL;
+        mpBody = NULL;
+        mpHeaders = NULL;
+        mDestFile = NULL;
+        mUploadCallback = NULL;
+        mUserdata = NULL;
+        mUploadOffset = 0;
         mpResultBuf = NULL;
+        
+        getAuthbearerHeader();
     }
         
     HttpTransfer::~HttpTransfer()
     {
         if (mpResultBuf) delete mpResultBuf;
-        if (pQuery) delete pQuery;
-        if (pPostData) delete pPostData;
-        if (pHeaders) curl_slist_free_all(pHeaders);
+        if (mpQuery) delete mpQuery;
+        if (mpPostData) delete mpPostData;
+        if (mpHeaders) curl_slist_free_all(mpHeaders);
     }
 
-    Gdrive& HttpTransfer::gdrive_xfer_get_gdrive()
+    HttpTransfer& HttpTransfer::setRequestType(enum Request_Type requestType)
     {
-        return mGInfo;
-    }
-
-    HttpTransfer& HttpTransfer::gdrive_xfer_set_requesttype(enum Gdrive_Request_Type requestType)
-    {
-        this->requestType = requestType;
+        this->mRequestType = requestType;
         return *this;
     }
 
-    HttpTransfer& HttpTransfer::gdrive_xfer_set_retryonautherror(bool retry)
+    HttpTransfer& HttpTransfer::setRetryOnAuthError(bool retry)
     {
-        retryOnAuthError = retry;
+        mRetryOnAuthError = retry;
         return *this;
     }
 
-    HttpTransfer& HttpTransfer::gdrive_xfer_set_url(const std::string& url)
+    HttpTransfer& HttpTransfer::setUrl(const std::string& url)
     {
-        this->url = url;
+        this->mUrl = url;
         return *this;
     }
 
-    HttpTransfer& HttpTransfer::gdrive_xfer_set_destfile(FILE* destFile)
+    HttpTransfer& HttpTransfer::setDestfile(FILE* destFile)
     {
-        this->destFile = destFile;
+        this->mDestFile = destFile;
         return *this;
     }
 
-    HttpTransfer& HttpTransfer::gdrive_xfer_set_body(const std::string& body)
+    HttpTransfer& HttpTransfer::setBody(const std::string& body)
     {
-        this->body = &body;
+        this->mpBody = &body;
         return *this;
     }
 
-    HttpTransfer& HttpTransfer::gdrive_xfer_set_uploadcallback(gdrive_xfer_upload_callback callback, 
+    HttpTransfer& HttpTransfer::setUploadCallback(uploadCallback callback, 
                                         void* userdata)
     {
-        this->uploadCallback = callback;
-        this->uploadOffset = 0;
-        this->userdata = userdata;
+        this->mUploadCallback = callback;
+        this->mUploadOffset = 0;
+        this->mUserdata = userdata;
         return *this;
     }
 
-    HttpTransfer& HttpTransfer::gdrive_xfer_add_query(const std::string& field, 
+    HttpTransfer& HttpTransfer::addQuery(const std::string& field, 
         const std::string& value)
     {
         //return gdrive_xfer_add_query_or_post(&pQuery, field, value);
         
-        pQuery = pQuery ? 
-            &pQuery->add(field, value) : 
+        mpQuery = mpQuery ? 
+            &mpQuery->add(field, value) : 
             new HttpQuery(mGInfo, field, value);
-        if (!pQuery)
+        if (!mpQuery)
         {
             throw new exception();
         }
@@ -101,15 +98,15 @@ namespace fusedrive
         return *this;
     }
 
-    HttpTransfer& HttpTransfer::gdrive_xfer_add_postfield(const std::string& field, 
+    HttpTransfer& HttpTransfer::addPostField(const std::string& field, 
         const std::string& value)
     {
         //return gdrive_xfer_add_query_or_post(&pPostData, field, value);
         
-        pPostData = pPostData ? 
-            &pPostData->add(field, value) : 
+        mpPostData = mpPostData ? 
+            &mpPostData->add(field, value) : 
             new HttpQuery(mGInfo, field, value);
-        if (!pPostData)
+        if (!mpPostData)
         {
             throw new exception();
         }
@@ -117,10 +114,10 @@ namespace fusedrive
         return *this;
     }
 
-    HttpTransfer& HttpTransfer::gdrive_xfer_add_header(const std::string& header)
+    HttpTransfer& HttpTransfer::addHeader(const std::string& header)
     {
-        pHeaders = curl_slist_append(pHeaders, header.c_str());
-        if (!pHeaders)
+        mpHeaders = curl_slist_append(mpHeaders, header.c_str());
+        if (!mpHeaders)
         {
             throw new exception();
         }
@@ -128,9 +125,9 @@ namespace fusedrive
         return *this;
     }
 
-    int HttpTransfer::gdrive_xfer_execute()
+    int HttpTransfer::execute()
     {
-        if (this->url.empty())
+        if (this->mUrl.empty())
         {
             // Invalid parameter, need at least a URL.
             return -1;
@@ -141,29 +138,29 @@ namespace fusedrive
         bool needsBody = false;
 
         // Set the request type
-        switch (this->requestType)
+        switch (this->mRequestType)
         {
-            case GDRIVE_REQUEST_GET:
+            case GET:
                 curl_easy_setopt(curlHandle, CURLOPT_HTTPGET, 1);
                 break;
 
-            case GDRIVE_REQUEST_POST:
+            case POST:
                 curl_easy_setopt(curlHandle, CURLOPT_POST, 1);
                 needsBody = true;
                 break;
 
-            case GDRIVE_REQUEST_PUT:
+            case PUT:
                 curl_easy_setopt(curlHandle, CURLOPT_UPLOAD, 1);
                 needsBody = true;
                 break;
 
-            case GDRIVE_REQUEST_PATCH:
+            case PATCH:
                 curl_easy_setopt(curlHandle, CURLOPT_POST, 1);
                 curl_easy_setopt(curlHandle, CURLOPT_CUSTOMREQUEST, "PATCH");
                 needsBody = true;
                 break;
 
-            case GDRIVE_REQUEST_DELETE:
+            case DELETE:
                 curl_easy_setopt(curlHandle, CURLOPT_HTTPGET, 1);
                 curl_easy_setopt(curlHandle, CURLOPT_CUSTOMREQUEST, "DELETE");
                 break;
@@ -176,9 +173,9 @@ namespace fusedrive
 
         // Append any query parameters to the URL, and add the full URL to the
         // curl handle.
-        std::string fullUrl = this->pQuery ?
-            this->pQuery->assemble(this->url) :
-            this->url;
+        std::string fullUrl = this->mpQuery ?
+            this->mpQuery->assemble(this->mUrl) :
+            this->mUrl;
         if (fullUrl.empty())
         {
             // Memory error or invalid URL
@@ -188,8 +185,8 @@ namespace fusedrive
         curl_easy_setopt(curlHandle, CURLOPT_URL, fullUrl.c_str());
         
         // Set simple POST fields, if applicable
-        if (needsBody && this->body == NULL && this->pPostData == NULL && 
-                this->uploadCallback == NULL
+        if (needsBody && this->mpBody == NULL && this->mpPostData == NULL && 
+                this->mUploadCallback == NULL
                 )
         {
             // A request type that normally has a body, but no body given. Need to
@@ -197,14 +194,14 @@ namespace fusedrive
             // http://curl.haxx.se/libcurl/c/CURLOPT_POSTFIELDS.html
             curl_easy_setopt(curlHandle, CURLOPT_POSTFIELDSIZE, 0L);
         }
-        if (this->body != NULL)
+        if (this->mpBody != NULL)
         {
             curl_easy_setopt(curlHandle, CURLOPT_POSTFIELDSIZE, -1L);
-            curl_easy_setopt(curlHandle, CURLOPT_COPYPOSTFIELDS, this->body->c_str());
+            curl_easy_setopt(curlHandle, CURLOPT_COPYPOSTFIELDS, this->mpBody->c_str());
         }
-        else if (this->pPostData != NULL)
+        else if (this->mpPostData != NULL)
         {
-            std::string postData = this->pPostData->assembleAsPostData();
+            std::string postData = this->mpPostData->assembleAsPostData();
             if (postData.empty())
             {
                 // Memory error or invalid query
@@ -216,22 +213,22 @@ namespace fusedrive
         }
 
         // Set upload data callback, if applicable
-        if (this->uploadCallback != NULL)
+        if (this->mUploadCallback != NULL)
         {
-            gdrive_xfer_add_header("Transfer-Encoding: chunked");
+            addHeader("Transfer-Encoding: chunked");
             curl_easy_setopt(curlHandle, CURLOPT_READFUNCTION, 
-                    gdrive_xfer_upload_callback_internal);
+                    uploadCallbackInternal);
             curl_easy_setopt(curlHandle, CURLOPT_READDATA, this);
         }
 
 
 
         // Set headers
-        curl_easy_setopt(curlHandle, CURLOPT_HTTPHEADER, this->pHeaders);
+        curl_easy_setopt(curlHandle, CURLOPT_HTTPHEADER, this->mpHeaders);
 
         try
         {
-            mpResultBuf = new DownloadBuffer(mGInfo, this->destFile);
+            mpResultBuf = new DownloadBuffer(mGInfo, this->mDestFile);
         }
         catch (const std::exception& e)
         {
@@ -240,8 +237,8 @@ namespace fusedrive
             return -1;
         }
 
-        mpResultBuf->downloadWithRetry(curlHandle, this->retryOnAuthError, 
-                GDRIVE_RETRY_LIMIT);
+        mpResultBuf->downloadWithRetry(curlHandle, this->mRetryOnAuthError, 
+                RETRY_LIMIT);
         curl_easy_cleanup(curlHandle);
         
         if (!mpResultBuf->wasSuccessful())
@@ -302,14 +299,14 @@ namespace fusedrive
 //        return (*ppQuery == NULL);
 //    }
 
-    size_t HttpTransfer::gdrive_xfer_upload_callback_internal(char* buffer, size_t size, 
+    size_t HttpTransfer::uploadCallbackInternal(char* buffer, size_t size, 
             size_t nitems, void* instream)
     {
         // Get the transfer struct.
         HttpTransfer* pTransfer = (HttpTransfer*) instream;
-        size_t bytesTransferred = pTransfer->uploadCallback(pTransfer->mGInfo, 
-                buffer, pTransfer->uploadOffset, size * nitems, 
-                pTransfer->userdata);
+        size_t bytesTransferred = pTransfer->mUploadCallback(pTransfer->mGInfo, 
+                buffer, pTransfer->mUploadOffset, size * nitems, 
+                pTransfer->mUserdata);
         if (bytesTransferred == (size_t)(-1))
         {
             // Upload error
@@ -317,19 +314,18 @@ namespace fusedrive
         }
         // else succeeded
 
-        pTransfer->uploadOffset += bytesTransferred;
+        pTransfer->mUploadOffset += bytesTransferred;
         return bytesTransferred;
     }
 
-    struct curl_slist* 
-    HttpTransfer::gdrive_get_authbearer_header(struct curl_slist* pHeaders)
+    void HttpTransfer::getAuthbearerHeader()
     {
         const string& token = mGInfo.getAccessToken();
 
         // If we don't have any access token yet, do nothing
         if (token.empty())
         {
-            return pHeaders;
+            return;
         }
 
         // First form a string with the required text and the access token.
@@ -337,9 +333,7 @@ namespace fusedrive
         header += token;
 
         // Copy the string into a curl_slist for use in headers.
-        struct curl_slist* returnVal = 
-            curl_slist_append(pHeaders, header.c_str());
-        return returnVal;
+        mpHeaders = curl_slist_append(mpHeaders, header.c_str());
     }
 
 }

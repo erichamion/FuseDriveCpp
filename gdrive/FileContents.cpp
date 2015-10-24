@@ -153,15 +153,15 @@ namespace fusedrive
     {
         Gdrive& gInfo = mCacheNode.getGdrive();
         HttpTransfer xfer(gInfo);
-        xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET);
+        xfer.setRequestType(HttpTransfer::GET);
 
         // Construct the base URL in the form of "<GDRIVE_URL_FILES>/<fileId>".
         string fileUrl(Gdrive::GDRIVE_URL_FILES);
         fileUrl += "/";
         fileUrl += fileId;
-        xfer.gdrive_xfer_set_url(fileUrl)
-            .gdrive_xfer_add_query("updateViewedDate", "false")
-            .gdrive_xfer_add_query("alt", "media");
+        xfer.setUrl(fileUrl)
+            .addQuery("updateViewedDate", "false")
+            .addQuery("alt", "media");
 
         // Add the Range header.  Per 
         // http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.35 it is
@@ -171,9 +171,9 @@ namespace fusedrive
         stringstream rangeHeader;
         rangeHeader << "Range: bytes=" << start << '-' << end;
         
-        xfer.gdrive_xfer_add_header(rangeHeader.str())
+        xfer.addHeader(rangeHeader.str())
             // Set the destination file to the current chunk's handle
-            .gdrive_xfer_set_destfile(mFh);
+            .setDestfile(mFh);
 
         // Make sure the file position is at the start and any stream errors are
         // cleared (this should be redundant, since we should normally have a newly
@@ -181,7 +181,7 @@ namespace fusedrive
         rewind(mFh);
 
         // Perform the transfer
-        if (xfer.gdrive_xfer_execute() != 0)
+        if (xfer.execute() != 0)
         {
             return -1;
         }

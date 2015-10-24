@@ -56,10 +56,10 @@ namespace fusedrive
             url << Gdrive::GDRIVE_URL_FILES <<  "/" << fileId;
             HttpTransfer xfer(gInfo);
             
-            xfer.gdrive_xfer_set_url(url.str())
-                .gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET);
+            xfer.setUrl(url.str())
+                .setRequestType(HttpTransfer::GET);
             
-            if (xfer.gdrive_xfer_execute() != 0)
+            if (xfer.execute() != 0)
             {
                 return NULL;
             }

@@ -114,11 +114,11 @@ namespace fusedrive
         HttpTransfer xfer(mGInfo);
         
         int result =
-            xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET)
-                .gdrive_xfer_set_url(Gdrive::GDRIVE_URL_ABOUT)
-                .gdrive_xfer_add_query("includeSubscribed", "false")
-                .gdrive_xfer_add_query("fields", fieldString)
-                .gdrive_xfer_execute();
+            xfer.setRequestType(HttpTransfer::GET)
+                .setUrl(Gdrive::GDRIVE_URL_ABOUT)
+                .addQuery("includeSubscribed", "false")
+                .addQuery("fields", fieldString)
+                .execute();
 
         int returnVal = -1;
         if (result == 0 && xfer.getHttpResponse() < 400)

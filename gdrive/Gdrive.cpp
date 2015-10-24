@@ -111,13 +111,13 @@ namespace fusedrive
 
         // Prepare the network request
         HttpTransfer xfer(*this);
-        xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET)
-            .gdrive_xfer_set_url(GDRIVE_URL_FILES)
-            .gdrive_xfer_add_query("q", filter)
-            .gdrive_xfer_add_query("fields", "items(title,id,mimeType)");
+        xfer.setRequestType(HttpTransfer::GET)
+            .setUrl(GDRIVE_URL_FILES)
+            .addQuery("q", filter)
+            .addQuery("fields", "items(title,id,mimeType)");
 
         // Send the network request
-        if (xfer.gdrive_xfer_execute() != 0)
+        if (xfer.execute() != 0)
         {
             // Request failed
             return -1;
@@ -261,7 +261,7 @@ namespace fusedrive
         // Prepare the request
         HttpTransfer xfer(*this);
         
-        xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET);
+        xfer.setRequestType(HttpTransfer::GET);
 
         // Add the URL.
         // String to hold the url.  Add 2 to the end to account for the '/' before
@@ -270,14 +270,14 @@ namespace fusedrive
         baseUrl += "/";
         baseUrl += fileId;
         
-        xfer.gdrive_xfer_set_url(baseUrl)
-            .gdrive_xfer_add_query("fields", "title,id,mimeType,fileSize,"
+        xfer.setUrl(baseUrl)
+            .addQuery("fields", "title,id,mimeType,fileSize,"
                                     "createdDate,modifiedDate,"
                                     "lastViewedByMeDate,parents(id),"
                                     "userPermission");
 
         // Perform the request
-        if (xfer.gdrive_xfer_execute() != 0)
+        if (xfer.execute() != 0)
         {
             // Download error
             throw new exception();
@@ -478,10 +478,10 @@ namespace fusedrive
 
         HttpTransfer xfer(*this);
         
-        xfer.gdrive_xfer_set_url(url) 
-            .gdrive_xfer_set_requesttype(GDRIVE_REQUEST_DELETE);
+        xfer.setUrl(url) 
+            .setRequestType(HttpTransfer::DELETE);
 
-        int result = xfer.gdrive_xfer_execute();
+        int result = xfer.execute();
 
         return (result != 0 || xfer.getHttpResponse() >= 400) ? -EIO : 0;
     }
@@ -508,10 +508,10 @@ namespace fusedrive
 
         HttpTransfer xfer(*this);
         
-        xfer.gdrive_xfer_set_url(url)
-            .gdrive_xfer_set_requesttype(GDRIVE_REQUEST_POST);
+        xfer.setUrl(url)
+            .setRequestType(HttpTransfer::POST);
 
-        int result = xfer.gdrive_xfer_execute();
+        int result = xfer.execute();
 
         int returnVal = (result != 0 || xfer.getHttpResponse() >= 400) ? 
             -EIO : 0;
@@ -552,12 +552,12 @@ namespace fusedrive
 
         HttpTransfer xfer(*this);
         
-        xfer.gdrive_xfer_set_url(url)
-            .gdrive_xfer_add_header("Content-Type: application/json")
-            .gdrive_xfer_set_requesttype(GDRIVE_REQUEST_POST)
-            .gdrive_xfer_set_body(body);
+        xfer.setUrl(url)
+            .addHeader("Content-Type: application/json")
+            .setRequestType(HttpTransfer::POST)
+            .setBody(body);
 
-        int result = xfer.gdrive_xfer_execute();
+        int result = xfer.execute();
 
         int returnVal = (result != 0 || xfer.getHttpResponse() >= 400) ? 
             -EIO : 0;
@@ -599,14 +599,14 @@ namespace fusedrive
         // Set up the network transfer
         HttpTransfer xfer(*this);
         
-        xfer.gdrive_xfer_set_url(url)
-            .gdrive_xfer_add_query("updateViewedDate", "false")
-            .gdrive_xfer_add_header("Content-Type: application/json")
-            .gdrive_xfer_set_body(body)
-            .gdrive_xfer_set_requesttype(GDRIVE_REQUEST_PATCH);
+        xfer.setUrl(url)
+            .addQuery("updateViewedDate", "false")
+            .addHeader("Content-Type: application/json")
+            .setBody(body)
+            .setRequestType(HttpTransfer::PATCH);
 
         // Send the network request
-        int result = xfer.gdrive_xfer_execute();
+        int result = xfer.execute();
 
         return (result != 0 || xfer.getHttpResponse() >= 400) ? -EIO : 0;
     }
@@ -828,19 +828,20 @@ namespace fusedrive
         
         // URL, header, and updateViewedDate query parameter always get added. The 
         // setModifiedDate query parameter only gets set when hasMtime is true.
-        xfer.gdrive_xfer_set_url(url.str())
-            .gdrive_xfer_add_header("Content-Type: application/json");
+        xfer.setUrl(url.str())
+            .addHeader("Content-Type: application/json");
         if (hasMtime)
         {
-            xfer.gdrive_xfer_add_query("setModifiedDate", "true");
+            xfer.addQuery("setModifiedDate", "true");
         }
-        xfer.gdrive_xfer_add_query("updateViewedDate", "false")
-            .gdrive_xfer_set_requesttype((pFileinfo != NULL) ? 
-                GDRIVE_REQUEST_PATCH : GDRIVE_REQUEST_POST)
-            .gdrive_xfer_set_body(uploadResourceStr);
+        xfer.addQuery("updateViewedDate", "false")
+            .setRequestType((pFileinfo != NULL) ? 
+                HttpTransfer::PATCH : 
+                HttpTransfer::POST)
+            .setBody(uploadResourceStr);
 
         // Do the transfer
-        int result = xfer.gdrive_xfer_execute();
+        int result = xfer.execute();
 
         if (result != 0 || xfer.getHttpResponse() >= 400)
         {
@@ -1079,10 +1080,10 @@ namespace fusedrive
         // Prepare the network request
         HttpTransfer xfer(*this);
         
-        xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_POST)
+        xfer.setRequestType(HttpTransfer::POST)
             // We're trying to get authorization, so it doesn't make sense to retry if
             // authentication fails.
-            .gdrive_xfer_set_retryonautherror(false);
+            .setRetryOnAuthError(false);
 
         // Set up the post data. Some of the post fields depend on whether we have
         // an auth code or a refresh token, and some do not.
@@ -1091,7 +1092,7 @@ namespace fusedrive
         {
             // Converting an auth code into auth and refresh tokens.  Interpret
             // tokenString as the auth code.
-            xfer.gdrive_xfer_add_postfield(GDRIVE_FIELDNAME_REDIRECTURI, 
+            xfer.addPostField(GDRIVE_FIELDNAME_REDIRECTURI, 
                     GDRIVE_REDIRECT_URI);
             tokenOrCodeField.assign(GDRIVE_FIELDNAME_CODE);
         }
@@ -1101,17 +1102,17 @@ namespace fusedrive
             // refresh token.
             tokenOrCodeField.assign(GDRIVE_FIELDNAME_REFRESHTOKEN);
         }
-        xfer.gdrive_xfer_add_postfield(tokenOrCodeField, tokenString)
-            .gdrive_xfer_add_postfield(GDRIVE_FIELDNAME_CLIENTID, 
+        xfer.addPostField(tokenOrCodeField, tokenString)
+            .addPostField(GDRIVE_FIELDNAME_CLIENTID, 
                 GDRIVE_CLIENT_ID)
-            .gdrive_xfer_add_postfield(GDRIVE_FIELDNAME_CLIENTSECRET,
+            .addPostField(GDRIVE_FIELDNAME_CLIENTSECRET,
                 GDRIVE_CLIENT_SECRET)
-            .gdrive_xfer_add_postfield(GDRIVE_FIELDNAME_GRANTTYPE, grantType)
-            .gdrive_xfer_set_url(GDRIVE_URL_AUTH_TOKEN);
+            .addPostField(GDRIVE_FIELDNAME_GRANTTYPE, grantType)
+            .setUrl(GDRIVE_URL_AUTH_TOKEN);
         
 
         // Do the transfer. 
-        if (xfer.gdrive_xfer_execute() != 0)
+        if (xfer.execute() != 0)
         {
             // There was an error sending the request and getting the response.
             return -1;
@@ -1232,11 +1233,11 @@ namespace fusedrive
         // Prepare and send the network request
         HttpTransfer xfer(*this);
         int result =
-            xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET)
-                .gdrive_xfer_set_retryonautherror(false)
-                .gdrive_xfer_set_url(GDRIVE_URL_AUTH_TOKENINFO)
-                .gdrive_xfer_add_query(GDRIVE_FIELDNAME_ACCESSTOKEN, mAccessToken)
-                .gdrive_xfer_execute();
+            xfer.setRequestType(HttpTransfer::GET)
+                .setRetryOnAuthError(false)
+                .setUrl(GDRIVE_URL_AUTH_TOKENINFO)
+                .addQuery(GDRIVE_FIELDNAME_ACCESSTOKEN, mAccessToken)
+                .execute();
         
         if (result != 0 || xfer.getHttpResponse() >= 400)
         {
@@ -1326,11 +1327,11 @@ namespace fusedrive
         HttpTransfer xfer(*this);
         
         int result =
-            xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET)
-                .gdrive_xfer_set_url(GDRIVE_URL_FILES)
-                .gdrive_xfer_add_query("q", filter)
-                .gdrive_xfer_add_query("fields", "items(id)")
-                .gdrive_xfer_execute();
+            xfer.setRequestType(HttpTransfer::GET)
+                .setUrl(GDRIVE_URL_FILES)
+                .addQuery("q", filter)
+                .addQuery("fields", "items(id)")
+                .execute();
 
         if (result != 0 || xfer.getHttpResponse() >= 400)
         {

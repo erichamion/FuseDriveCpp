@@ -35,12 +35,12 @@ namespace fusedrive
         // Prepare and send the network request
         HttpTransfer xfer(mGInfo);
         
-        xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET)
-            .gdrive_xfer_set_url(Gdrive::GDRIVE_URL_ABOUT)
-            .gdrive_xfer_add_query("includeSubscribed", "false")
-            .gdrive_xfer_add_query("fields", "largestChangeId");
+        xfer.setRequestType(HttpTransfer::GET)
+            .setUrl(Gdrive::GDRIVE_URL_ABOUT)
+            .addQuery("includeSubscribed", "false")
+            .addQuery("fields", "largestChangeId");
         
-        int result = xfer.gdrive_xfer_execute();
+        int result = xfer.execute();
         if (result != 0)
         {
             // The transfer failed
@@ -119,12 +119,12 @@ namespace fusedrive
         // Prepare the request, using the string change ID, and send it
         HttpTransfer xfer(mGInfo);
         
-        xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET)
-            .gdrive_xfer_set_url(Gdrive::GDRIVE_URL_CHANGES)
-            .gdrive_xfer_add_query("startChangeId", changeIdStream.str())
-            .gdrive_xfer_add_query("includeSubscribed", "false");
+        xfer.setRequestType(HttpTransfer::GET)
+            .setUrl(Gdrive::GDRIVE_URL_CHANGES)
+            .addQuery("startChangeId", changeIdStream.str())
+            .addQuery("includeSubscribed", "false");
         
-        int result = xfer.gdrive_xfer_execute();
+        int result = xfer.execute();
         if (result != 0)
         {
             return -1;

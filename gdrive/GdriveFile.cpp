@@ -292,12 +292,12 @@ namespace fusedrive
         HttpTransfer xfer(mGInfo);
         
         int result =
-            xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_PUT)
-                .gdrive_xfer_set_url(url.str())
-                .gdrive_xfer_add_query("uploadType", "media")
+            xfer.setRequestType(HttpTransfer::PUT)
+                .setUrl(url.str())
+                .addQuery("uploadType", "media")
                 // Set upload callback
-                .gdrive_xfer_set_uploadcallback(uploadCallback, this)
-                .gdrive_xfer_execute();
+                .setUploadCallback(uploadCallback, this)
+                .execute();
             
         int returnVal = (result != 0 || xfer.getHttpResponse() >= 400);
         if (returnVal == 0)
@@ -572,16 +572,17 @@ namespace fusedrive
         // of these can fail with an out of memory error (returning non-zero).
         if (hasMtime)
         {
-            xfer.gdrive_xfer_add_query("setModifiedDate", "true");
+            xfer.addQuery("setModifiedDate", "true");
         }
         int result =
-            xfer.gdrive_xfer_set_url(url.str())
-                .gdrive_xfer_add_header("Content-Type: application/json")
-                .gdrive_xfer_add_query("updateViewedDate", "false")
-                .gdrive_xfer_set_requesttype((pFileinfo != NULL) ? 
-                    GDRIVE_REQUEST_PATCH : GDRIVE_REQUEST_POST)
-                .gdrive_xfer_set_body(uploadResourceStr)
-                .gdrive_xfer_execute();
+            xfer.setUrl(url.str())
+                .addHeader("Content-Type: application/json")
+                .addQuery("updateViewedDate", "false")
+                .setRequestType((pFileinfo != NULL) ? 
+                    HttpTransfer::PATCH : 
+                    HttpTransfer::POST)
+                .setBody(uploadResourceStr)
+                .execute();
 
         if (result != 0 || xfer.getHttpResponse() >= 400)
         {

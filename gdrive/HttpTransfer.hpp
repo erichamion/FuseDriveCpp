@@ -20,48 +20,50 @@ namespace fusedrive
     class DownloadBuffer;
     class HttpQuery;
     
-    enum Gdrive_Request_Type
-    {
-        GDRIVE_REQUEST_GET,
-        GDRIVE_REQUEST_POST,
-        GDRIVE_REQUEST_PUT,
-        GDRIVE_REQUEST_PATCH,
-        GDRIVE_REQUEST_DELETE
-    };
     
-    typedef size_t(*gdrive_xfer_upload_callback)
-    (fusedrive::Gdrive& gInfo, char* buffer, off_t offset, size_t size, void* userdata);
+    
+    
 
     class HttpTransfer {
     public:
+        typedef size_t(*uploadCallback)
+        (Gdrive& gInfo, char* buffer, off_t offset, size_t size, void* userdata);
+        
+        enum Request_Type
+        {
+            GET,
+            POST,
+            PUT,
+            PATCH,
+            DELETE
+        };
+        
         HttpTransfer(Gdrive& gInfo);
         
         virtual ~HttpTransfer();
-        
-        Gdrive& gdrive_xfer_get_gdrive();
 
-        HttpTransfer& gdrive_xfer_set_requesttype(enum Gdrive_Request_Type requestType);
+        HttpTransfer& setRequestType(enum Request_Type requestType);
 
-        HttpTransfer& gdrive_xfer_set_retryonautherror(bool retry);
+        HttpTransfer& setRetryOnAuthError(bool retry);
 
-        HttpTransfer& gdrive_xfer_set_url(const std::string& url);
+        HttpTransfer& setUrl(const std::string& url);
 
-        HttpTransfer& gdrive_xfer_set_destfile(FILE* destFile);
+        HttpTransfer& setDestfile(FILE* destFile);
 
-        HttpTransfer& gdrive_xfer_set_body(const std::string& body);
+        HttpTransfer& setBody(const std::string& body);
 
-        HttpTransfer& gdrive_xfer_set_uploadcallback(gdrive_xfer_upload_callback callback, 
+        HttpTransfer& setUploadCallback(uploadCallback callback, 
                                             void* userdata);
 
-        HttpTransfer& gdrive_xfer_add_query(const std::string& field, 
+        HttpTransfer& addQuery(const std::string& field, 
             const std::string& value);
 
-        HttpTransfer& gdrive_xfer_add_postfield(const std::string& field, 
+        HttpTransfer& addPostField(const std::string& field, 
             const std::string& value);
 
-        HttpTransfer& gdrive_xfer_add_header(const std::string& header);
+        HttpTransfer& addHeader(const std::string& header);
 
-        int gdrive_xfer_execute();
+        int execute();
         
         long getHttpResponse() const;
 
@@ -72,30 +74,26 @@ namespace fusedrive
         bool wasSuccessful() const;
 
     private:
-        static const int GDRIVE_RETRY_LIMIT;
+        static const int RETRY_LIMIT;
         
-        enum Gdrive_Request_Type requestType;
-        bool retryOnAuthError;
-        std::string url;
-        HttpQuery* pQuery;
-        HttpQuery* pPostData;
-        const std::string* body;
-        struct curl_slist* pHeaders;
-        FILE* destFile;
-        gdrive_xfer_upload_callback uploadCallback;
-        void* userdata;
-        off_t uploadOffset;
+        enum Request_Type mRequestType;
+        bool mRetryOnAuthError;
+        std::string mUrl;
+        HttpQuery* mpQuery;
+        HttpQuery* mpPostData;
+        const std::string* mpBody;
+        struct curl_slist* mpHeaders;
+        FILE* mDestFile;
+        uploadCallback mUploadCallback;
+        void* mUserdata;
+        off_t mUploadOffset;
         DownloadBuffer* mpResultBuf;
         Gdrive& mGInfo;
         
-//        int gdrive_xfer_add_query_or_post(HttpQuery** ppQuery, 
-//            const std::string& field, const std::string& value);
+        static size_t uploadCallbackInternal(char* buffer, size_t size, 
+            size_t nitems, void* instream);
 
-        static size_t gdrive_xfer_upload_callback_internal(char* buffer, 
-            size_t size, size_t nitems, void* instream);
-
-        struct curl_slist* 
-        gdrive_get_authbearer_header(struct curl_slist* pHeaders);
+        void getAuthbearerHeader();
         
         HttpTransfer(const HttpTransfer& orig);
         
