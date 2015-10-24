@@ -379,32 +379,24 @@ namespace fusedrive
         assert(!path.empty() && path[0] == '/');
             
         // Separate path into basename and parent folder.
-        Gdrive_Path* pGpath = gdrive_path_create(path.c_str());
-        if (pGpath == NULL)
-        {
-            // Memory error
-            error = ENOMEM;
-            return "";
-        }
-        const char* folderName = gdrive_path_get_dirname(pGpath);
-        const char* filename = gdrive_path_get_basename(pGpath);
+        Path gpath(path);
+        const string& folderName = gpath.getDirname();
+        const string& filename = gpath.getBasename();
 
         // Check basename for validity (non-NULL, not a directory link such as "..")
-        if (filename == NULL || filename[0] == '/' || 
-                strcmp(filename, ".") == 0 || strcmp(filename, "..") == 0)
+        if (filename.empty() || filename[0] == '/' || 
+                filename == "." || filename == "..")
         {
             error = EISDIR;
-            gdrive_path_free(pGpath);
             return "";
         }
 
         // Check folder for validity (non-NULL, starts with '/', and is an existing
         // folder)
-        if (folderName == NULL || folderName[0] != '/')
+        if (folderName.empty() || folderName[0] != '/')
         {
             // Path wasn't in the form of an absolute path
             error = ENOTDIR;
-            gdrive_path_free(pGpath);
             return "";
         }
         string parentId = getFileIdFromPath(folderName);
@@ -412,7 +404,6 @@ namespace fusedrive
         {
             // Folder doesn't exist
             error = ENOTDIR;
-            gdrive_path_free(pGpath);
             return "";
         }
         CacheNode* pFolderNode = 
@@ -421,7 +412,6 @@ namespace fusedrive
         {
             // Couldn't get a node for the parent folder
             error = EIO;
-            gdrive_path_free(pGpath);
             return "";
         }
         const Fileinfo& folderinfo = pFolderNode->getFileinfo();
@@ -429,7 +419,6 @@ namespace fusedrive
         {
             // Not an actual folder
             error = ENOTDIR;
-            gdrive_path_free(pGpath);
             return "";
         }
 
@@ -438,14 +427,12 @@ namespace fusedrive
         {
             // Don't have the needed permission
             error = EACCES;
-            gdrive_path_free(pGpath);
             return "";
         }
 
 
         string fileId = syncMetadataOrCreate(NULL, parentId, filename, 
                 createFolder, error);
-        gdrive_path_free(pGpath);
 
         // TODO: See if gdrive_cache_add_fileid() can be modified to return a 
         // pointer to the cached ID (which is a new copy of the ID that was passed

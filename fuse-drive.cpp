@@ -26,7 +26,6 @@
 
 // Project header(s)
 #include "fuse-drive.hpp"
-#include "gdrive/gdrive-util.h"
 #include "gdrive/Gdrive.hpp"
 #include "Options.hpp"
 #include "FuseDrivePrivateData.hpp"
@@ -409,14 +408,8 @@ using namespace fusedrive;
         }
 
         // Need write access to the parent directory
-        Gdrive_Path* pGpath = gdrive_path_create(path);
-        if (!pGpath)
-        {
-            // Memory error
-            return -ENOMEM;
-        }
-        int accessResult = fudr_access(gdrive_path_get_dirname(pGpath), W_OK);
-        gdrive_path_free(pGpath);
+        Path gpath(path);
+        int accessResult = fudr_access(gpath.getDirname().c_str(), W_OK);
         if (accessResult)
         {
             // Access check failed
@@ -600,8 +593,8 @@ using namespace fusedrive;
 
     static int fudr_link(const char* from, const char* to)
     {
-        Gdrive_Path* pOldPath = gdrive_path_create(from);
-        Gdrive_Path* pNewPath = gdrive_path_create(to);
+        Path oldPath(from);
+        Path newPath(to);
         
         struct fuse_context* context = fuse_get_context();
         FuseDrivePrivateData* pPrivateData = 
@@ -617,16 +610,15 @@ using namespace fusedrive;
 
         // Google Drive supports a file with multiple parents - that is, a file with
         // multiple hard links that all have the same base name.
-        if (strcmp(gdrive_path_get_basename(pOldPath), 
-                   gdrive_path_get_basename(pNewPath))
-                )
+        if (oldPath.getBasename() != 
+                newPath.getBasename())
         {
             // Basenames differ, not supported
             return -ENOENT;
         }
 
         // Need write access in the target directory
-        int accessResult = fudr_access(gdrive_path_get_dirname(pNewPath), W_OK);
+        int accessResult = fudr_access(newPath.getDirname().c_str(), W_OK);
         if (accessResult)
         {
             return accessResult;
@@ -639,9 +631,7 @@ using namespace fusedrive;
             return -ENOENT;
         }
         const char* newParentId = 
-            gInfo.getFileIdFromPath(gdrive_path_get_dirname(pNewPath)).c_str();
-        gdrive_path_free(pOldPath);
-        gdrive_path_free(pNewPath);
+            gInfo.getFileIdFromPath(newPath.getDirname()).c_str();
         if (!newParentId[0])
         {
             // New directory doesn't exist
@@ -685,14 +675,8 @@ using namespace fusedrive;
         }
 
         // Need write access to the parent directory
-        Gdrive_Path* pGpath = gdrive_path_create(path);
-        if (!pGpath)
-        {
-            // Memory error
-            return -ENOMEM;
-        }
-        int accessResult = fudr_access(gdrive_path_get_dirname(pGpath), W_OK);
-        gdrive_path_free(pGpath);
+        Path gpath(path);
+        int accessResult = fudr_access(gpath.getDirname().c_str(), W_OK);
         if (accessResult)
         {
             return accessResult;
@@ -994,47 +978,31 @@ using namespace fusedrive;
         }
         
 
-        Gdrive_Path* pFromPath = gdrive_path_create(from);
-        if (!pFromPath)
-        {
-            // Memory error
-            return -ENOMEM;
-        }
-        Gdrive_Path* pToPath = gdrive_path_create(to);
-        if (!pToPath)
-        {
-            // Memory error
-            gdrive_path_free(pFromPath);
-            return -ENOMEM;
-        }
+        Path fromPath(from);
+        Path toPath(to);
+        
         
         string fromParentIdStr = 
-                gInfo.getFileIdFromPath(gdrive_path_get_dirname(pFromPath));
+                gInfo.getFileIdFromPath(fromPath.getDirname());
         const char* fromParentId = fromParentIdStr.c_str();
         if (!fromParentId || !fromParentId[0])
         {
             // from path doesn't exist
-            gdrive_path_free(pToPath);
-            gdrive_path_free(pFromPath);
             return -ENOENT;
         }
         string toParentIdStr = 
-                gInfo.getFileIdFromPath(gdrive_path_get_dirname(pToPath));
+                gInfo.getFileIdFromPath(toPath.getDirname());
         const char* toParentId = toParentIdStr.c_str();
         if (!toParentId || !toParentId[0])
         {
             // from path doesn't exist
-            gdrive_path_free(pToPath);
-            gdrive_path_free(pFromPath);
             return -ENOENT;
         }
 
         // Need write access in the destination parent directory
-        int accessResult = fudr_access(gdrive_path_get_dirname(pToPath), W_OK);
+        int accessResult = fudr_access(toPath.getDirname().c_str(), W_OK);
         if (accessResult)
         {
-            gdrive_path_free(pToPath);
-            gdrive_path_free(pFromPath);
             return accessResult;
         }
 
@@ -1047,16 +1015,12 @@ using namespace fusedrive;
             if (result != 0)
             {
                 // An error occurred
-                gdrive_path_free(pToPath);
-                gdrive_path_free(pFromPath);
                 return result;
             }
             result = fudr_unlink(from);
             if (result != 0)
             {
                 // An error occurred
-                gdrive_path_free(pToPath);
-                gdrive_path_free(pFromPath);
                 return result;
             }
         }
@@ -1065,8 +1029,8 @@ using namespace fusedrive;
 
         // If the basenames are different, change the basename. NOTE: If there are
         // any other hard links to the file, this will also change their names.
-        const char* fromBasename = gdrive_path_get_basename(pFromPath);
-        const char* toBasename = gdrive_path_get_basename(pToPath);
+        const char* fromBasename = fromPath.getBasename().c_str();
+        const char* toBasename = toPath.getBasename().c_str();
         if (strcmp(fromBasename, toBasename))
         {
             returnVal = gInfo.changeBasename(fromFileId, toBasename);
@@ -1079,8 +1043,6 @@ using namespace fusedrive;
         }
 
 
-        gdrive_path_free(pFromPath);
-        gdrive_path_free(pToPath);
         return returnVal;
     }
 
@@ -1134,17 +1096,11 @@ using namespace fusedrive;
         }
 
         // Get the parent ID
-        Gdrive_Path* pGpath = gdrive_path_create(path);
-        if (pGpath == NULL)
-        {
-            // Memory error
-            return -ENOMEM;
-        }
+        Path gpath(path);
         string parentIdStr = 
-                gInfo.getFileIdFromPath(gdrive_path_get_dirname(pGpath));
+                gInfo.getFileIdFromPath(gpath.getDirname());
         const char* parentId = parentIdStr.c_str();
-        gdrive_path_free(pGpath);
-
+        
         int returnVal = fudr_rm_file_or_dir_by_id(gInfo, fileId, parentId);
         return returnVal;
     }
@@ -1246,16 +1202,10 @@ using namespace fusedrive;
             return accessResult;
         }
 
-        Gdrive_Path* pGpath = gdrive_path_create(path);
-        if (pGpath == NULL)
-        {
-            // Memory error
-            return -ENOMEM;
-        }
-        string parentIdStr = gInfo.getFileIdFromPath(gdrive_path_get_dirname(pGpath));
+        Path gpath(path);
+        string parentIdStr = gInfo.getFileIdFromPath(gpath.getDirname());
         const char* parentId = parentIdStr.c_str();
-        gdrive_path_free(pGpath);
-
+        
         int returnVal = fudr_rm_file_or_dir_by_id(gInfo, fileId, parentId);
         return returnVal;
     }

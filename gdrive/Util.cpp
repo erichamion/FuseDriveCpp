@@ -6,7 +6,7 @@
  */
 
 #include "Util.hpp"
-#include "gdrive-util.h"
+#include "Path.hpp"
 
 #include <stdlib.h>
 #include <string.h>
@@ -42,8 +42,8 @@ namespace fusedrive
         mode_t oldUmask = umask(S_IRGRP | S_IWGRP | S_IXGRP | 
                                 S_IROTH | S_IWOTH | S_IXOTH);
 
-        Gdrive_Path* pGpath = gdrive_path_create(path.c_str());
-        const string dirname(gdrive_path_get_dirname(pGpath));
+        Path gpath(path);
+        const string& dirname = gpath.getDirname();
 
         FILE* returnVal = NULL;
 
@@ -65,14 +65,13 @@ namespace fusedrive
         }
 
         umask(oldUmask);
-        gdrive_path_free(pGpath);
         return returnVal;
     }
 
     int Util::recursiveMkdir(const string& path)
     {
-        Gdrive_Path* pGpath = gdrive_path_create(path.c_str());
-        const string parentDir(gdrive_path_get_dirname(pGpath));
+        Path gpath(path);
+        const string& parentDir = gpath.getDirname();
 
         int returnVal;
         // Does the parent directory exist?
@@ -93,7 +92,6 @@ namespace fusedrive
             returnVal = mkdir(path.c_str(), 0755);
         }
 
-        gdrive_path_free(pGpath);
         return returnVal;
     }
 

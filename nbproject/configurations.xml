@@ -177,6 +177,10 @@
       </item>
       <item path="gdrive/NullStream.hpp" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="gdrive/Path.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/Path.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="gdrive/Sysinfo.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/Sysinfo.hpp" ex="false" tool="3" flavor2="0">
@@ -191,10 +195,6 @@
             flavor2="0">
       </item>
       <item path="gdrive/gdrive-client-secret.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-util.c" ex="false" tool="0" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-util.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="1">
@@ -283,6 +283,10 @@
       </item>
       <item path="gdrive/NullStream.hpp" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="gdrive/Path.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/Path.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="gdrive/Sysinfo.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/Sysinfo.hpp" ex="false" tool="3" flavor2="0">
@@ -297,10 +301,6 @@
             flavor2="0">
       </item>
       <item path="gdrive/gdrive-client-secret.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-util.c" ex="false" tool="0" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-util.h" ex="false" tool="3" flavor2="0">
       </item>
     </conf>
   </confs>
