@@ -22,30 +22,26 @@ namespace fusedrive
         
         virtual ~Sysinfo();
         
-        void gdrive_sysinfo_cleanup();
+        void clear();
 
-        int64_t gdrive_sysinfo_get_size();
+        int64_t size();
 
-        int64_t gdrive_sysinfo_get_used();
+        int64_t used();
 
-        const std::string& gdrive_sysinfo_get_rootid();
+        const std::string& rootId();
         
     private:
-        int64_t nextChangeId;
-        int64_t quotaBytesTotal;
-        int64_t quotaBytesUsed;
-        std::string rootId;
-        Gdrive& gInfo;
+        int64_t mNextChangeId;
+        int64_t mQuotaBytesTotal;
+        int64_t mQuotaBytesUsed;
+        std::string mRootId;
+        Gdrive& mGInfo;
         
-        //const Sysinfo* gdrive_sysinfo_get_or_clear(bool cleanup);
-
-        //void gdrive_sysinfo_cleanup_internal();
-
-        int gdrive_sysinfo_fill_from_json(const Json& jsonObj);
+        int fillFromJson(const Json& jsonObj);
         
-        int gdrive_sysinfo_update_if_stale();
+        int updateIfStale();
 
-        int gdrive_sysinfo_update();
+        int update();
         
         Sysinfo(const Sysinfo& orig);
         

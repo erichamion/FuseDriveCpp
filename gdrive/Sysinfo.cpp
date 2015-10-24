@@ -16,9 +16,9 @@ using namespace std;
 namespace fusedrive
 {
     Sysinfo::Sysinfo(Gdrive& gInfo)
-    : gInfo(gInfo)
+    : mGInfo(gInfo)
     {
-        gdrive_sysinfo_cleanup();
+        clear();
     }
 
     Sysinfo::~Sysinfo()
@@ -26,32 +26,32 @@ namespace fusedrive
         // Empty
     }
 
-    void Sysinfo::gdrive_sysinfo_cleanup()
+    void Sysinfo::clear()
     {
         // Ensure an update happens on the first access
-        nextChangeId = INT64_MIN;
+        mNextChangeId = INT64_MIN;
         
-        quotaBytesTotal = 0;
-        quotaBytesUsed = 0;
-        rootId = "";
+        mQuotaBytesTotal = 0;
+        mQuotaBytesUsed = 0;
+        mRootId = "";
     }
 
-    int64_t Sysinfo::gdrive_sysinfo_get_size()
+    int64_t Sysinfo::size()
     {
-        gdrive_sysinfo_update_if_stale();
-        return quotaBytesTotal;
+        updateIfStale();
+        return mQuotaBytesTotal;
     }
 
-    int64_t Sysinfo::gdrive_sysinfo_get_used()
+    int64_t Sysinfo::used()
     {
-        gdrive_sysinfo_update_if_stale();
-        return quotaBytesUsed;
+        updateIfStale();
+        return mQuotaBytesUsed;
     }
 
-    const string& Sysinfo::gdrive_sysinfo_get_rootid()
+    const string& Sysinfo::rootId()
     {
-        gdrive_sysinfo_update_if_stale();
-        return rootId;
+        updateIfStale();
+        return mRootId;
     }
 
 //    const Sysinfo* Sysinfo::gdrive_sysinfo_get_or_clear(bool cleanup)
@@ -64,25 +64,25 @@ namespace fusedrive
 //        
 //    }
 
-    int Sysinfo::gdrive_sysinfo_fill_from_json(const Json& jsonObj)
+    int Sysinfo::fillFromJson(const Json& jsonObj)
     {
         bool currentSuccess = true;
         bool totalSuccess = true;
-        nextChangeId = 
+        mNextChangeId = 
                 jsonObj.getInt64("largestChangeId", true, currentSuccess)
                 + 1;
         totalSuccess = totalSuccess && currentSuccess;
 
-        quotaBytesTotal = 
+        mQuotaBytesTotal = 
                 jsonObj.getInt64("quotaBytesTotal", true, currentSuccess);
         totalSuccess = totalSuccess && currentSuccess;
 
-        quotaBytesUsed = 
+        mQuotaBytesUsed = 
                 jsonObj.getInt64("quotaBytesUsed", true, currentSuccess);
         totalSuccess = totalSuccess && currentSuccess;
 
-        rootId = jsonObj.getString("rootFolderId");
-        currentSuccess = totalSuccess && (!rootId.empty());
+        mRootId = jsonObj.getString("rootFolderId");
+        currentSuccess = totalSuccess && (!mRootId.empty());
 
         // For now, we'll ignore the importFormats and exportFormats.
 
@@ -90,28 +90,28 @@ namespace fusedrive
     }
 
 
-    int Sysinfo::gdrive_sysinfo_update_if_stale()
+    int Sysinfo::updateIfStale()
     {
         // First, make sure the cache is up to date.
-        Cache& cache = gInfo.getCache();
+        Cache& cache = mGInfo.getCache();
         cache.UpdateIfStale();
 
         // If the Sysinfo's next change ID is at least as high as the cache's
         // next change ID, then our info is current.  No need to do anything
         // else. Otherwise, it needs updated.
         int64_t cacheChangeId = cache.getNextChangeId();
-        return (nextChangeId < cacheChangeId) ? gdrive_sysinfo_update() : 0;
+        return (mNextChangeId < cacheChangeId) ? update() : 0;
     }
 
-    int Sysinfo::gdrive_sysinfo_update()
+    int Sysinfo::update()
     {
-        gdrive_sysinfo_cleanup();
+        clear();
 
         const string fieldString = "quotaBytesTotal,quotaBytesUsed,"
                 "largestChangeId,rootFolderId,importFormats,exportFormats";
 
         // Prepare the transfer
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(gInfo);
+        Gdrive_Transfer* pTransfer = gdrive_xfer_create(mGInfo);
         if (pTransfer == NULL)
         {
             // Memory error
@@ -120,8 +120,8 @@ namespace fusedrive
         gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
         if (
                 gdrive_xfer_set_url(pTransfer, Gdrive::GDRIVE_URL_ABOUT.c_str()) || 
-                gdrive_xfer_add_query(gInfo, pTransfer, "includeSubscribed", "false") || 
-                gdrive_xfer_add_query(gInfo, pTransfer, "fields", fieldString.c_str())
+                gdrive_xfer_add_query(mGInfo, pTransfer, "includeSubscribed", "false") || 
+                gdrive_xfer_add_query(mGInfo, pTransfer, "fields", fieldString.c_str())
             )
         {
             // Error
@@ -130,7 +130,7 @@ namespace fusedrive
         }
 
         // Do the transfer.
-        DownloadBuffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
+        DownloadBuffer* pBuf = gdrive_xfer_execute(mGInfo, pTransfer);
         gdrive_xfer_free(pTransfer);
 
         int returnVal = -1;
@@ -140,7 +140,7 @@ namespace fusedrive
             Json jsonObj(pBuf->getData());
             if (jsonObj.isValid())
             {
-                returnVal = gdrive_sysinfo_fill_from_json(jsonObj);
+                returnVal = fillFromJson(jsonObj);
             }
         }
 

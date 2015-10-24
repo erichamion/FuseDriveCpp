@@ -192,7 +192,7 @@ namespace fusedrive
         string result = string();
         if (path.compare("/") == 0)
         {
-            result = mSysinfo.gdrive_sysinfo_get_rootid();
+            result = mSysinfo.rootId();
             if (!result.empty())
             {
                 // Add to the fileId cache.

@@ -1167,8 +1167,8 @@ using namespace fusedrive;
         Gdrive& gInfo = pPrivateData->getGdrive();
 
         unsigned long blockSize = gInfo.getMinChunkSize();
-        unsigned long bytesTotal = gInfo.sysinfo().gdrive_sysinfo_get_size();
-        unsigned long bytesFree = bytesTotal - gInfo.sysinfo().gdrive_sysinfo_get_used();
+        unsigned long bytesTotal = gInfo.sysinfo().size();
+        unsigned long bytesFree = bytesTotal - gInfo.sysinfo().used();
 
         memset(stbuf, 0, sizeof(struct statvfs));
         stbuf->f_bsize = blockSize;
