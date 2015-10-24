@@ -21,7 +21,6 @@
         <itemPath>gdrive/Util.hpp</itemPath>
         <itemPath>gdrive/gdrive-client-secret-template.h</itemPath>
         <itemPath>gdrive/gdrive-client-secret.h</itemPath>
-        <itemPath>gdrive/gdrive-transfer.hpp</itemPath>
         <itemPath>gdrive/gdrive-util.h</itemPath>
       </logicalFolder>
       <itemPath>FuseDrivePrivateData.hpp</itemPath>
@@ -52,7 +51,6 @@
         <itemPath>gdrive/Json.cpp</itemPath>
         <itemPath>gdrive/Sysinfo.cpp</itemPath>
         <itemPath>gdrive/Util.cpp</itemPath>
-        <itemPath>gdrive/gdrive-transfer.cpp</itemPath>
         <itemPath>gdrive/gdrive-util.c</itemPath>
       </logicalFolder>
       <itemPath>FuseDrivePrivateData.cpp</itemPath>
@@ -194,10 +192,6 @@
       </item>
       <item path="gdrive/gdrive-client-secret.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/gdrive-transfer.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-transfer.hpp" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="gdrive/gdrive-util.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="gdrive/gdrive-util.h" ex="false" tool="3" flavor2="0">
@@ -303,10 +297,6 @@
             flavor2="0">
       </item>
       <item path="gdrive/gdrive-client-secret.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-transfer.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-transfer.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/gdrive-util.c" ex="false" tool="0" flavor2="0">
       </item>

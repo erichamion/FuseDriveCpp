@@ -54,7 +54,6 @@ OBJECTFILES= \
 	${OBJECTDIR}/gdrive/NullStream.o \
 	${OBJECTDIR}/gdrive/Sysinfo.o \
 	${OBJECTDIR}/gdrive/Util.o \
-	${OBJECTDIR}/gdrive/gdrive-transfer.o \
 	${OBJECTDIR}/gdrive/gdrive-util.o
 
 
@@ -176,11 +175,6 @@ ${OBJECTDIR}/gdrive/Util.o: gdrive/Util.cpp
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/Util.o gdrive/Util.cpp
-
-${OBJECTDIR}/gdrive/gdrive-transfer.o: gdrive/gdrive-transfer.cpp 
-	${MKDIR} -p ${OBJECTDIR}/gdrive
-	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-transfer.o gdrive/gdrive-transfer.cpp
 
 ${OBJECTDIR}/gdrive/gdrive-util.o: gdrive/gdrive-util.c 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
