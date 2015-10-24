@@ -5,7 +5,7 @@
 #include "Gdrive.hpp"
 #include "GdriveFile.hpp"
 #include "Cache.hpp"
-#include "gdrive-query.hpp"
+#include "HttpQuery.hpp"
 #include "Util.hpp"
 #include "Json.hpp"
 
@@ -1299,26 +1299,13 @@ namespace fusedrive
             }
         }
 
-        Gdrive_Query* pQuery = NULL;
-        pQuery = gdrive_query_add(*this, pQuery, "response_type", "code");
-        pQuery = gdrive_query_add(*this, pQuery, "client_id", GDRIVE_CLIENT_ID);
-        pQuery = gdrive_query_add(*this, pQuery, "redirect_uri", GDRIVE_REDIRECT_URI.c_str());
-        pQuery = gdrive_query_add(*this, pQuery, "scope", scopeStr);
-        pQuery = gdrive_query_add(*this, pQuery, "include_granted_scopes", "true");
-        if (pQuery == NULL)
-        {
-            // Memory error
-            return -1;
-        }
+        HttpQuery query(*this, "response_type", "code");
+        query.gdrive_query_add("client_id", GDRIVE_CLIENT_ID)
+            .gdrive_query_add("redirect_uri", GDRIVE_REDIRECT_URI)
+            .gdrive_query_add("scope", scopeStr)
+            .gdrive_query_add("include_granted_scopes", "true");
 
-        char* authUrl = gdrive_query_assemble(pQuery, GDRIVE_URL_AUTH_NEWAUTH.c_str());
-        gdrive_query_free(pQuery);
-
-        if (authUrl == NULL)
-        {
-            // Return error
-            return -1;
-        }
+        string authUrl = query.gdrive_query_assemble(GDRIVE_URL_AUTH_NEWAUTH);
 
         // Prompt the user.
         puts("This program needs access to a Google Drive account.\n"
@@ -1326,9 +1313,8 @@ namespace fusedrive
                 "browser.  Copy the code that you receive, and paste it\n"
                 "below.\n\n"
                 "The URL to open is:");
-        puts(authUrl);
+        puts(authUrl.c_str());
         puts("\nPlease paste the authorization code here:");
-        free(authUrl);
 
         // The authorization code should never be this long, so it's fine to ignore
         // longer input

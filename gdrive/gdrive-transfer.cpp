@@ -3,7 +3,7 @@
 
 
 #include "gdrive-transfer.hpp"
-#include "gdrive-query.hpp"
+#include "HttpQuery.hpp"
 
 #include <string.h>
 
@@ -24,8 +24,8 @@ typedef struct Gdrive_Transfer
     enum Gdrive_Request_Type requestType;
     bool retryOnAuthError;
     char* url;
-    Gdrive_Query* pQuery;
-    Gdrive_Query* pPostData;
+    HttpQuery* pQuery;
+    HttpQuery* pPostData;
     const char* body;
     struct curl_slist* pHeaders;
     FILE* destFile;
@@ -39,7 +39,7 @@ typedef struct Gdrive_Transfer
 /*
  * Returns 0 on success, other on failure.
  */
-static int gdrive_xfer_add_query_or_post(Gdrive& gInfo, Gdrive_Query** ppQuery, 
+static int gdrive_xfer_add_query_or_post(Gdrive& gInfo, HttpQuery** ppQuery, 
                                          const char* field, const char* value);
 
 static size_t gdrive_xfer_upload_callback_internal(char* buffer, size_t size, 
@@ -83,9 +83,9 @@ void gdrive_xfer_free(Gdrive_Transfer* pTransfer)
     // they'll be NULL, and it's safe to free them anyway.
     free(pTransfer->url);
     pTransfer->url = NULL;
-    gdrive_query_free(pTransfer->pQuery);
+    delete (pTransfer->pQuery);
     pTransfer->pQuery = NULL;
-    gdrive_query_free(pTransfer->pPostData);
+    delete (pTransfer->pPostData);
     pTransfer->pPostData = NULL;
     if (pTransfer->pHeaders != NULL)
     {
@@ -227,8 +227,11 @@ DownloadBuffer* gdrive_xfer_execute(Gdrive& gInfo, Gdrive_Transfer* pTransfer)
     
     // Append any query parameters to the URL, and add the full URL to the
     // curl handle.
-    char* fullUrl = NULL;
-    fullUrl = gdrive_query_assemble(pTransfer->pQuery, pTransfer->url);
+    const char* fullUrl = NULL;
+    std::string tmpStr = pTransfer->pQuery ?
+        pTransfer->pQuery->gdrive_query_assemble(pTransfer->url) :
+        pTransfer->url;
+    fullUrl = tmpStr.c_str();
     if (fullUrl == NULL)
     {
         // Memory error or invalid URL
@@ -236,7 +239,7 @@ DownloadBuffer* gdrive_xfer_execute(Gdrive& gInfo, Gdrive_Transfer* pTransfer)
         return NULL;
     }
     curl_easy_setopt(curlHandle, CURLOPT_URL, fullUrl);
-    free(fullUrl);
+    //free(fullUrl);
     fullUrl = NULL;
     
     // Set simple POST fields, if applicable
@@ -256,7 +259,9 @@ DownloadBuffer* gdrive_xfer_execute(Gdrive& gInfo, Gdrive_Transfer* pTransfer)
     }
     else if (pTransfer->pPostData != NULL)
     {
-        char* postData = gdrive_query_assemble(pTransfer->pPostData, NULL);
+        std::string tmpStr = 
+                pTransfer->pPostData->gdrive_query_assemble_as_post_data();
+        const char* postData = tmpStr.c_str();
         if (postData == NULL)
         {
             // Memory error or invalid query
@@ -265,7 +270,6 @@ DownloadBuffer* gdrive_xfer_execute(Gdrive& gInfo, Gdrive_Transfer* pTransfer)
         }
         curl_easy_setopt(curlHandle, CURLOPT_POSTFIELDSIZE, -1L);
         curl_easy_setopt(curlHandle, CURLOPT_COPYPOSTFIELDS, postData);
-        free(postData);
     }
     
     // Set upload data callback, if applicable
@@ -320,10 +324,12 @@ DownloadBuffer* gdrive_xfer_execute(Gdrive& gInfo, Gdrive_Transfer* pTransfer)
  * Implementations of private functions for use within this file
  *************************************************************************/
 
-static int gdrive_xfer_add_query_or_post(Gdrive& gInfo, Gdrive_Query** ppQuery, 
+static int gdrive_xfer_add_query_or_post(Gdrive& gInfo, HttpQuery** ppQuery, 
                                          const char* field, const char* value)
 {
-    *ppQuery = gdrive_query_add(gInfo, *ppQuery, field, value);
+    *ppQuery = *ppQuery ? 
+        &(*ppQuery)->gdrive_query_add(field, value) :
+        new HttpQuery(gInfo, field, value);
     return (*ppQuery == NULL);
 }
 

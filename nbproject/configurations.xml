@@ -24,6 +24,7 @@
         <itemPath>gdrive/gdrive-util.h</itemPath>
       </logicalFolder>
       <itemPath>FuseDrivePrivateData.hpp</itemPath>
+      <itemPath>gdrive/HttpQuery.hpp</itemPath>
       <itemPath>gdrive/NullStream.hpp</itemPath>
       <itemPath>Options.hpp</itemPath>
       <itemPath>fuse-drive.hpp</itemPath>
@@ -54,6 +55,7 @@
         <itemPath>gdrive/gdrive-util.c</itemPath>
       </logicalFolder>
       <itemPath>FuseDrivePrivateData.cpp</itemPath>
+      <itemPath>gdrive/HttpQuery.cpp</itemPath>
       <itemPath>gdrive/NullStream.cpp</itemPath>
       <itemPath>Options.cpp</itemPath>
       <itemPath>fuse-drive.cpp</itemPath>
@@ -161,6 +163,10 @@
       </item>
       <item path="gdrive/GdriveInfo.cpp" ex="false" tool="1" flavor2="0">
       </item>
+      <item path="gdrive/HttpQuery.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/HttpQuery.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="gdrive/Json.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/Json.hpp" ex="false" tool="3" flavor2="0">
@@ -266,6 +272,10 @@
       <item path="gdrive/GdriveFile.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/GdriveInfo.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/HttpQuery.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/HttpQuery.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/Json.cpp" ex="false" tool="1" flavor2="0">
       </item>
