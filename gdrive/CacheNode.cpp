@@ -266,9 +266,9 @@ namespace fusedrive
         lastUpdateTime = time(NULL);
     }
 
-    void CacheNode::deleteFileContents(Gdrive_File_Contents* pContentsToDelete)
+    void CacheNode::deleteFileContents(FileContents& contentsToDelete)
     {
-        gdrive_fcontents_delete(pContentsToDelete, &pContents);
+        delete &contentsToDelete;
     }
 
 
@@ -336,7 +336,10 @@ namespace fusedrive
 
     void CacheNode::clearContents()
     {
-        gdrive_fcontents_free_all(&pContents);
+        if (pContents)
+        {
+            pContents->gdrive_fcontents_free_all();
+        }
         pContents = NULL;
     }
     
@@ -345,7 +348,7 @@ namespace fusedrive
         return (pContents != NULL);
     }
         
-    Gdrive_File_Contents* CacheNode::findChunk(off_t offset) const
+    FileContents* CacheNode::findChunk(off_t offset) const
     {
         if (!pContents)
         {
@@ -353,14 +356,19 @@ namespace fusedrive
             return NULL;
         }
         
-        return gdrive_fcontents_find_chunk(pContents, offset);
+        return pContents->gdrive_fcontents_find_chunk(offset);
+    }
+    
+    FileContents** CacheNode::getContentsListPtr()
+    {
+        return &pContents;
     }
     
     void CacheNode::deleteContentsAfterOffset(off_t offset)
     {
         if (pContents)
         {
-            return gdrive_fcontents_delete_after_offset(gInfo, &pContents, offset);
+            pContents->gdrive_fcontents_delete_after_offset(offset);
         }
     }
     
@@ -473,29 +481,24 @@ namespace fusedrive
     }
 
 
-    Gdrive_File_Contents* CacheNode::addContents()
+    FileContents& CacheNode::addContents()
     {
         // Create the actual Gdrive_File_Contents struct, and add it to the existing
         // chain if there is one.
-        Gdrive_File_Contents* pNewContents = gdrive_fcontents_add(pContents);
-        if (pNewContents == NULL)
-        {
-            // Memory or file creation error
-            return NULL;
-        }
-
+        FileContents& pNewContents = FileContents::gdrive_fcontents_add_new(*this);
+        
         // If there is no existing chain, point to the new struct as the start of a
         // new chain.
         if (pContents == NULL)
         {
-            pContents = pNewContents;
+            pContents = &pNewContents;
         }
 
 
         return pNewContents;
     }
 
-    Gdrive_File_Contents* CacheNode::createChunk(off_t offset, 
+    FileContents* CacheNode::createChunk(off_t offset, 
         size_t size, bool fillChunk)
     {
         // Get the normal chunk size for this file, the smallest multiple of
@@ -517,17 +520,12 @@ namespace fusedrive
         size_t realChunkSize = Util::divideCeil(endChunkOffset, chunkSize) * 
                 chunkSize;
 
-        Gdrive_File_Contents* pContents = addContents();
-        if (pContents == NULL)
-        {
-            // Memory or file creation error
-            return NULL;
-        }
-
+        FileContents& pContents = addContents();
+        
         if (fillChunk)
         {
-            int success = gdrive_fcontents_fill_chunk(gInfo, pContents,
-                    fileinfo.id.c_str(), chunkStart, realChunkSize);
+            int success = pContents.gdrive_fcontents_fill_chunk(fileinfo.id, 
+                    chunkStart, realChunkSize);
             if (success != 0)
             {
                 // Didn't write the file.  Clean up the new Gdrive_File_Contents 
@@ -539,7 +537,7 @@ namespace fusedrive
         // else we're not filling the chunk, do nothing
 
         // Success
-        return pContents;
+        return &pContents;
     }
 
     CacheNode::~CacheNode()

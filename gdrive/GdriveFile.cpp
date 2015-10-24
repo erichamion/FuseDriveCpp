@@ -199,7 +199,7 @@ namespace fusedrive
         // file's length.
         
         
-        Gdrive_File_Contents* pFinalChunk = NULL;
+        FileContents* pFinalChunk = NULL;
         if (fileinfo.size < (size_t) size)
         {
             // File is being lengthened. The current final chunk will remain final.
@@ -214,8 +214,7 @@ namespace fusedrive
                 }
 
                 // Grab the final chunk
-                pFinalChunk = 
-                        mCacheNode.findChunk(fileinfo.size - 1);
+                pFinalChunk = mCacheNode.findChunk(fileinfo.size - 1);
             }
             else
             {
@@ -258,7 +257,7 @@ namespace fusedrive
             return -EIO;
         }
 
-        int returnVal = gdrive_fcontents_truncate(pFinalChunk, size);
+        int returnVal = pFinalChunk->gdrive_fcontents_truncate(size);
 
         if (returnVal == 0)
         {
@@ -393,8 +392,7 @@ namespace fusedrive
             off_t offset, size_t size)
     {
         // Do we already have a chunk that includes the starting point?
-        Gdrive_File_Contents* pChunkContents = 
-                mCacheNode.findChunk(offset);
+        FileContents* pChunkContents = mCacheNode.findChunk(offset);
 
         if (pChunkContents == NULL)
         {
@@ -414,7 +412,7 @@ namespace fusedrive
         // Actually read to the buffer and return the number of bytes read (which
         // may be less than size if we hit the end of the chunk), or return any 
         // error up to the caller.
-        return gdrive_fcontents_read(pChunkContents, buf, offset, size);
+        return pChunkContents->gdrive_fcontents_read(buf, offset, size);
     }
 
     off_t GdriveFile::writeNextChunk(const char* buf, 
@@ -428,8 +426,7 @@ namespace fusedrive
         // Find the chunk that includes the starting point, or the last chunk if
         // the starting point is 1 byte past the end.
         off_t searchOffset = (extendChunk && offset > 0) ? offset - 1 : offset;
-        Gdrive_File_Contents* pChunkContents = 
-                mCacheNode.findChunk(searchOffset);
+        FileContents* pChunkContents = mCacheNode.findChunk(searchOffset);
 
         if (pChunkContents == NULL)
         {
@@ -439,8 +436,7 @@ namespace fusedrive
                 // File size is 0, and there is no existing chunk. Create one and 
                 // try again.
                 mCacheNode.createChunk(0, 1, false);
-                pChunkContents = 
-                        mCacheNode.findChunk(searchOffset);
+                pChunkContents = mCacheNode.findChunk(searchOffset);
             }
         }
         if (pChunkContents == NULL)
@@ -455,7 +451,7 @@ namespace fusedrive
         // Actually write to the buffer and return the number of bytes read (which
         // may be less than size if we hit the end of the chunk), or return any 
         // error up to the caller.
-        off_t bytesWritten = gdrive_fcontents_write(pChunkContents, buf, 
+        off_t bytesWritten = pChunkContents->gdrive_fcontents_write(buf, 
                 offset, size, extendChunk);
 
         if (bytesWritten > 0)

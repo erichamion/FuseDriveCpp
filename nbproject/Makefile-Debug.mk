@@ -41,6 +41,7 @@ OBJECTFILES= \
 	${OBJECTDIR}/gdrive/Cache.o \
 	${OBJECTDIR}/gdrive/CacheNode.o \
 	${OBJECTDIR}/gdrive/DownloadBuffer.o \
+	${OBJECTDIR}/gdrive/FileContents.o \
 	${OBJECTDIR}/gdrive/FileIdCacheNode.o \
 	${OBJECTDIR}/gdrive/Fileinfo.o \
 	${OBJECTDIR}/gdrive/Gdrive.o \
@@ -49,8 +50,6 @@ OBJECTFILES= \
 	${OBJECTDIR}/gdrive/Json.o \
 	${OBJECTDIR}/gdrive/NullStream.o \
 	${OBJECTDIR}/gdrive/Util.o \
-	${OBJECTDIR}/gdrive/gdrive-download-buffer.o \
-	${OBJECTDIR}/gdrive/gdrive-file-contents.o \
 	${OBJECTDIR}/gdrive/gdrive-fileinfo-array.o \
 	${OBJECTDIR}/gdrive/gdrive-query.o \
 	${OBJECTDIR}/gdrive/gdrive-sysinfo.o \
@@ -112,6 +111,11 @@ ${OBJECTDIR}/gdrive/DownloadBuffer.o: gdrive/DownloadBuffer.cpp
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/DownloadBuffer.o gdrive/DownloadBuffer.cpp
 
+${OBJECTDIR}/gdrive/FileContents.o: gdrive/FileContents.cpp 
+	${MKDIR} -p ${OBJECTDIR}/gdrive
+	${RM} "$@.d"
+	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/FileContents.o gdrive/FileContents.cpp
+
 ${OBJECTDIR}/gdrive/FileIdCacheNode.o: gdrive/FileIdCacheNode.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
@@ -151,16 +155,6 @@ ${OBJECTDIR}/gdrive/Util.o: gdrive/Util.cpp
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/Util.o gdrive/Util.cpp
-
-${OBJECTDIR}/gdrive/gdrive-download-buffer.o: gdrive/gdrive-download-buffer.cpp 
-	${MKDIR} -p ${OBJECTDIR}/gdrive
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-download-buffer.o gdrive/gdrive-download-buffer.cpp
-
-${OBJECTDIR}/gdrive/gdrive-file-contents.o: gdrive/gdrive-file-contents.cpp 
-	${MKDIR} -p ${OBJECTDIR}/gdrive
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/gdrive-file-contents.o gdrive/gdrive-file-contents.cpp
 
 ${OBJECTDIR}/gdrive/gdrive-fileinfo-array.o: gdrive/gdrive-fileinfo-array.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive

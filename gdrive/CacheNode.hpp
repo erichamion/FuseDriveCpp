@@ -8,7 +8,7 @@
 #ifndef CACHENODE_HPP
 #define	CACHENODE_HPP
 
-#include "gdrive-file-contents.hpp"
+#include "FileContents.hpp"
 #include "Fileinfo.hpp"
 
 #include <string>
@@ -19,6 +19,7 @@ namespace fusedrive
     class Cache;
     
     class CacheNode {
+        
     public:
         static CacheNode* retrieveNode(Cache& cache, CacheNode* pParent, 
                 CacheNode** ppNode, const std::string& fileId, 
@@ -46,7 +47,7 @@ namespace fusedrive
 
         void updateFromJson(Json& jsonObj);
 
-        void deleteFileContents(Gdrive_File_Contents* pContentsToDelete);
+        void deleteFileContents(FileContents& contentsToDelete);
 
         bool isDirty() const;
         
@@ -66,14 +67,16 @@ namespace fusedrive
         
         bool hasContents() const;
         
-        Gdrive_File_Contents* createChunk(off_t offset, size_t size, 
+        FileContents* createChunk(off_t offset, size_t size, 
             bool fillChunk);
         
-        Gdrive_File_Contents* findChunk(off_t offset) const;
+        FileContents* findChunk(off_t offset) const;
+        
+        FileContents** getContentsListPtr();
         
         void deleteContentsAfterOffset(off_t offset);
         
-
+        
         
         
     private:
@@ -84,7 +87,7 @@ namespace fusedrive
         bool dirty;
         bool deleted;
         Fileinfo fileinfo;
-        Gdrive_File_Contents* pContents;
+        FileContents* pContents;
         Cache& mCache;
         struct CacheNode* pParent;
         struct CacheNode* pLeft;
@@ -99,7 +102,7 @@ namespace fusedrive
         static void SwapNodes(CacheNode** ppFromParentOne, CacheNode* pNodeOne,
             CacheNode** ppFromParentTwo, CacheNode* pNodeTwo);
 
-        Gdrive_File_Contents* addContents();
+        FileContents& addContents();
         
         
         //CacheNode* gdrive_cnode_get_head();

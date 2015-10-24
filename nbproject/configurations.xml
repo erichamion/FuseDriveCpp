@@ -8,6 +8,7 @@
         <itemPath>gdrive/Cache.hpp</itemPath>
         <itemPath>gdrive/CacheNode.hpp</itemPath>
         <itemPath>gdrive/DownloadBuffer.hpp</itemPath>
+        <itemPath>gdrive/FileContents.hpp</itemPath>
         <itemPath>gdrive/FileIdCacheNode.hpp</itemPath>
         <itemPath>gdrive/Fileinfo.hpp</itemPath>
         <itemPath>gdrive/Gdrive.hpp</itemPath>
@@ -16,8 +17,6 @@
         <itemPath>gdrive/Util.hpp</itemPath>
         <itemPath>gdrive/gdrive-client-secret-template.h</itemPath>
         <itemPath>gdrive/gdrive-client-secret.h</itemPath>
-        <itemPath>gdrive/gdrive-download-buffer.hpp</itemPath>
-        <itemPath>gdrive/gdrive-file-contents.hpp</itemPath>
         <itemPath>gdrive/gdrive-fileinfo-array.hpp</itemPath>
         <itemPath>gdrive/gdrive-query.hpp</itemPath>
         <itemPath>gdrive/gdrive-sysinfo.hpp</itemPath>
@@ -40,6 +39,7 @@
         <itemPath>gdrive/Cache.cpp</itemPath>
         <itemPath>gdrive/CacheNode.cpp</itemPath>
         <itemPath>gdrive/DownloadBuffer.cpp</itemPath>
+        <itemPath>gdrive/FileContents.cpp</itemPath>
         <itemPath>gdrive/FileIdCacheNode.cpp</itemPath>
         <itemPath>gdrive/Fileinfo.cpp</itemPath>
         <itemPath>gdrive/Gdrive.cpp</itemPath>
@@ -47,8 +47,6 @@
         <itemPath>gdrive/GdriveInfo.cpp</itemPath>
         <itemPath>gdrive/Json.cpp</itemPath>
         <itemPath>gdrive/Util.cpp</itemPath>
-        <itemPath>gdrive/gdrive-download-buffer.cpp</itemPath>
-        <itemPath>gdrive/gdrive-file-contents.cpp</itemPath>
         <itemPath>gdrive/gdrive-fileinfo-array.cpp</itemPath>
         <itemPath>gdrive/gdrive-query.cpp</itemPath>
         <itemPath>gdrive/gdrive-sysinfo.cpp</itemPath>
@@ -137,6 +135,10 @@
       </item>
       <item path="gdrive/DownloadBuffer.hpp" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="gdrive/FileContents.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/FileContents.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="gdrive/FileIdCacheNode.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/FileIdCacheNode.hpp" ex="false" tool="3" flavor2="0">
@@ -173,14 +175,6 @@
             flavor2="0">
       </item>
       <item path="gdrive/gdrive-client-secret.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-download-buffer.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-download-buffer.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-file-contents.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-file-contents.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/gdrive-fileinfo-array.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -247,6 +241,10 @@
       </item>
       <item path="gdrive/DownloadBuffer.hpp" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="gdrive/FileContents.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="gdrive/FileContents.hpp" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="gdrive/FileIdCacheNode.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/FileIdCacheNode.hpp" ex="false" tool="3" flavor2="0">
@@ -283,14 +281,6 @@
             flavor2="0">
       </item>
       <item path="gdrive/gdrive-client-secret.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-download-buffer.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-download-buffer.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-file-contents.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="gdrive/gdrive-file-contents.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/gdrive-fileinfo-array.cpp" ex="false" tool="1" flavor2="0">
       </item>
