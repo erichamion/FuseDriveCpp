@@ -338,7 +338,7 @@ namespace fusedrive
     {
         if (pContents)
         {
-            pContents->gdrive_fcontents_free_all();
+            pContents->freeAll();
         }
         pContents = NULL;
     }
@@ -356,7 +356,7 @@ namespace fusedrive
             return NULL;
         }
         
-        return pContents->gdrive_fcontents_find_chunk(offset);
+        return pContents->findChunk(offset);
     }
     
     FileContents** CacheNode::getContentsListPtr()
@@ -368,7 +368,7 @@ namespace fusedrive
     {
         if (pContents)
         {
-            pContents->gdrive_fcontents_delete_after_offset(offset);
+            pContents->deleteAfterOffset(offset);
         }
     }
     
@@ -485,7 +485,7 @@ namespace fusedrive
     {
         // Create the actual Gdrive_File_Contents struct, and add it to the existing
         // chain if there is one.
-        FileContents& pNewContents = FileContents::gdrive_fcontents_add_new(*this);
+        FileContents& pNewContents = FileContents::addNewChunk(*this);
         
         // If there is no existing chain, point to the new struct as the start of a
         // new chain.
@@ -524,7 +524,7 @@ namespace fusedrive
         
         if (fillChunk)
         {
-            int success = pContents.gdrive_fcontents_fill_chunk(fileinfo.id, 
+            int success = pContents.fillChunk(fileinfo.id, 
                     chunkStart, realChunkSize);
             if (success != 0)
             {

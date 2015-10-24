@@ -22,7 +22,7 @@ using namespace std;
 namespace fusedrive
 {
 
-    FileContents& FileContents::gdrive_fcontents_add_new(CacheNode& cacheNode)
+    FileContents& FileContents::addNewChunk(CacheNode& cacheNode)
     {
         // Create the actual file contents struct.
         FileContents* pNew = new FileContents(cacheNode);
@@ -32,7 +32,7 @@ namespace fusedrive
         FileContents** ppFromLast = cacheNode.getContentsListPtr();
         while (*ppFromLast)
         {
-            ppFromLast = &(*ppFromLast)->pNext;
+            ppFromLast = &(*ppFromLast)->mpNext;
         }
         *ppFromLast = pNew;
 
@@ -42,25 +42,25 @@ namespace fusedrive
     FileContents::~FileContents()
     {
         // Find the pointer leading to this object
-        FileContents** ppFromLast = cacheNode.getContentsListPtr();
+        FileContents** ppFromLast = mCacheNode.getContentsListPtr();
         while (*ppFromLast != this)
         {
             assert(*ppFromLast && "Null pointer while deleting FileContents,"
                 "this object is not in the list.");
-            ppFromLast = &(*ppFromLast)->pNext;
+            ppFromLast = &(*ppFromLast)->mpNext;
         }
         
         // Move the next item in the list (or the end of the list) up the chain
-        *ppFromLast = this->pNext;
+        *ppFromLast = mpNext;
         
         // Close the temp file
-        if (fh != NULL)
+        if (mFh != NULL)
         {
-            fclose(fh);
+            fclose(mFh);
         }
     }
 
-    void FileContents::gdrive_fcontents_delete_after_offset(off_t offset)
+    void FileContents::deleteAfterOffset(off_t offset)
     {
         // Container to store pointers to the chunks that need deleted.
         queue<FileContents*> deleteQueue;
@@ -69,11 +69,11 @@ namespace fusedrive
         FileContents* pCurrentContentNode = this;
         do
         {
-            if (pCurrentContentNode->start > offset)
+            if (pCurrentContentNode->mStart > offset)
             {
                 deleteQueue.push(pCurrentContentNode);
             }
-            pCurrentContentNode = pCurrentContentNode->pNext;
+            pCurrentContentNode = pCurrentContentNode->mpNext;
         } while (pCurrentContentNode);
 
         // Delete each of the chunks. This can't be the most efficient way to do
@@ -109,37 +109,37 @@ namespace fusedrive
 
     }
 
-    void FileContents::gdrive_fcontents_free_all()
+    void FileContents::freeAll()
     {
         // Free the rest of the list after the current item.
-        if (pNext)
+        if (mpNext)
         {
-            delete pNext;
+            delete mpNext;
         }
         
         // Free this object
         delete this;
     }
 
-    FileContents* FileContents::gdrive_fcontents_find_chunk(off_t offset)
+    FileContents* FileContents::findChunk(off_t offset)
     {
-        if (offset >= start && offset <= end)
+        if (offset >= mStart && offset <= mEnd)
         {
             // Found it!
             return this;
         }
         
-        if (offset == start && end < start)
+        if (offset == mStart && mEnd < mStart)
         {
             // Found it in a zero-length chunk (probably a zero-length file)
             return this;
         }
 
         // It's not at this chunk.  Is there another chunk to try?
-        if (pNext)
+        if (mpNext)
         {
             // Try the next node
-            return pNext->gdrive_fcontents_find_chunk(offset);
+            return mpNext->findChunk(offset);
         }
         else
         {
@@ -148,10 +148,10 @@ namespace fusedrive
         }
     }
 
-    int FileContents::gdrive_fcontents_fill_chunk(const std::string& fileId, off_t start, 
+    int FileContents::fillChunk(const std::string& fileId, off_t start, 
         size_t size)
     {
-        Gdrive& gInfo = cacheNode.getGdrive();
+        Gdrive& gInfo = mCacheNode.getGdrive();
         Gdrive_Transfer* pTransfer = gdrive_xfer_create(gInfo);
         if (pTransfer == NULL)
         {
@@ -198,12 +198,12 @@ namespace fusedrive
         }
 
         // Set the destination file to the current chunk's handle
-        gdrive_xfer_set_destfile(pTransfer, fh);
+        gdrive_xfer_set_destfile(pTransfer, mFh);
 
         // Make sure the file position is at the start and any stream errors are
         // cleared (this should be redundant, since we should normally have a newly
         // created and opened temporary file).
-        rewind(fh);
+        rewind(mFh);
 
         // Perform the transfer
         DownloadBuffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
@@ -213,27 +213,27 @@ namespace fusedrive
         delete pBuf;
         if (success)
         {
-            this->start = start;
-            this->end = start + size - 1;
+            mStart = start;
+            mEnd = start + size - 1;
             return 0;
         }
         // else failed
         return -1;
     }
 
-    size_t FileContents::gdrive_fcontents_read(char* destBuf, off_t offset, size_t size)
+    size_t FileContents::read(char* destBuf, off_t offset, size_t size) const
     {
         // If given a NULL buffer pointer, just return the number of bytes that 
         // would have been read upon success.
         if (destBuf == NULL)
         {
-            size_t maxSize = this->end - offset + 1;
+            size_t maxSize = mEnd - offset + 1;
             return (size > maxSize) ? maxSize : size;
         }
 
         // Read the data into the supplied buffer.
-        FILE* chunkFile = this->fh;
-        fseek(chunkFile, offset - this->start, SEEK_SET);
+        FILE* chunkFile = mFh;
+        fseek(chunkFile, offset - mStart, SEEK_SET);
         size_t bytesRead = fread(destBuf, 1, size, chunkFile);
 
         // If an error occurred, return negative.
@@ -252,22 +252,22 @@ namespace fusedrive
         return bytesRead;
     }
 
-    off_t FileContents::gdrive_fcontents_write(const char* buf, off_t offset, 
+    off_t FileContents::write(const char* buf, off_t offset, 
         size_t size, bool extendChunk)
     {
         // Only write to the end of the chunk, unless extendChunk is true
-        size_t maxSize = this->end - offset;
+        size_t maxSize = mEnd - offset;
         size_t realSize = (extendChunk || size <= maxSize) ? size : maxSize;
 
         // Write the data from the supplied buffer.
-        FILE* chunkFile = this->fh;
-        fseek(chunkFile, offset - this->start, SEEK_SET);
+        FILE* chunkFile = mFh;
+        fseek(chunkFile, offset - mStart, SEEK_SET);
         size_t bytesWritten = fwrite(buf, 1, size, chunkFile);
 
         // Extend the chunk's ending offset if needed
-        if ((off_t) (offset + bytesWritten - 1) > this->end)
+        if ((off_t) (offset + bytesWritten - 1) > mEnd)
         {
-            this->end = offset + bytesWritten - 1;
+            mEnd = offset + bytesWritten - 1;
         }
 
         // If an error occurred, return negative.
@@ -286,11 +286,11 @@ namespace fusedrive
         return bytesWritten;
     }
 
-    int FileContents::gdrive_fcontents_truncate(size_t size)
+    int FileContents::truncate(size_t size)
     {
-        size_t newSize = size - this->start;
+        size_t newSize = size - mStart;
         // Truncate the underlying file
-        if (ftruncate(fileno(this->fh), size - this->start) != 0)
+        if (ftruncate(fileno(mFh), size - mStart) != 0)
         {
             // An error occurred.
             return -errno;
@@ -298,9 +298,9 @@ namespace fusedrive
 
         // If the truncate call extended the file, update the chunk size  to meet
         // the new size
-        if ((this->end - this->start) < (off_t) newSize)
+        if ((mEnd - mStart) < (off_t) newSize)
         {
-            this->end = this->start + newSize - 1;
+            mEnd = mStart + newSize - 1;
         }
 
         // Return success
@@ -308,17 +308,17 @@ namespace fusedrive
     }
 
     FileContents::FileContents(CacheNode& cacheNode)
-    : cacheNode(cacheNode)
+    : mCacheNode(cacheNode)
     {
-        start = 0;
-        end = 0;
-        fh = NULL;
-        pNext = NULL;
+        mStart = 0;
+        mEnd = 0;
+        mFh = NULL;
+        mpNext = NULL;
         // Create a temporary file on disk.  This will automatically be deleted
         // when the file is closed or when this program terminates, so no 
         // cleanup is needed.
-        fh = tmpfile();
-        if (!fh)
+        mFh = tmpfile();
+        if (!mFh)
         {
             // File creation error
             throw new exception();

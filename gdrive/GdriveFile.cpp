@@ -257,7 +257,7 @@ namespace fusedrive
             return -EIO;
         }
 
-        int returnVal = pFinalChunk->gdrive_fcontents_truncate(size);
+        int returnVal = pFinalChunk->truncate(size);
 
         if (returnVal == 0)
         {
@@ -412,7 +412,7 @@ namespace fusedrive
         // Actually read to the buffer and return the number of bytes read (which
         // may be less than size if we hit the end of the chunk), or return any 
         // error up to the caller.
-        return pChunkContents->gdrive_fcontents_read(buf, offset, size);
+        return pChunkContents->read(buf, offset, size);
     }
 
     off_t GdriveFile::writeNextChunk(const char* buf, 
@@ -451,7 +451,7 @@ namespace fusedrive
         // Actually write to the buffer and return the number of bytes read (which
         // may be less than size if we hit the end of the chunk), or return any 
         // error up to the caller.
-        off_t bytesWritten = pChunkContents->gdrive_fcontents_write(buf, 
+        off_t bytesWritten = pChunkContents->write(buf, 
                 offset, size, extendChunk);
 
         if (bytesWritten > 0)
