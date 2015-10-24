@@ -79,7 +79,7 @@ namespace fusedrive
         return setTime(GDRIVE_FINFO_MTIME, ts);
     }
 
-    void Fileinfo::readJson(Json& jsonObj)
+    void Fileinfo::readJson(const Json& jsonObj)
     {
         
         filename.assign(jsonObj.getString("title"));
@@ -191,7 +191,7 @@ namespace fusedrive
         clear();
     }
     
-    Fileinfo::Fileinfo(Gdrive& gInfo, Json& jsonObj)
+    Fileinfo::Fileinfo(Gdrive& gInfo, const Json& jsonObj)
     : gInfo(gInfo)
     {
         clear();

@@ -844,9 +844,9 @@ using namespace fusedrive;
         filler(buf, ".", NULL, 0);
         filler(buf, "..", NULL, 0);
         const Fileinfo* pCurrentFile;
-        for (pCurrentFile = fileArray.gdrive_finfoarray_get_first(); 
+        for (pCurrentFile = fileArray.first(); 
                 pCurrentFile != NULL; 
-                pCurrentFile = fileArray.gdrive_finfoarray_get_next()
+                pCurrentFile = fileArray.next()
                 )
         {
             struct stat st = {0};

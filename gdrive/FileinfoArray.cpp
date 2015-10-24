@@ -13,7 +13,7 @@ using namespace std;
 namespace fusedrive
 {
     FileinfoArray::FileinfoArray(Gdrive& gInfo)
-    : gInfo(gInfo)
+    : mGInfo(gInfo)
     {
         mNextIndex = 0;
     }
@@ -28,7 +28,7 @@ namespace fusedrive
         }
     }
 
-    const Fileinfo* FileinfoArray::gdrive_finfoarray_get_first()
+    const Fileinfo* FileinfoArray::first()
     {
         const Fileinfo* returnVal = NULL;
         mNextIndex = 0;
@@ -39,7 +39,7 @@ namespace fusedrive
         return returnVal;
     }
 
-    const Fileinfo* FileinfoArray::gdrive_finfoarray_get_next()
+    const Fileinfo* FileinfoArray::next()
     {
         if (mNextIndex >= mContainer.size())
         {
@@ -50,14 +50,14 @@ namespace fusedrive
         return mContainer[mNextIndex++];
     }
 
-    unsigned long FileinfoArray::gdrive_finfoarray_get_count()
+    unsigned long FileinfoArray::count() const
     {
         return mContainer.size();
     }
 
-    void FileinfoArray::gdrive_finfoarray_add_from_json(Json& jsonObj)
+    void FileinfoArray::addFromJson(const Json& jsonObj)
     {
-        Fileinfo* pInfo = new Fileinfo(gInfo, jsonObj);
+        Fileinfo* pInfo = new Fileinfo(mGInfo, jsonObj);
         mContainer.push_back(pInfo);
     }
 }

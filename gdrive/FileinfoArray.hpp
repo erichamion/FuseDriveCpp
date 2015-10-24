@@ -22,19 +22,18 @@ namespace fusedrive
         
         virtual ~FileinfoArray();
 
-        const Fileinfo* 
-        gdrive_finfoarray_get_first();
+        const Fileinfo* first();
 
-        const Fileinfo* gdrive_finfoarray_get_next();
+        const Fileinfo* next();
 
-        unsigned long gdrive_finfoarray_get_count();
+        unsigned long count() const;
 
-        void gdrive_finfoarray_add_from_json(Json& jsonObj);
+        void addFromJson(const Json& jsonObj);
 
     private:
         std::vector<Fileinfo*> mContainer;
         unsigned long mNextIndex;
-        Gdrive& gInfo;
+        Gdrive& mGInfo;
         
         FileinfoArray(const FileinfoArray& orig);
         

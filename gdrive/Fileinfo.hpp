@@ -54,13 +54,13 @@ namespace fusedrive
 
         int setMtime(const struct timespec* ts);
 
-        void readJson(Json& jsonObj);
+        void readJson(const Json& jsonObj);
 
         unsigned int getRealPermissions() const;
 
         Fileinfo(Gdrive& gInfo);
         
-        Fileinfo(Gdrive& gInfo, Json& jsonObj);
+        Fileinfo(Gdrive& gInfo, const Json& jsonObj);
         
         virtual ~Fileinfo();
         

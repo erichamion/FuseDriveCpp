@@ -155,7 +155,7 @@ namespace fusedrive
                                 index);
                         if (jsonFile.isValid())
                         {
-                            fileArray.gdrive_finfoarray_add_from_json(jsonFile);
+                            fileArray.addFromJson(jsonFile);
                         }
                     }
                 }
@@ -338,7 +338,7 @@ namespace fusedrive
             if (ListFolderContents(fileId, fileArray) >= 0)
             {
 
-                pFileinfo->nChildren = fileArray.gdrive_finfoarray_get_count();
+                pFileinfo->nChildren = fileArray.count();
             }
         }
         return *pFileinfo;

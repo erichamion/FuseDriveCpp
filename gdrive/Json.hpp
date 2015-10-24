@@ -32,10 +32,10 @@ namespace fusedrive
         
         Json getNestedObject(const std::string& key="");
 
-        std::string getString(const std::string& key="");
+        std::string getString(const std::string& key="") const;
 
         int64_t getInt64(const std::string& key, bool convertTypes, 
-            bool& success);
+            bool& success) const;
         
         int64_t getInt64(bool convertTypes, bool& success);
 
@@ -58,7 +58,7 @@ namespace fusedrive
 
         std::string toString(bool pretty);
 
-        int getArrayLength(const std::string& key, bool& success);
+        int getArrayLength(const std::string& key, bool& success) const;
         
         int getArrayLength(bool& success);
 
@@ -82,10 +82,10 @@ namespace fusedrive
         
         Json(json_object* pObj);
         
-        json_object* getNestedInternal(const std::string& key);
+        json_object* getNestedInternal(const std::string& key) const;
         
         json_object* getNestedInternal(json_object* pObj, 
-            const std::string& key);
+            const std::string& key) const;
         
     };
 

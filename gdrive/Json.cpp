@@ -46,7 +46,7 @@ namespace fusedrive
         return Json(getNestedInternal(key));
     }
 
-    string Json::getString(const string& key)
+    string Json::getString(const string& key) const
     {
         json_object* pInnerObj = getNestedInternal(key);
         if (pInnerObj == NULL || 
@@ -60,7 +60,7 @@ namespace fusedrive
         return string(jsonStr ? jsonStr : "");
     }
 
-    int64_t Json::getInt64(const string& key, bool convertTypes, bool& success)
+    int64_t Json::getInt64(const string& key, bool convertTypes, bool& success) const
     {
         json_object* pInnerObj = getNestedInternal(key);
         if (pInnerObj == NULL)
@@ -200,7 +200,7 @@ namespace fusedrive
     return string(json_object_to_json_string_ext(mpJsonObj, flags));
     }
 
-    int Json::getArrayLength(const string& key, bool& success)
+    int Json::getArrayLength(const string& key, bool& success) const
     {
         json_object* pInnerObj = getNestedInternal(key);
         if (pInnerObj == NULL || !json_object_is_type(pInnerObj, json_type_array))
@@ -273,13 +273,13 @@ namespace fusedrive
         json_object_get(pObj);
     }
     
-    json_object* Json::getNestedInternal(const string& key)
+    json_object* Json::getNestedInternal(const string& key) const
     {
         return getNestedInternal(mpJsonObj, key);
     }
     
     json_object* Json::getNestedInternal(json_object* pObj, 
-            const string& key)
+            const string& key) const
     {
         if (key.empty())
         {

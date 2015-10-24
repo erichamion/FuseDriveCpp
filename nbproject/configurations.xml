@@ -11,6 +11,7 @@
         <itemPath>gdrive/FileContents.hpp</itemPath>
         <itemPath>gdrive/FileIdCacheNode.hpp</itemPath>
         <itemPath>gdrive/Fileinfo.hpp</itemPath>
+        <itemPath>gdrive/FileinfoArray.hpp</itemPath>
         <itemPath>gdrive/Gdrive.hpp</itemPath>
         <itemPath>gdrive/GdriveFile.hpp</itemPath>
         <itemPath>gdrive/Json.hpp</itemPath>
@@ -22,7 +23,6 @@
         <itemPath>gdrive/gdrive-transfer.hpp</itemPath>
         <itemPath>gdrive/gdrive-util.h</itemPath>
       </logicalFolder>
-      <itemPath>gdrive/FileinfoArray.hpp</itemPath>
       <itemPath>FuseDrivePrivateData.hpp</itemPath>
       <itemPath>gdrive/NullStream.hpp</itemPath>
       <itemPath>Options.hpp</itemPath>
@@ -42,6 +42,7 @@
         <itemPath>gdrive/FileContents.cpp</itemPath>
         <itemPath>gdrive/FileIdCacheNode.cpp</itemPath>
         <itemPath>gdrive/Fileinfo.cpp</itemPath>
+        <itemPath>gdrive/FileinfoArray.cpp</itemPath>
         <itemPath>gdrive/Gdrive.cpp</itemPath>
         <itemPath>gdrive/GdriveFile.cpp</itemPath>
         <itemPath>gdrive/GdriveInfo.cpp</itemPath>
@@ -52,7 +53,6 @@
         <itemPath>gdrive/gdrive-transfer.cpp</itemPath>
         <itemPath>gdrive/gdrive-util.c</itemPath>
       </logicalFolder>
-      <itemPath>gdrive/FileinfoArray.cpp</itemPath>
       <itemPath>FuseDrivePrivateData.cpp</itemPath>
       <itemPath>gdrive/NullStream.cpp</itemPath>
       <itemPath>Options.cpp</itemPath>
