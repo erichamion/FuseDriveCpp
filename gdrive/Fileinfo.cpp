@@ -33,11 +33,20 @@ namespace fusedrive
     **************************/
     
     
-    void Fileinfo::Cleanup()
+    void Fileinfo::clear()
     {
-
         filename.clear();
         id.clear();
+        
+        type = (Gdrive_Filetype) 0;
+        size = 0;
+        basePermission = 0;
+        creationTime = {0};
+        modificationTime = {0};
+        accessTime = {0};
+        nParents = 0;
+        nChildren = 0;
+        dirtyMetainfo = false;
     }
 
     string Fileinfo::getAtimeString() const
@@ -179,23 +188,19 @@ namespace fusedrive
     Fileinfo::Fileinfo(Gdrive& gInfo)
     : gInfo(gInfo)
     {
-        
-        type = (Gdrive_Filetype) 0;
-        size = 0;
-        basePermission = 0;
-        creationTime = {0};
-        modificationTime = {0};
-        accessTime = {0};
-        nParents = 0;
-        nChildren = 0;
-        dirtyMetainfo = false;
+        clear();
     }
-
     
+    Fileinfo::Fileinfo(Gdrive& gInfo, Json& jsonObj)
+    : gInfo(gInfo)
+    {
+        clear();
+        readJson(jsonObj);
+    }
 
     Fileinfo::~Fileinfo() {
         
-        Cleanup();
+        clear();
     }
     
     

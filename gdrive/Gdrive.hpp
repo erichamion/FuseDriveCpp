@@ -10,7 +10,7 @@
 
 #include "GdriveEnums.hpp"
 
-#include "gdrive-fileinfo-array.hpp"
+#include "FileinfoArray.hpp"
 #include "gdrive-sysinfo.hpp"
 #include "Cache.hpp"
 //#include "GdriveFile.hpp"
@@ -61,7 +61,8 @@ namespace fusedrive
 
         int getFilesystemPermissions(enum Gdrive_Filetype type);
 
-        Gdrive_Fileinfo_Array*  ListFolderContents(const std::string& folderId);
+        int ListFolderContents(const std::string& folderId, 
+            FileinfoArray& fileArray);
 
         std::string getFileIdFromPath(const std::string& path);
         

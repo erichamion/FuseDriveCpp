@@ -42,7 +42,7 @@ namespace fusedrive
         Gdrive& gInfo;
         
         
-        void Cleanup();
+        void clear();
 
         std::string getAtimeString() const;
 
@@ -59,6 +59,8 @@ namespace fusedrive
         unsigned int getRealPermissions() const;
 
         Fileinfo(Gdrive& gInfo);
+        
+        Fileinfo(Gdrive& gInfo, Json& jsonObj);
         
         virtual ~Fileinfo();
         

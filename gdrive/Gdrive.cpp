@@ -102,7 +102,8 @@ namespace fusedrive
     }
 
 
-    Gdrive_Fileinfo_Array*  Gdrive::ListFolderContents(const string& folderId)
+    int Gdrive::ListFolderContents(const string& folderId, 
+            FileinfoArray& fileArray)
     {
         // Allow for an initial quote character in addition to the terminating null
         string filter = string("'") + folderId + 
@@ -132,7 +133,6 @@ namespace fusedrive
         // TODO: Somehow unify this process with other ways to fill Gdrive_Fileinfo,
         // reducing code duplication and taking advantage of the cache.
         int fileCount = -1;
-        Gdrive_Fileinfo_Array* pArray = NULL;
         if (pBuf != NULL && pBuf->getHttpResponse() < 400)
         {
             // Transfer was successful.  Convert result to a JSON object and extract
@@ -144,39 +144,31 @@ namespace fusedrive
                 fileCount = jsonObj.getArrayLength("items", dummy);
                 if (fileCount > 0)
                 {
-                    // Create an array of Gdrive_Fileinfo structs large enough to
-                    // hold all the items.
-                    pArray = gdrive_finfoarray_create(*this, fileCount);
-                    if (pArray != NULL)
+                    // Extract Fileinfo for each item and insert into a 
+                    // FileinfoArray.
+
+                    // Extract the file info from each member of the array.
+                    for (int index = 0; index < fileCount; index++)
                     {
-                        // Extract the file info from each member of the array.
-                        for (int index = 0; index < fileCount; index++)
+                        Json jsonFile = 
+                                jsonObj.arrayGet("items",
+                                index);
+                        if (jsonFile.isValid())
                         {
-                            Json jsonFile = 
-                                    jsonObj.arrayGet("items",
-                                    index);
-                            if (jsonFile.isValid())
-                            {
-                                gdrive_finfoarray_add_from_json(pArray, jsonFile);
-                            }
+                            fileArray.gdrive_finfoarray_add_from_json(jsonFile);
                         }
-                    }
-                    else
-                    {
-                        // Memory error.
-                        fileCount = -1;
                     }
                 }
                 // else either failure (return -1) or 0-length array (return 0),
                 // nothing special needs to be done.
 
             }
-            // else do nothing.  Already prepared to return error.
+            // else do nothing.  Already prepared to return error (-1).
         }
 
         delete pBuf;
 
-        return pArray;
+        return fileCount;
     }
 
 
@@ -342,13 +334,12 @@ namespace fusedrive
         // If it's a folder, get the number of children.
         if (pFileinfo->type == GDRIVE_FILETYPE_FOLDER)
         {
-            Gdrive_Fileinfo_Array* pFileArray = ListFolderContents(fileId);
-            if (pFileArray != NULL)
+            FileinfoArray fileArray(*this);
+            if (ListFolderContents(fileId, fileArray) >= 0)
             {
 
-                pFileinfo->nChildren = gdrive_finfoarray_get_count(pFileArray);
+                pFileinfo->nChildren = fileArray.gdrive_finfoarray_get_count();
             }
-            gdrive_finfoarray_free(pFileArray);
         }
         return *pFileinfo;
     }

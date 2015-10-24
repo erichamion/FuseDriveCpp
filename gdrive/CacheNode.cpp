@@ -259,7 +259,7 @@ namespace fusedrive
 
     void CacheNode::updateFromJson(Json& jsonObj)
     {
-        fileinfo.Cleanup();
+        fileinfo.clear();
         fileinfo.readJson(jsonObj);
 
         // Mark the node as having been updated.

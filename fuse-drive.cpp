@@ -834,9 +834,8 @@ using namespace fusedrive;
             return accessResult;
         }
 
-        Gdrive_Fileinfo_Array* pFileArray = 
-                gInfo.ListFolderContents(folderId);
-        if (pFileArray == NULL)
+        FileinfoArray fileArray(gInfo);
+        if (gInfo.ListFolderContents(folderId, fileArray) < 0)
         {
             // An error occurred.
             return -ENOENT;
@@ -845,9 +844,9 @@ using namespace fusedrive;
         filler(buf, ".", NULL, 0);
         filler(buf, "..", NULL, 0);
         const Fileinfo* pCurrentFile;
-        for (pCurrentFile = gdrive_finfoarray_get_first(pFileArray); 
+        for (pCurrentFile = fileArray.gdrive_finfoarray_get_first(); 
                 pCurrentFile != NULL; 
-                pCurrentFile = gdrive_finfoarray_get_next(pFileArray, pCurrentFile)
+                pCurrentFile = fileArray.gdrive_finfoarray_get_next()
                 )
         {
             struct stat st = {0};
@@ -864,7 +863,6 @@ using namespace fusedrive;
             filler(buf, pCurrentFile->filename.c_str(), &st, 0);
         }
 
-        gdrive_finfoarray_free(pFileArray);
 
         return 0;
     }
