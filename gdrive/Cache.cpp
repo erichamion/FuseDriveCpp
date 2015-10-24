@@ -33,31 +33,25 @@ namespace fusedrive
     void Cache::init()
     {
         // Prepare and send the network request
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(mGInfo);
-        if (pTransfer == NULL)
+        HttpTransfer xfer(mGInfo);
+        
+        xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET)
+            .gdrive_xfer_set_url(Gdrive::GDRIVE_URL_ABOUT)
+            .gdrive_xfer_add_query("includeSubscribed", "false")
+            .gdrive_xfer_add_query("fields", "largestChangeId");
+        
+        int result = xfer.gdrive_xfer_execute();
+        if (result != 0)
         {
-            // Memory error
-            throw new bad_alloc();
-        }
-        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
-        if (
-                gdrive_xfer_set_url(pTransfer, Gdrive::GDRIVE_URL_ABOUT.c_str()) || 
-                gdrive_xfer_add_query(mGInfo, pTransfer, "includeSubscribed", "false") || 
-                gdrive_xfer_add_query(mGInfo, pTransfer, "fields", "largestChangeId")
-            )
-        {
-            // Error
-            gdrive_xfer_free(pTransfer);
+            // The transfer failed
             throw new exception();
         }
-        DownloadBuffer* pBuf = gdrive_xfer_execute(mGInfo, pTransfer);
-        gdrive_xfer_free(pTransfer);
-
+        
         bool success = false;
-        if (pBuf != NULL && pBuf->getHttpResponse() < 400)
+        if (xfer.getHttpResponse() < 400)
         {
             // Response was good, try extracting the data.
-            Json jsonObj(pBuf->getData());
+            Json jsonObj(xfer.getData());
             int newNextChangeId = 
                     jsonObj.getInt64("largestChangeId", true, success) + 1;
             if (success)
@@ -65,7 +59,6 @@ namespace fusedrive
                 mNextChangeId = newNextChangeId;
             }
         }
-        delete pBuf;
         
         if (!success)
         {
@@ -124,32 +117,24 @@ namespace fusedrive
         changeIdStream << mNextChangeId;
 
         // Prepare the request, using the string change ID, and send it
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(mGInfo);
-        if (pTransfer == NULL)
+        HttpTransfer xfer(mGInfo);
+        
+        xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET)
+            .gdrive_xfer_set_url(Gdrive::GDRIVE_URL_CHANGES)
+            .gdrive_xfer_add_query("startChangeId", changeIdStream.str())
+            .gdrive_xfer_add_query("includeSubscribed", "false");
+        
+        int result = xfer.gdrive_xfer_execute();
+        if (result != 0)
         {
-            // Memory error
             return -1;
         }
-        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
-        if (
-                gdrive_xfer_set_url(pTransfer, Gdrive::GDRIVE_URL_CHANGES.c_str()) || 
-                gdrive_xfer_add_query(mGInfo, pTransfer, "startChangeId", 
-                                      changeIdStream.str().c_str()) || 
-                gdrive_xfer_add_query(mGInfo, pTransfer, "includeSubscribed", "false")
-            )
-        {
-            // Error
-            gdrive_xfer_free(pTransfer);
-        }
-        DownloadBuffer* pBuf = gdrive_xfer_execute(mGInfo,pTransfer);
-        gdrive_xfer_free(pTransfer);
-
 
         int returnVal = -1;
-        if (pBuf != NULL && pBuf->getHttpResponse() < 400)
+        if (xfer.getHttpResponse() < 400)
         {
             // Response was good, try extracting the data.
-            Json jsonObj(pBuf->getData());
+            Json jsonObj(xfer.getData());
             if (jsonObj.isValid())
             {
                 // Update or remove cached data for each item in the "items" array.
@@ -228,7 +213,6 @@ namespace fusedrive
                 returnVal = success ? 0 : -1;
             }
         }
-        delete pBuf;
 
         // Reset the last updated time
         mLastUpdateTime = time(NULL);

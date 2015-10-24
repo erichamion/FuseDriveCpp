@@ -152,35 +152,16 @@ namespace fusedrive
         size_t size)
     {
         Gdrive& gInfo = mCacheNode.getGdrive();
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(gInfo);
-        if (pTransfer == NULL)
-        {
-            // Memory error
-            return -1;
-        }
-        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
+        HttpTransfer xfer(gInfo);
+        xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET);
 
         // Construct the base URL in the form of "<GDRIVE_URL_FILES>/<fileId>".
         string fileUrl(Gdrive::GDRIVE_URL_FILES);
         fileUrl += "/";
         fileUrl += fileId;
-        if (gdrive_xfer_set_url(pTransfer, fileUrl.c_str()) != 0)
-        {
-            // Error
-            gdrive_xfer_free(pTransfer);
-            return -1;
-        }
-
-        // Construct query parameters
-        if (
-                gdrive_xfer_add_query(gInfo, pTransfer, "updateViewedDate", "false") || 
-                gdrive_xfer_add_query(gInfo, pTransfer, "alt", "media")
-            )
-        {
-            // Error
-            gdrive_xfer_free(pTransfer);
-            return -1;
-        }
+        xfer.gdrive_xfer_set_url(fileUrl)
+            .gdrive_xfer_add_query("updateViewedDate", "false")
+            .gdrive_xfer_add_query("alt", "media");
 
         // Add the Range header.  Per 
         // http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.35 it is
@@ -190,15 +171,9 @@ namespace fusedrive
         stringstream rangeHeader;
         rangeHeader << "Range: bytes=" << start << '-' << end;
         
-        if (gdrive_xfer_add_header(pTransfer, rangeHeader.str().c_str()) != 0)
-        {
-            // Error
-            gdrive_xfer_free(pTransfer);
-            return -1;
-        }
-
-        // Set the destination file to the current chunk's handle
-        gdrive_xfer_set_destfile(pTransfer, mFh);
+        xfer.gdrive_xfer_add_header(rangeHeader.str())
+            // Set the destination file to the current chunk's handle
+            .gdrive_xfer_set_destfile(mFh);
 
         // Make sure the file position is at the start and any stream errors are
         // cleared (this should be redundant, since we should normally have a newly
@@ -206,11 +181,12 @@ namespace fusedrive
         rewind(mFh);
 
         // Perform the transfer
-        DownloadBuffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
-        gdrive_xfer_free(pTransfer);
+        if (xfer.gdrive_xfer_execute() != 0)
+        {
+            return -1;
+        }
 
-        bool success = (pBuf != NULL && pBuf->getHttpResponse() < 400);
-        delete pBuf;
+        bool success = (xfer.getHttpResponse() < 400);
         if (success)
         {
             mStart = start;

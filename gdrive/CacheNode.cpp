@@ -54,28 +54,22 @@ namespace fusedrive
             // Get the fileinfo
             stringstream url;
             url << Gdrive::GDRIVE_URL_FILES <<  "/" << fileId;
-            Gdrive_Transfer* pTransfer = gdrive_xfer_create(gInfo);
-            if (!pTransfer)
+            HttpTransfer xfer(gInfo);
+            
+            xfer.gdrive_xfer_set_url(url.str())
+                .gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET);
+            
+            if (xfer.gdrive_xfer_execute() != 0)
             {
-                // Memory error
                 return NULL;
             }
-            if (gdrive_xfer_set_url(pTransfer, url.str().c_str()))
-            {
-                // Error, probably memory
-                return NULL;
-            }
-            gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
-            DownloadBuffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
-            gdrive_xfer_free(pTransfer);
-            if (!pBuf || pBuf->getHttpResponse() >= 400)
+            
+            if (xfer.getHttpResponse() >= 400)
             {
                 // Download or request error
-                delete pBuf;
                 return NULL;
             }
-            Json jsonObj(pBuf->getData());
-            delete pBuf;
+            Json jsonObj(xfer.getData());
             if (!jsonObj.isValid())
             {
                 // Couldn't convert network response to JSON

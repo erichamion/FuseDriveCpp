@@ -18,7 +18,7 @@
 #include <string>
 
 
-#include "gdrive-transfer.hpp"
+#include "HttpTransfer.hpp"
 #include "gdrive-util.h"
 #include "DownloadBuffer.hpp"
 

@@ -29,11 +29,13 @@ namespace fusedrive
         
         virtual ~DownloadBuffer();
         
-        long getHttpResponse();
+        long getHttpResponse() const;
 
-        std::string getData();
+        std::string getData() const;
+        
+        std::string getHeaders() const;
 
-        bool wasSuccessful();
+        bool wasSuccessful() const;
 
         int downloadWithRetry(CURL* curlHandle, bool retryOnAuthError,
             int maxTries);

@@ -283,47 +283,28 @@ namespace fusedrive
             return -EACCES;
         }
 
-        // Just using simple upload for now.
-        // TODO: Consider using resumable upload, possibly only for large files.
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(mGInfo);
-        if (pTransfer == NULL)
-        {
-            // Memory error
-            return -ENOMEM;
-        }
-        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_PUT);
-
         // Assemble the URL
         stringstream url;
         url << Gdrive::GDRIVE_URL_UPLOAD <<  "/" << getFileinfo().id;
-        if (gdrive_xfer_set_url(pTransfer, url.str().c_str()) != 0)
-        {
-            // Error, probably memory
-            gdrive_xfer_free(pTransfer);
-            return -ENOMEM;
-        }
-
-        // Add query parameter(s)
-        if (gdrive_xfer_add_query(mGInfo, pTransfer, "uploadType", "media") != 0)
-        {
-            // Error, probably memory
-            gdrive_xfer_free(pTransfer);
-            return -ENOMEM;
-        }
-
-        // Set upload callback
-        gdrive_xfer_set_uploadcallback(pTransfer, uploadCallback, this);
-
-        // Do the transfer
-        DownloadBuffer* pBuf = gdrive_xfer_execute(mGInfo, pTransfer);
-        gdrive_xfer_free(pTransfer);
-        int returnVal = (pBuf == NULL || pBuf->getHttpResponse() >= 400);
+        
+        // Just using simple upload for now.
+        // TODO: Consider using resumable upload, possibly only for large files.
+        HttpTransfer xfer(mGInfo);
+        
+        int result =
+            xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_PUT)
+                .gdrive_xfer_set_url(url.str())
+                .gdrive_xfer_add_query("uploadType", "media")
+                // Set upload callback
+                .gdrive_xfer_set_uploadcallback(uploadCallback, this)
+                .gdrive_xfer_execute();
+            
+        int returnVal = (result != 0 || xfer.getHttpResponse() >= 400);
         if (returnVal == 0)
         {
             // Success. Clear the dirty flag
             mCacheNode.setDirty(false);
         }
-        delete pBuf;
         return returnVal;
     }
 
@@ -584,47 +565,33 @@ namespace fusedrive
         }
 
         // Set up the network request
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(gInfo);
-        if (pTransfer == NULL)
-        {
-            error = ENOMEM;
-            gdrive_xfer_free(pTransfer);
-            return NULL;
-        }
+        HttpTransfer xfer(gInfo);
+        
         // URL, header, and updateViewedDate query parameter always get added. The 
         // setModifiedDate query parameter only gets set when hasMtime is true. Any 
         // of these can fail with an out of memory error (returning non-zero).
-        if ((gdrive_xfer_set_url(pTransfer, url.str().c_str()) || 
-                gdrive_xfer_add_header(pTransfer, "Content-Type: application/json"))
-                || 
-                (hasMtime && 
-                gdrive_xfer_add_query(gInfo, pTransfer, "setModifiedDate", "true")) || 
-                gdrive_xfer_add_query(gInfo, pTransfer, "updateViewedDate", "false")
-            )
+        if (hasMtime)
         {
-            error = ENOMEM;
-            gdrive_xfer_free(pTransfer);
-            return NULL;
+            xfer.gdrive_xfer_add_query("setModifiedDate", "true");
         }
-        gdrive_xfer_set_requesttype(pTransfer, (pFileinfo != NULL) ? 
-            GDRIVE_REQUEST_PATCH : GDRIVE_REQUEST_POST);
-        gdrive_xfer_set_body(pTransfer, uploadResourceStr.c_str());
+        int result =
+            xfer.gdrive_xfer_set_url(url.str())
+                .gdrive_xfer_add_header("Content-Type: application/json")
+                .gdrive_xfer_add_query("updateViewedDate", "false")
+                .gdrive_xfer_set_requesttype((pFileinfo != NULL) ? 
+                    GDRIVE_REQUEST_PATCH : GDRIVE_REQUEST_POST)
+                .gdrive_xfer_set_body(uploadResourceStr)
+                .gdrive_xfer_execute();
 
-        // Do the transfer
-        DownloadBuffer* pBuf = gdrive_xfer_execute(gInfo, pTransfer);
-        gdrive_xfer_free(pTransfer);
-
-        if (pBuf == NULL || pBuf->getHttpResponse() >= 400)
+        if (result != 0 || xfer.getHttpResponse() >= 400)
         {
             // Transfer was unsuccessful
             error = EIO;
-            delete pBuf;
             return NULL;
         }
 
         // Extract the file ID from the returned resource
-        Json jsonObj(pBuf->getData());
-        delete pBuf;
+        Json jsonObj(xfer.getData());
         if (!jsonObj.isValid())
         {
             // Either memory error, or couldn't convert the response to JSON.

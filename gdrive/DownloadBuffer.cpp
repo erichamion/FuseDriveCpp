@@ -31,17 +31,22 @@ namespace fusedrive
         // Empty
     }
 
-    long DownloadBuffer::getHttpResponse()
+    long DownloadBuffer::getHttpResponse() const
     {
         return mHttpResp;
     }
 
-    string DownloadBuffer::getData()
+    string DownloadBuffer::getData() const
     {
         return mData.str();
     }
+    
+    string DownloadBuffer::getHeaders() const
+    {
+        return this->mReturnedHeaders.str();
+    }
 
-    bool DownloadBuffer::wasSuccessful()
+    bool DownloadBuffer::wasSuccessful() const
     {
         return (mResultCode == CURLE_OK);
     }

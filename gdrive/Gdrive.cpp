@@ -110,34 +110,28 @@ namespace fusedrive
                 string("' in parents and trashed=false");
 
         // Prepare the network request
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(*this);
-        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
-
-        if (
-                gdrive_xfer_set_url(pTransfer, GDRIVE_URL_FILES.c_str()) || 
-                gdrive_xfer_add_query(*this, pTransfer, "q", filter.c_str()) || 
-                gdrive_xfer_add_query(*this, pTransfer, "fields", 
-                                      "items(title,id,mimeType)")
-            )
-        {
-            // Error
-            gdrive_xfer_free(pTransfer);
-            throw new exception();
-        }
+        HttpTransfer xfer(*this);
+        xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET)
+            .gdrive_xfer_set_url(GDRIVE_URL_FILES)
+            .gdrive_xfer_add_query("q", filter)
+            .gdrive_xfer_add_query("fields", "items(title,id,mimeType)");
 
         // Send the network request
-        DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
-        gdrive_xfer_free(pTransfer);
+        if (xfer.gdrive_xfer_execute() != 0)
+        {
+            // Request failed
+            return -1;
+        };
 
 
         // TODO: Somehow unify this process with other ways to fill Gdrive_Fileinfo,
         // reducing code duplication and taking advantage of the cache.
         int fileCount = -1;
-        if (pBuf != NULL && pBuf->getHttpResponse() < 400)
+        if (xfer.getHttpResponse() < 400)
         {
             // Transfer was successful.  Convert result to a JSON object and extract
             // the file meta-info.
-            Json jsonObj(pBuf->getData());
+            Json jsonObj(xfer.getData());
             if (jsonObj.isValid())
             {
                 bool dummy;
@@ -165,8 +159,6 @@ namespace fusedrive
             }
             // else do nothing.  Already prepared to return error (-1).
         }
-
-        delete pBuf;
 
         return fileCount;
     }
@@ -267,13 +259,9 @@ namespace fusedrive
         // else it wasn't cached, need to fill in the struct
 
         // Prepare the request
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(*this);
-        if (pTransfer == NULL)
-        {
-            // Memory error
-            throw new exception();
-        }
-        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
+        HttpTransfer xfer(*this);
+        
+        xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET);
 
         // Add the URL.
         // String to hold the url.  Add 2 to the end to account for the '/' before
@@ -281,39 +269,24 @@ namespace fusedrive
         string baseUrl(Gdrive::GDRIVE_URL_FILES);
         baseUrl += "/";
         baseUrl += fileId;
-        if (gdrive_xfer_set_url(pTransfer, baseUrl.c_str()) != 0)
-        {
-            // Error
-            gdrive_xfer_free(pTransfer);
-            throw new exception();
-        }
-
-        // Add query parameters
-        if (gdrive_xfer_add_query(*this, pTransfer, "fields", 
-                                  "title,id,mimeType,fileSize,createdDate,"
-                                  "modifiedDate,lastViewedByMeDate,parents(id),"
-                                  "userPermission") != 0)
-        {
-            // Error
-            gdrive_xfer_free(pTransfer);
-            throw new exception();
-        }
+        
+        xfer.gdrive_xfer_set_url(baseUrl)
+            .gdrive_xfer_add_query("fields", "title,id,mimeType,fileSize,"
+                                    "createdDate,modifiedDate,"
+                                    "lastViewedByMeDate,parents(id),"
+                                    "userPermission");
 
         // Perform the request
-        DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
-        gdrive_xfer_free(pTransfer);
-
-        if (pBuf == NULL)
+        if (xfer.gdrive_xfer_execute() != 0)
         {
             // Download error
             throw new exception();
         }
 
-        if (pBuf->getHttpResponse() >= 400)
+        if (xfer.getHttpResponse() >= 400)
         {
             // Server returned an error that couldn't be retried, or continued
             // returning an error after retrying
-            delete pBuf;
             throw new exception();
         }
 
@@ -321,8 +294,7 @@ namespace fusedrive
         // response.
 
         // Convert to a JSON object.
-        Json jsonObj(pBuf->getData());
-        delete pBuf;
+        Json jsonObj(xfer.getData());
         if (!jsonObj.isValid())
         {
             // Couldn't convert to Json object
@@ -504,26 +476,14 @@ namespace fusedrive
         // "<standard Drive Files url>/<fileId>/parents/<parentId>"
         string url = GDRIVE_URL_FILES + "/" + fileId + "/parents/" + parentId;
 
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(*this);
-        if (pTransfer == NULL)
-        {
-            return -ENOMEM;
-        }
-        if (gdrive_xfer_set_url(pTransfer, url.c_str()) != 0)
-        {
-            // Error, probably memory
-            gdrive_xfer_free(pTransfer);
-            return -ENOMEM;
-        }
-        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_DELETE);
+        HttpTransfer xfer(*this);
+        
+        xfer.gdrive_xfer_set_url(url) 
+            .gdrive_xfer_set_requesttype(GDRIVE_REQUEST_DELETE);
 
-        DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
-        gdrive_xfer_free(pTransfer);
+        int result = xfer.gdrive_xfer_execute();
 
-        int returnVal = (pBuf == NULL || pBuf->getHttpResponse() >= 400) ? 
-            -EIO : 0;
-        delete pBuf;
-        return returnVal;
+        return (result != 0 || xfer.getHttpResponse() >= 400) ? -EIO : 0;
     }
 
 
@@ -546,25 +506,16 @@ namespace fusedrive
         // "<standard Drive Files url>/<fileId>/trash"
         string url = GDRIVE_URL_FILES + "/" + fileId + "/trash";
 
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(*this);
-        if (pTransfer == NULL)
-        {
-            return -ENOMEM;
-        }
-        if (gdrive_xfer_set_url(pTransfer, url.c_str()) != 0)
-        {
-            // Error, probably memory
-            gdrive_xfer_free(pTransfer);
-            return -ENOMEM;
-        }
-        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_POST);
+        HttpTransfer xfer(*this);
+        
+        xfer.gdrive_xfer_set_url(url)
+            .gdrive_xfer_set_requesttype(GDRIVE_REQUEST_POST);
 
-        DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
-        gdrive_xfer_free(pTransfer);
+        int result = xfer.gdrive_xfer_execute();
 
-        int returnVal = (pBuf == NULL || pBuf->getHttpResponse() >= 400) ? 
+        int returnVal = (result != 0 || xfer.getHttpResponse() >= 400) ? 
             -EIO : 0;
-        delete pBuf;
+        
         if (returnVal == 0)
         {
             mCache.deleteId(fileId);
@@ -599,28 +550,17 @@ namespace fusedrive
         string body = string(jsonObj.toString(false));
         
 
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(*this);
-        if (pTransfer == NULL)
-        {
-            return -ENOMEM;
-        }
-        if (gdrive_xfer_set_url(pTransfer, url.c_str()) || 
-                gdrive_xfer_add_header(pTransfer, "Content-Type: application/json")
-                )
-        {
-            // Error, probably memory
-            gdrive_xfer_free(pTransfer);
-            return -ENOMEM;
-        }
-        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_POST);
-        gdrive_xfer_set_body(pTransfer, body.c_str());
+        HttpTransfer xfer(*this);
+        
+        xfer.gdrive_xfer_set_url(url)
+            .gdrive_xfer_add_header("Content-Type: application/json")
+            .gdrive_xfer_set_requesttype(GDRIVE_REQUEST_POST)
+            .gdrive_xfer_set_body(body);
 
-        DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
-        gdrive_xfer_free(pTransfer);
+        int result = xfer.gdrive_xfer_execute();
 
-        int returnVal = (pBuf == NULL || pBuf->getHttpResponse() >= 400) ? 
+        int returnVal = (result != 0 || xfer.getHttpResponse() >= 400) ? 
             -EIO : 0;
-        delete pBuf;
 
         if (returnVal == 0)
         {
@@ -657,32 +597,18 @@ namespace fusedrive
         string url = GDRIVE_URL_FILES + "/" + fileId;
 
         // Set up the network transfer
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(*this);
-        if (!pTransfer)
-        {
-            // Memory error
-            return -ENOMEM;
-        }
-        if (gdrive_xfer_set_url(pTransfer, url.c_str()) || 
-                gdrive_xfer_add_query(*this, pTransfer, "updateViewedDate", "false") || 
-                gdrive_xfer_add_header(pTransfer, "Content-Type: application/json")
-                )
-        {
-            // Error, probably memory
-            gdrive_xfer_free(pTransfer);
-            return -ENOMEM;
-        }
-        gdrive_xfer_set_body(pTransfer, body.c_str());
-        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_PATCH);
+        HttpTransfer xfer(*this);
+        
+        xfer.gdrive_xfer_set_url(url)
+            .gdrive_xfer_add_query("updateViewedDate", "false")
+            .gdrive_xfer_add_header("Content-Type: application/json")
+            .gdrive_xfer_set_body(body)
+            .gdrive_xfer_set_requesttype(GDRIVE_REQUEST_PATCH);
 
         // Send the network request
-        DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
-        gdrive_xfer_free(pTransfer);
+        int result = xfer.gdrive_xfer_execute();
 
-        int returnVal = (pBuf == NULL || pBuf->getHttpResponse() >= 400) ? 
-            -EIO : 0;
-        delete pBuf;
-        return returnVal;
+        return (result != 0 || xfer.getHttpResponse() >= 400) ? -EIO : 0;
     }
     
     Sysinfo& Gdrive::sysinfo()
@@ -898,47 +824,33 @@ namespace fusedrive
         }
 
         // Set up the network request
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(*this);
-        if (pTransfer == NULL)
-        {
-            error = ENOMEM;
-            gdrive_xfer_free(pTransfer);
-            return NULL;
-        }
+        HttpTransfer xfer(*this);
+        
         // URL, header, and updateViewedDate query parameter always get added. The 
-        // setModifiedDate query parameter only gets set when hasMtime is true. Any 
-        // of these can fail with an out of memory error (returning non-zero).
-        if ((gdrive_xfer_set_url(pTransfer, url.str().c_str()) || 
-                gdrive_xfer_add_header(pTransfer, "Content-Type: application/json"))
-                || 
-                (hasMtime && 
-                gdrive_xfer_add_query(*this, pTransfer, "setModifiedDate", "true")) || 
-                gdrive_xfer_add_query(*this, pTransfer, "updateViewedDate", "false")
-            )
+        // setModifiedDate query parameter only gets set when hasMtime is true.
+        xfer.gdrive_xfer_set_url(url.str())
+            .gdrive_xfer_add_header("Content-Type: application/json");
+        if (hasMtime)
         {
-            error = ENOMEM;
-            gdrive_xfer_free(pTransfer);
-            return NULL;
+            xfer.gdrive_xfer_add_query("setModifiedDate", "true");
         }
-        gdrive_xfer_set_requesttype(pTransfer, (pFileinfo != NULL) ? 
-            GDRIVE_REQUEST_PATCH : GDRIVE_REQUEST_POST);
-        gdrive_xfer_set_body(pTransfer, uploadResourceStr.c_str());
+        xfer.gdrive_xfer_add_query("updateViewedDate", "false")
+            .gdrive_xfer_set_requesttype((pFileinfo != NULL) ? 
+                GDRIVE_REQUEST_PATCH : GDRIVE_REQUEST_POST)
+            .gdrive_xfer_set_body(uploadResourceStr);
 
         // Do the transfer
-        DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
-        gdrive_xfer_free(pTransfer);
+        int result = xfer.gdrive_xfer_execute();
 
-        if (pBuf == NULL || pBuf->getHttpResponse() >= 400)
+        if (result != 0 || xfer.getHttpResponse() >= 400)
         {
             // Transfer was unsuccessful
             error = EIO;
-            delete pBuf;
             return NULL;
         }
 
         // Extract the file ID from the returned resource
-        Json jsonObj(pBuf->getData());
-        delete pBuf;
+        Json jsonObj(xfer.getData());
         if (!jsonObj.isValid())
         {
             // Either memory error, or couldn't convert the response to JSON.
@@ -1165,17 +1077,12 @@ namespace fusedrive
         }
 
         // Prepare the network request
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(*this);
-        if (pTransfer == NULL)
-        {
-            // Memory error
-            return -1;
-        }
-        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_POST);
-
-        // We're trying to get authorization, so it doesn't make sense to retry if
-        // authentication fails.
-        gdrive_xfer_set_retryonautherror(pTransfer, false);
+        HttpTransfer xfer(*this);
+        
+        xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_POST)
+            // We're trying to get authorization, so it doesn't make sense to retry if
+            // authentication fails.
+            .gdrive_xfer_set_retryonautherror(false);
 
         // Set up the post data. Some of the post fields depend on whether we have
         // an auth code or a refresh token, and some do not.
@@ -1184,15 +1091,8 @@ namespace fusedrive
         {
             // Converting an auth code into auth and refresh tokens.  Interpret
             // tokenString as the auth code.
-            if (gdrive_xfer_add_postfield(*this, pTransfer,
-                                      GDRIVE_FIELDNAME_REDIRECTURI.c_str(), 
-                                      GDRIVE_REDIRECT_URI.c_str()
-                    ) != 0)
-            {
-                // Error
-                gdrive_xfer_free(pTransfer);
-                return -1;
-            }
+            xfer.gdrive_xfer_add_postfield(GDRIVE_FIELDNAME_REDIRECTURI, 
+                    GDRIVE_REDIRECT_URI);
             tokenOrCodeField.assign(GDRIVE_FIELDNAME_CODE);
         }
         else
@@ -1201,38 +1101,26 @@ namespace fusedrive
             // refresh token.
             tokenOrCodeField.assign(GDRIVE_FIELDNAME_REFRESHTOKEN);
         }
-        if (
-                gdrive_xfer_add_postfield(*this, pTransfer, tokenOrCodeField.c_str(), 
-                                          tokenString.c_str()) || 
-                gdrive_xfer_add_postfield(*this, pTransfer, GDRIVE_FIELDNAME_CLIENTID.c_str(), 
-                                          GDRIVE_CLIENT_ID) || 
-                gdrive_xfer_add_postfield(*this, pTransfer, GDRIVE_FIELDNAME_CLIENTSECRET.c_str(),
-                                          GDRIVE_CLIENT_SECRET) || 
-                gdrive_xfer_add_postfield(*this, pTransfer, GDRIVE_FIELDNAME_GRANTTYPE.c_str(), 
-                                          grantType.c_str()) || 
-                gdrive_xfer_set_url(pTransfer, GDRIVE_URL_AUTH_TOKEN.c_str())
-            )
-        {
-            // Error
-            gdrive_xfer_free(pTransfer);
-            return -1;
-        }
+        xfer.gdrive_xfer_add_postfield(tokenOrCodeField, tokenString)
+            .gdrive_xfer_add_postfield(GDRIVE_FIELDNAME_CLIENTID, 
+                GDRIVE_CLIENT_ID)
+            .gdrive_xfer_add_postfield(GDRIVE_FIELDNAME_CLIENTSECRET,
+                GDRIVE_CLIENT_SECRET)
+            .gdrive_xfer_add_postfield(GDRIVE_FIELDNAME_GRANTTYPE, grantType)
+            .gdrive_xfer_set_url(GDRIVE_URL_AUTH_TOKEN);
+        
 
         // Do the transfer. 
-        DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
-        gdrive_xfer_free(pTransfer);
-
-        if (pBuf == NULL)
+        if (xfer.gdrive_xfer_execute() != 0)
         {
             // There was an error sending the request and getting the response.
             return -1;
         }
-        if (pBuf->getHttpResponse() >= 400)
+        if (xfer.getHttpResponse() >= 400)
         {
             // Failure, but probably not an error.  Most likely, the user has
             // revoked permission or the refresh token has otherwise been
             // invalidated.
-            delete pBuf;
             return 1;
         }
 
@@ -1240,8 +1128,7 @@ namespace fusedrive
         // need to pull the access_token string (and refresh token string if
         // present) out of it.
 
-        Json jsonObj(pBuf->getData());
-        delete pBuf;
+        Json jsonObj(xfer.getData());
         if (!jsonObj.isValid())
         {
             // Couldn't locate JSON-formatted information in the server's 
@@ -1342,34 +1229,18 @@ namespace fusedrive
 
     int Gdrive::checkScopes()
     {
-        // Prepare the network request
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(*this);
-        if (pTransfer == NULL)
-        {
-            // Memory error
-            return -1;
-        }
-        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
-        gdrive_xfer_set_retryonautherror(pTransfer, false);
-        if (
-                gdrive_xfer_set_url(pTransfer, GDRIVE_URL_AUTH_TOKENINFO.c_str()) || 
-                gdrive_xfer_add_query(*this, pTransfer, GDRIVE_FIELDNAME_ACCESSTOKEN.c_str(), 
-                                      mAccessToken.c_str())
-            )
-        {
-            // Error
-            gdrive_xfer_free(pTransfer);
-            return -1;
-        }
-
-        // Send the network request
-        DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
-        gdrive_xfer_free(pTransfer);
-
-        if (pBuf == NULL || pBuf->getHttpResponse() >= 400)
+        // Prepare and send the network request
+        HttpTransfer xfer(*this);
+        int result =
+            xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET)
+                .gdrive_xfer_set_retryonautherror(false)
+                .gdrive_xfer_set_url(GDRIVE_URL_AUTH_TOKENINFO)
+                .gdrive_xfer_add_query(GDRIVE_FIELDNAME_ACCESSTOKEN, mAccessToken)
+                .gdrive_xfer_execute();
+        
+        if (result != 0 || xfer.getHttpResponse() >= 400)
         {
             // Download failed or gave a bad response.
-            delete pBuf;
             return -1;
         }
 
@@ -1377,8 +1248,7 @@ namespace fusedrive
         // from the JSON array that should have been returned, and compare them
         // with the expected scopes.
 
-        Json jsonObj(pBuf->getData());
-        delete pBuf;
+        Json jsonObj(xfer.getData());
         if (!jsonObj.isValid())
         {
             // Couldn't interpret the response as JSON, return error.
@@ -1453,32 +1323,19 @@ namespace fusedrive
         string filter = string("'") + parentId + "' in parents and title = '" +
                 childName + "' and trashed = false";
 
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(*this);
-        if (pTransfer == NULL)
-        {
-            // Memory error
-            return string("");
-        }
-        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
-        if (
-                gdrive_xfer_set_url(pTransfer, GDRIVE_URL_FILES.c_str()) || 
-                gdrive_xfer_add_query(*this, pTransfer, "q", filter.c_str()) || 
-                gdrive_xfer_add_query(*this, pTransfer, "fields", "items(id)")
-            )
-        {
-            // Error
-            gdrive_xfer_free(pTransfer);
-            return string("");
-        }
+        HttpTransfer xfer(*this);
+        
+        int result =
+            xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET)
+                .gdrive_xfer_set_url(GDRIVE_URL_FILES)
+                .gdrive_xfer_add_query("q", filter)
+                .gdrive_xfer_add_query("fields", "items(id)")
+                .gdrive_xfer_execute();
 
-        DownloadBuffer* pBuf = gdrive_xfer_execute(*this, pTransfer);
-        gdrive_xfer_free(pTransfer);
-
-        if (pBuf == NULL || pBuf->getHttpResponse() >= 400)
+        if (result != 0 || xfer.getHttpResponse() >= 400)
         {
             // Download error
-            delete pBuf;
-            return string("");
+            return "";
         }
 
 
@@ -1486,12 +1343,11 @@ namespace fusedrive
         // response.
 
         // Convert to a JSON object.
-        Json jsonObj(pBuf->getData());
-        delete pBuf;
+        Json jsonObj(xfer.getData());
         if (!jsonObj.isValid())
         {
             // Couldn't convert to JSON object.
-            return string("");
+            return "";
         }
 
         string childId;

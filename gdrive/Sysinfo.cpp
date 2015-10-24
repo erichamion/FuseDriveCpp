@@ -111,40 +111,25 @@ namespace fusedrive
                 "largestChangeId,rootFolderId,importFormats,exportFormats";
 
         // Prepare the transfer
-        Gdrive_Transfer* pTransfer = gdrive_xfer_create(mGInfo);
-        if (pTransfer == NULL)
-        {
-            // Memory error
-            return -1;
-        }
-        gdrive_xfer_set_requesttype(pTransfer, GDRIVE_REQUEST_GET);
-        if (
-                gdrive_xfer_set_url(pTransfer, Gdrive::GDRIVE_URL_ABOUT.c_str()) || 
-                gdrive_xfer_add_query(mGInfo, pTransfer, "includeSubscribed", "false") || 
-                gdrive_xfer_add_query(mGInfo, pTransfer, "fields", fieldString.c_str())
-            )
-        {
-            // Error
-            gdrive_xfer_free(pTransfer);
-            return -1;
-        }
-
-        // Do the transfer.
-        DownloadBuffer* pBuf = gdrive_xfer_execute(mGInfo, pTransfer);
-        gdrive_xfer_free(pTransfer);
+        HttpTransfer xfer(mGInfo);
+        
+        int result =
+            xfer.gdrive_xfer_set_requesttype(GDRIVE_REQUEST_GET)
+                .gdrive_xfer_set_url(Gdrive::GDRIVE_URL_ABOUT)
+                .gdrive_xfer_add_query("includeSubscribed", "false")
+                .gdrive_xfer_add_query("fields", fieldString)
+                .gdrive_xfer_execute();
 
         int returnVal = -1;
-        if (pBuf != NULL && pBuf->getHttpResponse() < 400)
+        if (result == 0 && xfer.getHttpResponse() < 400)
         {
             // Response was good, try extracting the data.
-            Json jsonObj(pBuf->getData());
+            Json jsonObj(xfer.getData());
             if (jsonObj.isValid())
             {
                 returnVal = fillFromJson(jsonObj);
             }
         }
-
-        delete pBuf;
 
         return returnVal;
     }
