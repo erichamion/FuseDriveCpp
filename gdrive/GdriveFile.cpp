@@ -7,7 +7,6 @@
 
 #include "GdriveFile.hpp"
 #include "Gdrive.hpp"
-#include "NullStream.hpp"
 
 #include <assert.h>
 #include <fcntl.h>

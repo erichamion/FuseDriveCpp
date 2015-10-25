@@ -159,8 +159,6 @@
       </item>
       <item path="gdrive/GdriveFile.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/GdriveInfo.cpp" ex="false" tool="1" flavor2="0">
-      </item>
       <item path="gdrive/HttpQuery.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/HttpQuery.hpp" ex="false" tool="3" flavor2="0">
@@ -260,8 +258,6 @@
       <item path="gdrive/GdriveFile.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/GdriveFile.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="gdrive/GdriveInfo.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/HttpQuery.cpp" ex="false" tool="1" flavor2="0">
       </item>

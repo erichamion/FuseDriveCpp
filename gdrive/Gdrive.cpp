@@ -1008,19 +1008,16 @@ namespace fusedrive
                 return -1;
             }
 
-            char* buffer = (char*) malloc(st.st_size + 1);
-            if (buffer == NULL)
-            {
-                // Memory allocation error.
-                fclose(inFile);
-                return -1;
-            }
+            char* buffer = new char[st.st_size + 1];
 
             int bytesRead = fread(buffer, 1, st.st_size, inFile);
             buffer[bytesRead >= 0 ? bytesRead : 0] = '\0';
             int returnVal = 0;
 
             Json jsonObj = Json(string(buffer));
+            delete buffer;
+            fclose(inFile);
+            
             if (!jsonObj.isValid())
             {
                 // Couldn't convert the file contents to a JSON object, prepare to
@@ -1040,8 +1037,6 @@ namespace fusedrive
                     returnVal = -1;
                 }
             }
-            free(buffer);
-            fclose(inFile);
             return returnVal;
 
         }
@@ -1159,7 +1154,7 @@ namespace fusedrive
 
     int Gdrive::promptForAuth()
     {
-        char scopeStr[GDRIVE_SCOPE_MAXLENGTH] = "";
+        stringstream scopeStr;
         bool scopeFound = false;
 
         // Check each of the possible permissions, and add the appropriate scope
@@ -1171,10 +1166,10 @@ namespace fusedrive
                 // If this isn't the first scope, add a space to separate scopes.
                 if (scopeFound)
                 {
-                    strcat(scopeStr, " ");
+                    scopeStr << " ";
                 }
                 // Add the current scope.
-                strcat(scopeStr, GDRIVE_ACCESS_SCOPES[i].c_str());
+                scopeStr << GDRIVE_ACCESS_SCOPES[i];
                 scopeFound = true;
             }
         }
@@ -1182,7 +1177,7 @@ namespace fusedrive
         HttpQuery query(*this, "response_type", "code");
         query.add("client_id", GDRIVE_CLIENT_ID)
             .add("redirect_uri", GDRIVE_REDIRECT_URI)
-            .add("scope", scopeStr)
+            .add("scope", scopeStr.str())
             .add("include_granted_scopes", "true");
 
         string authUrl = query.assemble(GDRIVE_URL_AUTH_NEWAUTH);

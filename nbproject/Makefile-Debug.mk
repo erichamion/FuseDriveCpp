@@ -47,7 +47,6 @@ OBJECTFILES= \
 	${OBJECTDIR}/gdrive/FileinfoArray.o \
 	${OBJECTDIR}/gdrive/Gdrive.o \
 	${OBJECTDIR}/gdrive/GdriveFile.o \
-	${OBJECTDIR}/gdrive/GdriveInfo.o \
 	${OBJECTDIR}/gdrive/HttpQuery.o \
 	${OBJECTDIR}/gdrive/HttpTransfer.o \
 	${OBJECTDIR}/gdrive/Json.o \
@@ -139,11 +138,6 @@ ${OBJECTDIR}/gdrive/GdriveFile.o: gdrive/GdriveFile.cpp
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
 	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/GdriveFile.o gdrive/GdriveFile.cpp
-
-${OBJECTDIR}/gdrive/GdriveInfo.o: gdrive/GdriveInfo.cpp 
-	${MKDIR} -p ${OBJECTDIR}/gdrive
-	${RM} "$@.d"
-	$(COMPILE.cc) -g -Wall -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -D_XOPEN_SOURCE=700 -I/usr/include/ `pkg-config --cflags fuse` `pkg-config --cflags libcurl` `pkg-config --cflags json-c` -std=c++11  -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/GdriveInfo.o gdrive/GdriveInfo.cpp
 
 ${OBJECTDIR}/gdrive/HttpQuery.o: gdrive/HttpQuery.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive

@@ -287,11 +287,7 @@ namespace fusedrive
             return mpJsonObj;
         }
 
-        // Just use a single string guaranteed to be at least as long as the 
-        // longest key (because it's the length of all the keys put together).
-        //char* currentKey = malloc(strlen(key) + 1);
-
-
+        
         size_t startIndex = 0;
         size_t endIndex = 0;
         json_object* pLastObj = mpJsonObj;
