@@ -51,7 +51,6 @@ OBJECTFILES= \
 	${OBJECTDIR}/gdrive/HttpQuery.o \
 	${OBJECTDIR}/gdrive/HttpTransfer.o \
 	${OBJECTDIR}/gdrive/Json.o \
-	${OBJECTDIR}/gdrive/NullStream.o \
 	${OBJECTDIR}/gdrive/Path.o \
 	${OBJECTDIR}/gdrive/Sysinfo.o \
 	${OBJECTDIR}/gdrive/Util.o
@@ -160,11 +159,6 @@ ${OBJECTDIR}/gdrive/Json.o: gdrive/Json.cpp
 	${MKDIR} -p ${OBJECTDIR}/gdrive
 	${RM} "$@.d"
 	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/Json.o gdrive/Json.cpp
-
-${OBJECTDIR}/gdrive/NullStream.o: gdrive/NullStream.cpp 
-	${MKDIR} -p ${OBJECTDIR}/gdrive
-	${RM} "$@.d"
-	$(COMPILE.cc) -O2 -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/gdrive/NullStream.o gdrive/NullStream.cpp
 
 ${OBJECTDIR}/gdrive/Path.o: gdrive/Path.cpp 
 	${MKDIR} -p ${OBJECTDIR}/gdrive

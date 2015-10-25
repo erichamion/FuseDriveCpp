@@ -173,10 +173,6 @@
       </item>
       <item path="gdrive/Json.hpp" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="gdrive/NullStream.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="gdrive/NullStream.hpp" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="gdrive/Path.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/Path.hpp" ex="false" tool="3" flavor2="0">
@@ -278,10 +274,6 @@
       <item path="gdrive/Json.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="gdrive/Json.hpp" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="gdrive/NullStream.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="gdrive/NullStream.hpp" ex="false" tool="3" flavor2="0">
       </item>
       <item path="gdrive/Path.cpp" ex="false" tool="1" flavor2="0">
       </item>
