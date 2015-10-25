@@ -18,6 +18,7 @@
 #include <assert.h>
 #include <sstream>
 #include <iomanip>
+#include <cstdarg>
 
 using namespace std;
 namespace fusedrive
@@ -92,6 +93,32 @@ namespace fusedrive
             returnVal = mkdir(path.c_str(), 0755);
         }
 
+        return returnVal;
+    }
+    
+    int Util::sprintf(std::string& str, const string& format, ...)
+    {
+        str.clear();
+        
+        // Find the required length
+        va_list args;
+        va_start(args, format);
+        int resultSize = ::vsnprintf(NULL, 0, format.c_str(), args) + 1;
+        va_end(args);
+        
+        if (resultSize <= 1)
+        {
+            // Result is empty, no need to continue
+            return 0;
+        }
+        
+        va_start(args, format);
+        char* cStr = new char[resultSize];
+        int returnVal = ::vsnprintf(cStr, resultSize, format.c_str(), args);
+        str.assign(cStr);
+        delete cStr;
+        va_end(args);
+        
         return returnVal;
     }
 

@@ -14,6 +14,7 @@
 #include <assert.h>
 
 #include "Options.hpp"
+#include "gdrive/Util.hpp"
 
 using namespace std;
 
@@ -30,11 +31,11 @@ namespace fusedrive
     const unsigned int Options::OPTION_CACHETTL = 500;
     const unsigned int Options::OPTION_CHUNKSIZE = 501;
     const unsigned int Options::OPTION_MAXCHUNKS = 502;
-    const char* const Options::OPTION_STRING = "+a:c:i:p:d:";
+    const string Options::OPTION_STRING = "+a:c:i:p:d:";
 
     const unsigned int Options::DEFAULT_GDRIVE_ACCESS = Gdrive::GDRIVE_ACCESS_WRITE;
-    const char* const Options::DEFAULT_AUTH_BASENAME = ".auth";
-    const char* const Options::DEFAULT_AUTH_RELPATH = "fuse-drive";
+    const string Options::DEFAULT_AUTH_BASENAME = ".auth";
+    const string Options::DEFAULT_AUTH_RELPATH = "fuse-drive";
     const unsigned int Options::DEFAULT_CACHETTL = 30;
     const Gdrive_Interaction Options::DEFAULT_INTERACTION = GDRIVE_INTERACTION_STARTUP;
     const unsigned int Options::DEFAULT_CHUNKSIZE = Gdrive::GDRIVE_BASE_CHUNK_SIZE * 4;
@@ -114,7 +115,7 @@ namespace fusedrive
         opterr = 0;
         int currentArg;
         int longoptIndex = -1;
-        while ((currentArg = getopt_long(argc, argv, OPTION_STRING, 
+        while ((currentArg = getopt_long(argc, argv, OPTION_STRING.c_str(), 
                                          longopts, &longoptIndex)) != -1)
         {
             switch (currentArg)
@@ -252,22 +253,18 @@ namespace fusedrive
     **************************/
     
     /**
-     * Allocates and fills in an error message with one string parameter.
+     * Fills in an error message with one string parameter.
      * @param fmtStr (const char*): Format string as used for printf(). Must contain
      *                              exactly one "%s"
      * @param arg (const char*):    String that will be substituted into fmtStr.
      */
-    void Options::fudr_options_make_errormsg(char** pDest, const char* fmtStr, 
+    void Options::fudr_options_make_errormsg(string& dest, const string& fmtStr, 
             const char* arg)
     {
         // Nothing should be NULL, and fmtStr should not be "".
-        assert(pDest && fmtStr && fmtStr[0] && arg);
+        assert(!fmtStr.empty());
 
-        int length = snprintf(NULL, 0, fmtStr, arg);
-        
-        *pDest = new char[length + 1];
-        
-        snprintf(*pDest, length + 1, fmtStr, arg);
+        Util::sprintf(dest, fmtStr, arg);
         
     }
     
@@ -284,7 +281,6 @@ namespace fusedrive
         fuse_argv = NULL;
         fuse_argc = 0;
         error = false;
-        // errorMsg = NULL;
     }
 
     /**
@@ -320,7 +316,7 @@ namespace fusedrive
         }
         else
         {
-            const char* fmtStr = "Unrecognized access level '%s'. Valid values are "
+            const string fmtStr = "Unrecognized access level '%s'. Valid values are "
                                  "meta, read, write, apps, or all.\n";
             throw new BadOptionException(fmtStr, arg);
         }
@@ -340,7 +336,7 @@ namespace fusedrive
         {
             gdrive_auth_file.assign(arg);
         }
-        catch (const exception& e)
+        catch (...)
         {
             // This may fail, but at least try
             throw new BadOptionException("Could not allocate memory for options");
@@ -373,7 +369,7 @@ namespace fusedrive
         else
         {
             error = true;
-            const char* fmtStr = "Unrecognized interaction type '%s'. Valid values "
+            const string fmtStr = "Unrecognized interaction type '%s'. Valid values "
                                  "are always, never, and startup\n";
             throw new BadOptionException(fmtStr, arg);
         }
@@ -395,13 +391,13 @@ namespace fusedrive
         BadOptionException* pBoe = NULL;
         if (end == arg)
         {
-            const char* fmtStr = "Invalid file permission '%s', not an octal "
+            const string fmtStr = "Invalid file permission '%s', not an octal "
                                  "integer\n";
             pBoe = new BadOptionException(fmtStr, arg);
         }
         else if (filePerm > 0777)
         {
-            const char* fmtStr = "Invalid file permission '%s', should be three "
+            const string fmtStr = "Invalid file permission '%s', should be three "
                                  "octal digits\n";
             pBoe = new BadOptionException(fmtStr, arg);
         }
@@ -432,13 +428,13 @@ namespace fusedrive
         BadOptionException* pBoe = NULL;
         if (end == arg)
         {
-            const char* fmtStr = "Invalid directory permission '%s', not an octal "
+            const string fmtStr = "Invalid directory permission '%s', not an octal "
                                  "integer\n";
             pBoe = new BadOptionException(fmtStr, arg);
         }
         else if (dirPerm > 0777)
         {
-            const char* fmtStr = "Invalid directory permission '%s', should be "
+            const string fmtStr = "Invalid directory permission '%s', should be "
                                  "three octal digits\n";
             pBoe = new BadOptionException(fmtStr, arg);
         }
@@ -469,7 +465,7 @@ namespace fusedrive
         if (end == arg)
         {
             error = true;
-            const char* fmtStr = "Invalid cache-time '%s', not an integer\n";
+            const string fmtStr = "Invalid cache-time '%s', not an integer\n";
             throw new BadOptionException(fmtStr, arg);
         }
         gdrive_cachettl = cacheTime;
@@ -491,7 +487,7 @@ namespace fusedrive
         if (end == arg)
         {
             error = true;
-            const char* fmtStr = "Invalid chunk size '%s', not an integer\n";
+            const string fmtStr = "Invalid chunk size '%s', not an integer\n";
             throw new BadOptionException(fmtStr, arg);
         }
         gdrive_chunk_size = chunkSize;
@@ -513,7 +509,7 @@ namespace fusedrive
         if (end == arg)
         {
             error = true;
-            const char* fmtStr = "Invalid max chunks '%s', not an integer\n";
+            const string fmtStr = "Invalid max chunks '%s', not an integer\n";
             throw new BadOptionException(fmtStr, arg);
         }
         
@@ -537,20 +533,20 @@ namespace fusedrive
         // Assume short option for initialization
         char shortArgStr[] = {(char) argVal, '\0'};
         const char* argStr;
-        const char* fmtStr;
+        string fmtStr;
         if (argVal > 32 && argVal < 256)
         {
             // Short option
             argStr = shortArgStr;
-            fmtStr = "Unrecognized option, or no value given "
-                             "for option: '-%s'\n";
+            fmtStr.assign("Unrecognized option, or no value given "
+                             "for option: '-%s'\n");
         }
         else
         {
             // Long option
             argStr = longopts[longIndex].name;
-            fmtStr = "Unrecognized option, or no value given "
-                             "for option: '%s'\n";
+            fmtStr.assign("Unrecognized option, or no value given "
+                             "for option: '%s'\n");
         }
         
         // Throw exception to be consistent with other functions
@@ -573,46 +569,42 @@ namespace fusedrive
     
     
     
-    BadOptionException::BadOptionException(const char* message)
+    BadOptionException::BadOptionException(const string& message)
     {
-        msg = message ? strdup(message) : NULL;
+        msg.assign(message);
     }
     
-    BadOptionException::BadOptionException(const char* fmtStr, const char* arg)
+    BadOptionException::BadOptionException(const string& fmtStr, 
+            const char* arg)
     {
         
-        if (!(fmtStr && fmtStr[0] && arg))
+        if (fmtStr.empty())
         {
-            msg = NULL;
+            msg = "";
             return;
         }
 
         try
         {
-            int length = snprintf(NULL, 0, fmtStr, arg);
-
-            this->msg = new char[length + 1];
-
-            snprintf(msg, length + 1, fmtStr, arg);
+            
+            Util::sprintf(msg, fmtStr, arg);
         }
-        catch (const exception& e)
+        catch (...)
         {
-            // Don't throw another exception while creating this one.
+            // There shouldn't be any exceptions. If there are,
+            // don't throw another exception while creating this one.
             // Just do nothing and let the message be blank.
-            this->msg = NULL;
+            this->msg.clear();
         }
     }
     
     const char* BadOptionException::what() const noexcept
     {
-        return msg;
+        return msg.c_str();
     }
     
     BadOptionException::~BadOptionException()
     {
-        if (msg)
-        {
-            delete msg;
-        }
+        // Empty
     }
 }

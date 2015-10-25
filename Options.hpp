@@ -79,11 +79,11 @@ namespace fusedrive
         static const unsigned int OPTION_CACHETTL;
         static const unsigned int OPTION_CHUNKSIZE;
         static const unsigned int OPTION_MAXCHUNKS;
-        static const char* const OPTION_STRING;
+        static const std::string OPTION_STRING;
 
         static const unsigned int DEFAULT_GDRIVE_ACCESS;
-        static const char* const DEFAULT_AUTH_BASENAME;
-        static const char* const DEFAULT_AUTH_RELPATH;
+        static const std::string DEFAULT_AUTH_BASENAME;
+        static const std::string DEFAULT_AUTH_RELPATH;
         static const unsigned int DEFAULT_CACHETTL;
         static const Gdrive_Interaction DEFAULT_INTERACTION;
         static const unsigned int DEFAULT_CHUNKSIZE;
@@ -92,8 +92,8 @@ namespace fusedrive
         static const unsigned int DEFAULT_DIRPERMS;
         
         
-        static void fudr_options_make_errormsg(char** pDest, 
-            const char* fmtStr, const char* arg);
+        static void fudr_options_make_errormsg(std::string& dest, 
+            const std::string& fmtStr, const char* arg);
         
         void fudr_options_get_default_auth_file();
 
@@ -125,13 +125,13 @@ namespace fusedrive
     class BadOptionException : std::exception
     {
     public:
-        BadOptionException(const char* message);
-        BadOptionException(const char* fmtStr, const char* arg);
+        BadOptionException(const std::string& message);
+        BadOptionException(const std::string& fmtStr, const char* arg);
         virtual const char* what() const noexcept;
         ~BadOptionException();
         
     private:
-        char* msg;
+        std::string msg;
         
     };
     

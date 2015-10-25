@@ -21,9 +21,12 @@ namespace fusedrive
     public:
         static long divideCeil(long dividend, long divisor);
         
-        static FILE* recursiveFopen(const std::string& path, const std::string& mode);
+        static FILE* recursiveFopen(const std::string& path, 
+            const std::string& mode);
 
         static int recursiveMkdir(const std::string& path);
+        
+        static int sprintf(std::string& str, const std::string& format, ...);
         
         // Like strptime from <time.h>, but uses C++ string references. Returns the
         // index of the first unprocessed character, or string::npos if the entire
