@@ -194,7 +194,7 @@ namespace fusedrive
                             "";
                         if (!parentId.empty())
                         {
-                            this->deleteId(parentId.c_str());
+                            this->deleteId(parentId);
                         }
                     }
 
