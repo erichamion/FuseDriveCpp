@@ -605,9 +605,13 @@ namespace fusedrive
 
     Gdrive::~Gdrive() 
     {
-        if (this->mNeedsCurlCleanup && mCurlHandle != NULL)
+        if (mCurlHandle)
         {
             curl_easy_cleanup(mCurlHandle);
+        }
+        if (mNeedsCurlCleanup)
+        {
+            curl_global_cleanup();
         }
     }
 
@@ -922,12 +926,6 @@ namespace fusedrive
             throw new exception();
         }
 
-        // If we've made it this far, both the Gdrive_Info and its contained
-        // Gdrive_Info_Internal exist, and curl has been successfully initialized.
-        // Signal that fact in the data structure, and defer the rest of the 
-        // processing to gdrive_init_nocurl().
-        //isCurlInitialized = true;
-
         initNoCurl(access, cacheTTL, interactionMode, minFileChunkSize);
 
     }
@@ -1015,7 +1013,7 @@ namespace fusedrive
             int returnVal = 0;
 
             Json jsonObj = Json(string(buffer));
-            delete buffer;
+            delete[] buffer;
             fclose(inFile);
             
             if (!jsonObj.isValid())

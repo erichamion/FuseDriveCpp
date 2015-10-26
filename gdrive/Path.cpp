@@ -39,7 +39,7 @@ namespace fusedrive
         strcpy(pathCopy, mFullPath.c_str());
         char* dirName = dirname(pathCopy);
         mDirname = (string) dirName;
-        delete pathCopy;
+        delete[] pathCopy;
         
         return mDirname;
     }
@@ -56,7 +56,7 @@ namespace fusedrive
         strcpy(pathCopy, mFullPath.c_str());
         char* baseName = basename(pathCopy);
         mBasename = (string) baseName;
-        delete pathCopy;
+        delete[] pathCopy;
         
         return mBasename;
     }

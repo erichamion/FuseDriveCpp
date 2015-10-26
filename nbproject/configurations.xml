@@ -17,14 +17,13 @@
         <itemPath>gdrive/HttpQuery.hpp</itemPath>
         <itemPath>gdrive/HttpTransfer.hpp</itemPath>
         <itemPath>gdrive/Json.hpp</itemPath>
+        <itemPath>gdrive/Path.hpp</itemPath>
         <itemPath>gdrive/Sysinfo.hpp</itemPath>
         <itemPath>gdrive/Util.hpp</itemPath>
         <itemPath>gdrive/gdrive-client-secret-template.h</itemPath>
         <itemPath>gdrive/gdrive-client-secret.h</itemPath>
-        <itemPath>gdrive/gdrive-util.h</itemPath>
       </logicalFolder>
       <itemPath>FuseDrivePrivateData.hpp</itemPath>
-      <itemPath>gdrive/NullStream.hpp</itemPath>
       <itemPath>Options.hpp</itemPath>
       <itemPath>fuse-drive.hpp</itemPath>
     </logicalFolder>
@@ -45,16 +44,14 @@
         <itemPath>gdrive/FileinfoArray.cpp</itemPath>
         <itemPath>gdrive/Gdrive.cpp</itemPath>
         <itemPath>gdrive/GdriveFile.cpp</itemPath>
-        <itemPath>gdrive/GdriveInfo.cpp</itemPath>
         <itemPath>gdrive/HttpQuery.cpp</itemPath>
         <itemPath>gdrive/HttpTransfer.cpp</itemPath>
         <itemPath>gdrive/Json.cpp</itemPath>
+        <itemPath>gdrive/Path.cpp</itemPath>
         <itemPath>gdrive/Sysinfo.cpp</itemPath>
         <itemPath>gdrive/Util.cpp</itemPath>
-        <itemPath>gdrive/gdrive-util.c</itemPath>
       </logicalFolder>
       <itemPath>FuseDrivePrivateData.cpp</itemPath>
-      <itemPath>gdrive/NullStream.cpp</itemPath>
       <itemPath>Options.cpp</itemPath>
       <itemPath>fuse-drive.cpp</itemPath>
     </logicalFolder>

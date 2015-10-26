@@ -28,8 +28,14 @@ namespace fusedrive
         }
         // If curl_easy_escape fails, it returns NULL. Assigning NULL
         // pointer to a string will throw an exception.
-        this->mField = curl_easy_escape(curlHandle, field.c_str(), 0);
-        this->mValue = curl_easy_escape(curlHandle, value.c_str(), 0);
+        char* curlFieldStr = curl_easy_escape(curlHandle, field.c_str(), 0);
+        char* curlValueStr = curl_easy_escape(curlHandle, value.c_str(), 0);
+        
+        this->mField.assign(curlFieldStr);
+        this->mValue.assign(curlValueStr);
+        
+        curl_free(curlFieldStr);
+        curl_free(curlValueStr);
         curl_easy_cleanup(curlHandle);
     }
     
